@@ -22,7 +22,8 @@
 // routes/authRoutes.js
 import express from "express";
 import { signup, signin, forgotPassword, resetPassword } from "../controller/authController.js";
-import { getUser, getUserById, editUserById, deleteUserById } from "../controller/userController.js";
+import { createUser, getUser, getUserById, editUserById, deleteUserById } from "../controller/userController.js";
+import { createRole, getRoles, getRoleById, updateRoleById, deleteRoleById} from "../controller/userController.js";
 
 const router = express.Router();
 
@@ -33,9 +34,22 @@ router.post("/forgot-password", forgotPassword);
 router.post("/reset-password", resetPassword);
 
 // User routes
+router.post('/createUser', createUser);
 router.get('/getUser', getUser);
 router.get('/getUserById/:id', getUserById);
 router.put('/editUserById/:id', editUserById);
 router.delete('/deleteUserById/:id', deleteUserById);
+
+
+
+
+//role routes
+
+router.post('/roles', createRole);
+router.get('/roles', getRoles);
+router.get('/roles/:id', getRoleById);
+router.put('/roles/:id', updateRoleById); 
+router.delete('/roles/:id', deleteRoleById);
+
 
 export default router;
