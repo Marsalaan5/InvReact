@@ -740,30 +740,30 @@ export const getUserById = async (req, res) => {
 };
 
 export const editUserById = (req, res) => {
+  // Use multer middleware before your actual logic
   upload.single('avatar')(req, res, async (err) => {
     if (err) {
       console.error("File upload error:", err);
       return res.status(400).json({ message: "File upload failed", error: err.message });
     }
 
+    // Destructure fields from req.body
     const { name, email, phone, username, role_id, status } = req.body;
     const userId = req.params.id;
 
     try {
+      // Validate userId
       if (!Number.isInteger(Number(userId)) || Number(userId) <= 0) {
         return res.status(400).json({ message: "Invalid user ID" });
       }
 
-      const [existingUser] = await pool.execute(
-        "SELECT * FROM users WHERE id = ?",
-        [userId]
-      );
-
+      // Check if user exists
+      const [existingUser] = await pool.execute("SELECT * FROM users WHERE id = ?", [userId]);
       if (existingUser.length === 0) {
         return res.status(404).json({ message: "User not found" });
       }
 
-
+      // Check if email or username are already taken
       if (email || username) {
         const [duplicate] = await pool.execute(
           "SELECT * FROM users WHERE (email = ? OR username = ?) AND id != ?",
@@ -774,6 +774,7 @@ export const editUserById = (req, res) => {
         }
       }
 
+      // Update fields if provided
       const updates = [];
       const values = [];
 
@@ -807,42 +808,51 @@ export const editUserById = (req, res) => {
         values.push(status);
       }
 
+      // If avatar is provided, handle the file
       if (req.file) {
-        const normalizedPath = req.file.path.replace(/\\/g, '/');
+        const normalizedPath = req.file.path.replace(/\\/g, '/'); // Ensure file path consistency
         updates.push("avatar = ?");
         values.push(normalizedPath);
 
+        // If user already has an avatar, delete the old one
         if (existingUser[0].avatar && fs.existsSync(existingUser[0].avatar)) {
           fs.unlinkSync(existingUser[0].avatar);
         }
       }
 
+      // If no fields to update, return error
       if (updates.length === 0) {
         return res.status(400).json({ message: "No fields to update" });
       }
 
+      // Add userId to the values for the update query
       values.push(userId);
+
+      // Construct and execute the update query
       const query = `UPDATE users SET ${updates.join(", ")} WHERE id = ?`;
       await pool.execute(query, values);
 
+      // Fetch the updated user
       const [updatedUser] = await pool.execute(
         "SELECT id, name, email, phone, username, avatar, role_id, status FROM users WHERE id = ?",
         [userId]
       );
 
+      // Return success response
       res.json({
         message: "User updated successfully",
         user: updatedUser[0]
       });
     } catch (err) {
       console.error("Error updating user:", err);
-      res.status(500).json({ 
-        message: "Internal Server Error", 
-        error: err.message 
+      res.status(500).json({
+        message: "Internal Server Error",
+        error: err.message
       });
     }
   });
 };
+
 
 export const deleteUserById = async (req, res) => {
   const userId = req.params.id;
@@ -867,6 +877,133 @@ export const deleteUserById = async (req, res) => {
   }
 };
 
+
+
+//Profile Crud
+
+export const editProfileById = (req, res) => {
+
+  upload.single('avatar')(req, res, async (err) => {
+    if (err) {
+      console.error("File upload error:", err);
+      return res.status(400).json({ message: "File upload failed", error: err.message });
+    }
+
+    const { name, phone } = req.body;
+    const userId = req.user.id; 
+
+    try {
+    
+      const [user] = await pool.execute("SELECT * FROM users WHERE id = ?", [userId]);
+      if (user.length === 0) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+
+      let avatarPath = user[0].avatar;
+      if (req.file) {
+        const normalizedPath = req.file.path.replace(/\\/g, '/');
+        avatarPath = normalizedPath;
+
+  
+        if (user[0].avatar && fs.existsSync(user[0].avatar)) {
+          fs.unlinkSync(user[0].avatar);
+        }
+      }
+
+  
+      const updates = [];
+      const values = [];
+
+      if (name) {
+        updates.push("name = ?");
+        values.push(name);
+      }
+
+      if (phone !== undefined) {
+        updates.push("phone = ?");
+        values.push(phone);
+      }
+
+      if (avatarPath !== user[0].avatar) {
+        updates.push("avatar = ?");
+        values.push(avatarPath);
+      }
+
+      if (updates.length === 0) {
+        return res.status(400).json({ message: "No fields to update" });
+      }
+
+
+      values.push(userId);
+
+  
+      const query = `UPDATE users SET ${updates.join(", ")} WHERE id = ?`;
+      await pool.execute(query, values);
+
+  
+      res.json({ message: "Profile updated successfully", user: { id: userId, name, phone, avatar: avatarPath } });
+    } catch (err) {
+      console.error("Error updating profile:", err);
+      res.status(500).json({ message: "Internal Server Error", error: err.message });
+    }
+  });
+};
+
+// Get Profile
+export const getProfile = async (req, res) => {
+  const userId = req.user.id
+
+  try {
+    const [user] = await pool.execute(
+      `SELECT id, name, email, phone, username, avatar, role_id, status FROM users WHERE id = ?`, 
+      [userId]
+    );
+
+    if (user.length === 0) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.json(user[0]);
+  } catch (err) {
+    console.error("Error fetching profile:", err);
+    res.status(500).json({ message: "Internal Server Error", error: err.message });
+  }
+};
+
+export const getProfileById = async (req, res) => {
+  const userId = req.params.id; // Get the user ID from the request parameters
+
+  try {
+    // Validate the ID
+    if (isNaN(userId) || userId <= 0) {
+      return res.status(400).json({ message: "Invalid user ID" });
+    }
+
+    // Query to fetch the user profile by ID
+    const [user] = await pool.execute(
+      "SELECT id, name, email, phone, username, avatar, role_id, status FROM users WHERE id = ?",
+      [userId]
+    );
+
+    // If the user does not exist, return a 404 error
+    if (user.length === 0) {
+      return res.status(404).json({ message: `User with ID ${userId} not found` });
+    }
+
+    // Return the user's profile data
+    res.json(user[0]);
+  } catch (err) {
+    console.error("Error fetching user profile by ID:", err);
+    res.status(500).json({ message: "Internal Server Error", error: err.message });
+  }
+};
+
+export default {
+  editProfileById,
+  getProfile,
+  getProfileById,
+};
 
 
 // ============= ROLES API =============

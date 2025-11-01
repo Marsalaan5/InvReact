@@ -1050,7 +1050,7 @@ const fetchRoles = async () => {
     useEffect(() => {
         fetchRoles();
         fetchUsers();
-    }, []);
+    },[]);
 
     // Debounced search
     useEffect(() => {
@@ -1058,11 +1058,15 @@ const fetchRoles = async () => {
             fetchUsers();
         }, 500);
         return () => clearTimeout(timeoutId);
-    }, [filters]);
+    },[filters]);
 
     const toggleFilterVisibility = () => {
         setIsFilterVisible(prev => !prev);
     };
+
+    useEffect(() => {
+    console.log("Bootstrap available:", typeof window.bootstrap);
+}, []);
 
     // Delete user
     const handleDelete = async (userId) => {
@@ -1163,6 +1167,19 @@ const fetchRoles = async () => {
 
     const columns = [
         {
+            title: "Name",
+            dataIndex: "name",
+            render: (text, record) => (
+                <span className="userimgname">
+                    <Link to="#" className="userslist-img bg-img">
+                        <ImageWithBasePath alt="" src={record.img} />
+                    </Link>
+                    <div><Link to="#">{text}</Link></div>
+                </span>
+            ),
+            sorter: (a, b) => (a.name || '').localeCompare(b.name || ''),
+        },
+        {
             title: "User Name",
             dataIndex: "username",
             render: (text, record) => (
@@ -1208,36 +1225,73 @@ const fetchRoles = async () => {
             ),
             sorter: (a, b) => (a.status || '').localeCompare(b.status || ''),
         },
-        {
-            title: 'Actions',
-            dataIndex: 'actions',
-            key: 'actions',
-            render: (_, record) => (
-                <td className="action-table-data">
-                    <div className="edit-delete-action">
-                        <Link className="me-2 p-2" to={`/users/${record.id}`}>
-                            <i data-feather="eye" className="feather feather-eye action-eye"></i>
-                        </Link>
-                        <Link
-                            className="me-2 p-2"
-                            to="#"
-                            data-bs-toggle="modal"
-                            data-bs-target="#edit-units"
-                            onClick={() => handleEdit(record)}
-                        >
-                            <i data-feather="edit" className="feather-edit"></i>
-                        </Link>
-                        <Link
-                            className="confirm-text p-2"
-                            to="#"
-                            onClick={() => handleDelete(record.id)}
-                        >
-                            <i data-feather="trash-2" className="feather-trash-2"></i>
-                        </Link>
-                    </div>
-                </td>
-            )
-        },
+        // {
+        //     title: 'Actions',
+        //     dataIndex: 'actions',
+        //     key: 'actions',
+        //     render: (_, record) => (
+        //         <td className="action-table-data">
+        //             <div className="edit-delete-action">
+        //                 <Link className="me-2 p-2" to={`/users/${record.id}`}>
+        //                     <i data-feather="eye" className="feather feather-eye action-eye"></i>
+        //                 </Link>
+        //                 <Link
+        //                     className="me-2 p-2"
+        //                     to="#"
+        //                     data-bs-toggle="modal"
+        //                     data-bs-target="#edit-units"
+        //                     onClick={() => handleEdit(record)}
+        //                 >
+        //                     <i data-feather="edit" className="feather-edit"></i>
+        //                 </Link>
+        //                 <Link
+        //                     className="confirm-text p-2"
+        //                     to="#"
+        //                     onClick={() => handleDelete(record.id)}
+        //                 >
+        //                     <i data-feather="trash-2" className="feather-trash-2"></i>
+        //                 </Link>
+        //             </div>
+        //         </td>
+        //     )
+        // },
+
+        // Change the edit action in the columns array (around line 270)
+
+{
+    title: 'Actions',
+    dataIndex: 'actions',
+    key: 'actions',
+    render: (_, record) => (
+        <td className="action-table-data">
+            <div className="edit-delete-action">
+                <Link className="me-2 p-2" to={`/users/${record.id}`}>
+                    <i data-feather="eye" className="feather feather-eye action-eye"></i>
+                </Link>
+                <a
+                    className="me-2 p-2"
+                    href="#"
+                    data-bs-toggle="modal"
+                    data-bs-target="#edit-units"
+                    onClick={(e) => {
+                        e.preventDefault();
+                        handleEdit(record);
+                    }}
+                    style={{ cursor: 'pointer' }}
+                >
+                    <i data-feather="edit" className="feather-edit"></i>
+                </a>
+                <Link
+                    className="confirm-text p-2"
+                    to="#"
+                    onClick={() => handleDelete(record.id)}
+                >
+                    <i data-feather="trash-2" className="feather-trash-2"></i>
+                </Link>
+            </div>
+        </td>
+    )
+},
     ];
 
     return (
