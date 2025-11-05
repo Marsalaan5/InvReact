@@ -6,26 +6,50 @@ import ImageWithBasePath from "../../core/img/imagewithbasebath";
 import { Search, XCircle } from "react-feather";
 import { all_routes } from "../../Router/all_routes";
 
+
+import { loginSuccess,logout, } from "../../core/redux/slices/authSlice"; 
+import { useDispatch ,useSelector} from 'react-redux';
+
 const Header = () => {
   const route = all_routes;
   const [toggle, SetToggle] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
-    const [user, setUser] = useState(null);
+    // const [user, setUser] = useState(null);
 
+    const dispatch = useDispatch();  
   const navigate = useNavigate();
   
+  const { user, isAuthenticated } = useSelector((state) => state.auth);
+  // useEffect(() => {
+  //   // Get user info from localStorage
+  //   const storedUser = sessionStorage.getItem("user");
+  //   if (storedUser) setUser(JSON.parse(storedUser));
+  // }, []);
 
-  useEffect(() => {
-    // Get user info from localStorage
-    const storedUser = sessionStorage.getItem("user");
-    if (storedUser) setUser(JSON.parse(storedUser));
-  }, []);
+  // const handleLogout = () => {
+  // sessionStorage.removeItem("token");
+  // sessionStorage.removeItem("user");
+  //   setUser(null);
+  //   navigate(route.signin);
+  // };
+
+
+
+
+
 
   const handleLogout = () => {
-  sessionStorage.removeItem("token");
-  sessionStorage.removeItem("user");
-    setUser(null);
-    navigate(route.signin);
+  
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('user');
+
+  
+    dispatch(logout());
+
+   
+    navigate('/signin');
   };
 
   const isElementVisible = (element) => {
@@ -82,7 +106,7 @@ const Header = () => {
     return () => {
       document.removeEventListener("mouseover", handleMouseover);
     };
-  }, []); // Empty dependency array ensures that the effect runs only once on mount
+  }, []);
   useEffect(() => {
     const handleFullscreenChange = () => {
       setIsFullscreen(

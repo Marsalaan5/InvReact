@@ -194,6 +194,9 @@ import CurrencySettings from "../feature-module/settings/financialsettings/curre
 import WareHouses from "../core/modals/peoples/warehouses";
 import Coupons from "../feature-module/coupons/coupons";
 import { all_routes } from "./all_routes";
+import MenuManagement from "../feature-module/MenuManagement/MenuManagement";
+
+
 export const publicRoutes = [
   {
     id: 1,
@@ -201,6 +204,7 @@ export const publicRoutes = [
     name: "home",
     element: <Dashboard />,
     route: Route,
+
   },
   {
     id: 2,
@@ -1393,6 +1397,14 @@ export const publicRoutes = [
     element: <Navigate to="/" />,
     route: Route,
   },
+  {
+    id: 117,
+    path: "/menu-management",
+    name: "Menu",
+    element: <MenuManagement/>,
+    route: Route,
+  },
+
 ];
 export const posRoutes = [
   {

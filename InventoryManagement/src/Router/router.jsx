@@ -1,29 +1,265 @@
-import React from "react";
+// import React from "react";
+// import { Route, Routes } from "react-router-dom";
+// import Header from "../InitialPage/Sidebar/Header";
+// import Sidebar from "../InitialPage/Sidebar/Sidebar";
+// import { pagesRoute, posRoutes, publicRoutes } from "./router.link";
+// import { Outlet } from "react-router-dom";
+// import { useSelector } from "react-redux";
+// import ThemeSettings from "../InitialPage/themeSettings";
+// // import CollapsedSidebar from "../InitialPage/Sidebar/collapsedSidebar";
+// import Loader from "../feature-module/loader/loader";
+// // import HorizontalSidebar from "../InitialPage/Sidebar/horizontalSidebar";
+// //import LoadingSpinner from "../InitialPage/Sidebar/LoadingSpinner";
+
+// const AllRoutes = () => {
+//   const data = useSelector((state) => state.toggle_header);
+//   // const layoutStyles = useSelector((state) => state.layoutstyledata);
+//   const HeaderLayout = () => (
+//     <div className={`main-wrapper ${data ? "header-collapse" : ""}`}>
+//       <Header />
+//       {/* {layoutStyles == "collapsed" ? (
+//         <CollapsedSidebar />
+//       ) : layoutStyles == "horizontal" ? (
+//         <HorizontalSidebar />
+//       ) : (
+//         <Sidebar />
+//       )} */}
+//       <Sidebar />
+//       <Outlet />
+//       <ThemeSettings />
+//       <Loader />
+//     </div>
+//   );
+
+//   const Authpages = () => (
+//     <div className={data ? "header-collapse" : ""}>
+//       <Outlet />
+//       <Loader />
+//       <ThemeSettings />
+//     </div>
+//   );
+
+//   const Pospages = () => (
+//     <div>
+//       <Header />
+//       <Outlet />
+//       <Loader />
+//       <ThemeSettings />
+//     </div>
+//   );
+
+//   console.log(publicRoutes, "dashboard");
+
+//   return (
+//     <div>
+//       <Routes>
+//         <Route path="/pos" element={<Pospages />}>
+//           {posRoutes.map((route, id) => (
+//             <Route path={route.path} element={route.element} key={id} />
+//           ))}
+//         </Route>
+//         <Route path={"/"} element={<HeaderLayout />}>
+//           {publicRoutes.map((route, id) => (
+//             <Route path={route.path} element={route.element} key={id} />
+//           ))}
+//         </Route>
+
+//         <Route path={"/"} element={<Authpages />}>
+//           {pagesRoute.map((route, id) => (
+//             <Route path={route.path} element={route.element} key={id} />
+//           ))}
+//         </Route>
+
+//         {/* <Route path={"/expenses/"} element={<HeaderLayout />}>
+//           {expensesRoutes.map((route, id) => (
+//             <Route path={route.path} element={route.element} key={id} />
+//           ))}
+//         </Route> */}
+//       </Routes>
+//     </div>
+//   );
+// };
+// export default AllRoutes;
+
+
+
+
+
+
+
+// import React, { useEffect } from "react";
+// import { Route, Routes } from "react-router-dom";
+// import Header from "../InitialPage/Sidebar/Header";
+// import Sidebar from "../InitialPage/Sidebar/Sidebar";
+// import { pagesRoute, posRoutes, publicRoutes } from "./router.link";
+// import { Outlet } from "react-router-dom";
+// import { useSelector, useDispatch } from "react-redux"; // ✅ Add useDispatch
+// import ThemeSettings from "../InitialPage/themeSettings";
+// import Loader from "../feature-module/loader/loader";
+// import ProtectedRoute from './protectedroute.jsx';
+// import { loginSuccess } from "../core/redux/slices/authSlice.js"; 
+
+// const AllRoutes = () => {
+//   const data = useSelector((state) => state.toggle_header);
+//   const dispatch = useDispatch(); // ✅ Add dispatch
+
+//   // ✅ Restore authentication state on app load
+//   useEffect(() => {
+//     const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+//     const userStr = localStorage.getItem('user') || sessionStorage.getItem('user');
+
+//     if (token && userStr) {
+//       try {
+//         const user = JSON.parse(userStr);
+//         dispatch(loginSuccess({ user, token }));
+//         console.log('✅ Auth state restored');
+//       } catch (error) {
+//         console.error('❌ Failed to restore auth:', error);
+//         localStorage.removeItem('token');
+//         localStorage.removeItem('user');
+//         sessionStorage.removeItem('token');
+//         sessionStorage.removeItem('user');
+//       }
+//     }
+//   }, [dispatch]);
+
+//   const HeaderLayout = () => (
+//     <div className={`main-wrapper ${data ? "header-collapse" : ""}`}>
+//       <Header />
+//       <Sidebar />
+//       <Outlet />
+//       <ThemeSettings />
+//       <Loader />
+//     </div>
+//   );
+
+//   const Authpages = () => (
+//     <div className={data ? "header-collapse" : ""}>
+//       <Outlet />
+//       <Loader />
+//       <ThemeSettings />
+//     </div>
+//   );
+
+//   const Pospages = () => (
+//     <div>
+//       <Header />
+//       <Outlet />
+//       <Loader />
+//       <ThemeSettings />
+//     </div>
+//   );
+
+//   return (
+//     <div>
+//       <Routes>
+//         {/* POS Routes */}
+//         <Route path="/pos" element={<Pospages />}>
+//           {posRoutes.map((route, id) => (
+//             route.isProtected ? (
+//               <Route
+//                 key={id}
+//                 path={route.path}
+//                 element={<ProtectedRoute element={route.element} />}
+//               />
+//             ) : (
+//               <Route key={id} path={route.path} element={route.element} />
+//             )
+//           ))}
+//         </Route>
+
+//         {/* Protected Routes */}
+//         <Route path={"/"} element={<HeaderLayout />}>
+//           {publicRoutes.map((route, id) => (
+//             <Route
+//               key={id}
+//               path={route.path}
+//               element={<ProtectedRoute element={route.element} />}
+//             />
+//           ))}
+//         </Route>
+
+//         {/* Auth Routes (NOT protected) */}
+//         <Route path={"/"} element={<Authpages />}>
+//           {pagesRoute.map((route, id) => (
+//             <Route path={route.path} element={route.element} key={id} />
+//           ))}
+//         </Route>
+//       </Routes>
+//     </div>
+//   );
+// };
+
+// export default AllRoutes;
+
+
+
+
+
+
+
+
+
+
+import React, { useEffect } from "react";
 import { Route, Routes } from "react-router-dom";
 import Header from "../InitialPage/Sidebar/Header";
 import Sidebar from "../InitialPage/Sidebar/Sidebar";
 import { pagesRoute, posRoutes, publicRoutes } from "./router.link";
 import { Outlet } from "react-router-dom";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import ThemeSettings from "../InitialPage/themeSettings";
-// import CollapsedSidebar from "../InitialPage/Sidebar/collapsedSidebar";
 import Loader from "../feature-module/loader/loader";
-// import HorizontalSidebar from "../InitialPage/Sidebar/horizontalSidebar";
-//import LoadingSpinner from "../InitialPage/Sidebar/LoadingSpinner";
+import ProtectedRoute from './protectedroute.jsx';
+import { loginSuccess } from "../core/redux/slices/authSlice.js";
+import { fetchMenu } from "../core/redux/slices/menuSlice.js";
 
 const AllRoutes = () => {
   const data = useSelector((state) => state.toggle_header);
-  // const layoutStyles = useSelector((state) => state.layoutstyledata);
+  
+  const dispatch = useDispatch();
+
+
+const { user } = useSelector(state => state.auth);
+const { items } = useSelector(state => state.menu);
+
+
+
+  useEffect(() => {
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+    const userStr = localStorage.getItem('user') || sessionStorage.getItem('user');
+
+    console.log(' Checking storage on app load...');
+    console.log('Token:', token ? 'Found' : 'Not found');
+    console.log('User:', userStr ? 'Found' : 'Not found');
+
+    if (token && userStr) {
+      try {
+        const user = JSON.parse(userStr);
+        dispatch(loginSuccess({ user, token }));
+        console.log(' Auth state restored from storage');
+      } catch (error) {
+        console.error(' Failed to restore auth:', error);
+        
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        sessionStorage.removeItem('token');
+        sessionStorage.removeItem('user');
+      }
+    } else {
+      console.log(' No auth data found in storage');
+    }
+  }, [dispatch]);
+
+    useEffect(() => {
+    if (user && items.length === 0) {
+      dispatch(fetchMenu());
+    }
+  }, [user, items.length, dispatch]);
+
   const HeaderLayout = () => (
     <div className={`main-wrapper ${data ? "header-collapse" : ""}`}>
       <Header />
-      {/* {layoutStyles == "collapsed" ? (
-        <CollapsedSidebar />
-      ) : layoutStyles == "horizontal" ? (
-        <HorizontalSidebar />
-      ) : (
-        <Sidebar />
-      )} */}
       <Sidebar />
       <Outlet />
       <ThemeSettings />
@@ -48,35 +284,44 @@ const AllRoutes = () => {
     </div>
   );
 
-  console.log(publicRoutes, "dashboard");
-
   return (
     <div>
       <Routes>
+        {/* POS Routes */}
         <Route path="/pos" element={<Pospages />}>
           {posRoutes.map((route, id) => (
-            <Route path={route.path} element={route.element} key={id} />
-          ))}
-        </Route>
-        <Route path={"/"} element={<HeaderLayout />}>
-          {publicRoutes.map((route, id) => (
-            <Route path={route.path} element={route.element} key={id} />
+            route.isProtected ? (
+              <Route
+                key={id}
+                path={route.path}
+                element={<ProtectedRoute element={route.element} />}
+              />
+            ) : (
+              <Route key={id} path={route.path} element={route.element} />
+            )
           ))}
         </Route>
 
+        {/* Protected Routes */}
+        <Route path={"/"} element={<HeaderLayout />}>
+          {publicRoutes.map((route, id) => (
+            <Route
+              key={id}
+              path={route.path}
+              element={<ProtectedRoute element={route.element} />}
+            />
+          ))}
+        </Route>
+
+        {/* Auth Routes */}
         <Route path={"/"} element={<Authpages />}>
           {pagesRoute.map((route, id) => (
             <Route path={route.path} element={route.element} key={id} />
           ))}
         </Route>
-
-        {/* <Route path={"/expenses/"} element={<HeaderLayout />}>
-          {expensesRoutes.map((route, id) => (
-            <Route path={route.path} element={route.element} key={id} />
-          ))}
-        </Route> */}
       </Routes>
     </div>
   );
 };
+
 export default AllRoutes;

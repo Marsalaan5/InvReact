@@ -808,37 +808,37 @@ export const editUserById = (req, res) => {
         values.push(status);
       }
 
-      // If avatar is provided, handle the file
+     
       if (req.file) {
-        const normalizedPath = req.file.path.replace(/\\/g, '/'); // Ensure file path consistency
+        const normalizedPath = req.file.path.replace(/\\/g, '/');
         updates.push("avatar = ?");
         values.push(normalizedPath);
 
-        // If user already has an avatar, delete the old one
+       
         if (existingUser[0].avatar && fs.existsSync(existingUser[0].avatar)) {
           fs.unlinkSync(existingUser[0].avatar);
         }
       }
 
-      // If no fields to update, return error
+    
       if (updates.length === 0) {
         return res.status(400).json({ message: "No fields to update" });
       }
 
-      // Add userId to the values for the update query
+    
       values.push(userId);
 
-      // Construct and execute the update query
+      
       const query = `UPDATE users SET ${updates.join(", ")} WHERE id = ?`;
       await pool.execute(query, values);
 
-      // Fetch the updated user
+
       const [updatedUser] = await pool.execute(
         "SELECT id, name, email, phone, username, avatar, role_id, status FROM users WHERE id = ?",
         [userId]
       );
 
-      // Return success response
+    
       res.json({
         message: "User updated successfully",
         user: updatedUser[0]

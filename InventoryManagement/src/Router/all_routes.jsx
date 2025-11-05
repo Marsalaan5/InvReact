@@ -190,4 +190,5 @@ export const all_routes = {
   leavestype: "/leave-types",
   warehouses: "/warehouse",
   coupons:"/coupons",
+  menu:"/menu-management"
 };

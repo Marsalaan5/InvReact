@@ -557,15 +557,15 @@ const Profile = () => {
   useEffect(() => {
     const fetchUserProfile = async () => {
       try {
-        const { data } = await AuthService.getUser();
-        const fetchedUser = data.users[0];
+        const { data } = await AuthService.getProfile();
+        const fetchedUser = data;
         console.log("User data:", fetchedUser);
 
         const nameParts = fetchedUser.name ? fetchedUser.name.split(" ") : [];
         const firstName = nameParts[0] || "";
         const lastName = nameParts.slice(1).join(" ") || "";
 
-        // Format avatar URL - prepend API URL if it's a server path
+        
         let avatarUrl = fetchedUser.avatar || "assets/img/customer/customer5.jpg";
         if (fetchedUser.avatar && fetchedUser.avatar.startsWith('uploads/')) {
           avatarUrl = `http://localhost:5000/${fetchedUser.avatar}`;

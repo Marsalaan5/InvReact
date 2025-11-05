@@ -21,6 +21,7 @@
 
 // export default AuthService;
 
+
 import axiosInstance from "./axiosInstance";
 
 const AuthService = {
@@ -53,6 +54,17 @@ const AuthService = {
   createRole: (data) => axiosInstance.post("/auth/roles", data), 
   updateRole: (id, data) => axiosInstance.put(`/auth/roles/${id}`, data), 
   deleteRole: (id) => axiosInstance.delete(`/auth/roles/${id}`), 
+
+
+
+  //Menu Management 
+  getMenu: (showAll = false) => axiosInstance.get(`/auth/menu?showAll=${showAll}`),
+  getAllMenuItems: () => axiosInstance.get('/auth/menu?showAll=true'),
+  createMenuItem: (data) => axiosInstance.post('/auth/menu', data),
+  updateMenuItem: (id, data) => axiosInstance.put(`/auth/menu/${id}`, data),
+  deleteMenuItem: (id) => axiosInstance.delete(`/auth/menu/${id}`),
+  updateMenuStatus: (id, status) => axiosInstance.patch(`/auth/menu/${id}/status`, { status }),
+  reorderMenu: (menuItems) => axiosInstance.post('/auth/menu/reorder', { menu: menuItems }),
 };
 
 export const updateUser = (id, data) => axiosInstance.put(`/auth/editUserById/${id}`, data, {

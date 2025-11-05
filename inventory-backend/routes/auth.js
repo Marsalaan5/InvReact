@@ -25,6 +25,8 @@ import { signup, signin, forgotPassword, resetPassword } from "../controller/aut
 import { createUser, getUser, getUserById, editUserById, deleteUserById } from "../controller/userController.js";
 import { createRole, getRoles, getRoleById, updateRoleById, deleteRoleById} from "../controller/userController.js";
 import { getProfile, getProfileById, editProfileById } from "../controller/userController.js";
+import { authenticateToken } from "../middleware/authMiddleware.js";
+import { deleteMenu, getMenu, patchMenu, postMenu, postReorderMenu, putMenu } from "../controller/menuController.js";
 
 const router = express.Router();
 
@@ -42,9 +44,9 @@ router.put('/editUserById/:id', editUserById);
 router.delete('/deleteUserById/:id', deleteUserById);
 
 
-router.get('/getProfile', getProfile);
-router.get('/getProfileById/:id', getProfileById);
-router.put('/editProfileById/:id', editProfileById);
+router.get('/getProfile', authenticateToken,getProfile);
+router.get('/getProfileById/:id', authenticateToken, getProfileById);
+router.put('/editProfileById/:id', authenticateToken, editProfileById);
 
 
 //role routes
@@ -54,6 +56,18 @@ router.get('/roles', getRoles);
 router.get('/roles/:id', getRoleById);
 router.put('/roles/:id', updateRoleById); 
 router.delete('/roles/:id', deleteRoleById);
+
+
+//menu routes
+router.get("/menu", authenticateToken, getMenu);
+router.post("/menu", authenticateToken, postMenu);
+router.put("/menu/:id", authenticateToken, putMenu);
+router.patch("/menu/:id/status", authenticateToken, patchMenu);
+router.delete("/menu/:id", authenticateToken, deleteMenu);
+router.post("/menu/reorder", authenticateToken, postReorderMenu);
+
+
+
 
 
 export default router;

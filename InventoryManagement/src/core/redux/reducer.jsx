@@ -84,6 +84,8 @@ import salesReducer from './slices/salesSlice';
 import supplierReducer from './slices/supplierSlice';
 import uiReducer from './slices/uiSlice'
 import userReducer from './slices/userSlice'
+import authReducer from './slices/authSlice'
+import menuReducer from './slices/menuSlice'
 
 
 
@@ -99,6 +101,8 @@ const rootReducer = combineReducers({
   supplier: supplierReducer,
   ui:uiReducer,
   user:userReducer,
+  auth:authReducer,
+  menu:menuReducer
 });
 
 export default rootReducer;
