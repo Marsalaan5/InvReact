@@ -432,11 +432,347 @@
 
 
 
+// // controllers/menuController.js
+// import pool from '../db.js';
+
+// // Helper function to convert icon string to React component format
+// const formatIconForFrontend = (iconName) => (iconName ? iconName : null);
+
+// // Helper function to organize flat menu into nested structure
+// const organizeMenu = (items) => {
+//   const menuMap = new Map();
+//   const result = [];
+
+//   items.forEach((item) => {
+//     menuMap.set(item.id, {
+//       ...item,
+//       icon: formatIconForFrontend(item.icon),
+//       submenu: Boolean(item.submenu),
+//       showSubRoute: Boolean(item.show_sub_route),
+//       submenuOpen: Boolean(item.submenu_open),
+//       submenuHdr: item.submenu_hdr,
+//       submenuItems: [],
+//     });
+//   });
+
+//   items.forEach((item) => {
+//     if (item.parent_id === null) {
+//       result.push(menuMap.get(item.id));
+//     } else {
+//       const parent = menuMap.get(item.parent_id);
+//       if (parent) {
+//         parent.submenuItems.push(menuMap.get(item.id));
+//         parent.submenu = true;
+//       }
+//     }
+//   });
+
+//   return result;
+// };
+
+
+// export const getMenu = async (req, res) => {
+//   try {
+//     const userRoles = req.user?.roles || [req.user?.role || 'super admin'];
+//     const showAll = req.query.showAll === 'true';
+
+//     const placeholders = userRoles.map(() => '?').join(',');
+//     const query = `
+//       SELECT DISTINCT m.*
+//       FROM menu_items m
+//       JOIN menu_item_roles mir ON m.id = mir.menu_item_id
+//       JOIN roles r ON mir.role_id = r.id
+//       WHERE r.name IN (${placeholders})
+//       ${showAll ? '' : "AND m.status = 'active'"}
+//       ORDER BY m.order_by ASC
+//     `;
+
+//     const [results] = await pool.execute(query, userRoles);
+//     res.json(organizeMenu(results));
+//   } catch (err) {
+//     console.error('Error fetching menu items:', err);
+//     res.status(500).json({ error: 'Internal server error' });
+//   }
+// };
+
+
+// export const postMenu = async (req, res) => {
+//   const connection = await pool.getConnection();
+//   try {
+//     const {
+//       title,
+//       label,
+//       path,
+//       icon,
+//       roles, 
+//       parent_id,
+//       status,
+//       order_by,
+//       submenu,
+//       submenu_hdr,
+//     } = req.body;
+
+//     if (!title || !label) {
+//       return res.status(400).json({ error: 'Title and label are required' });
+//     }
+
+//     await connection.beginTransaction();
+
+//     // Insert menu item
+//     const [menuResult] = await connection.execute(
+//       `INSERT INTO menu_items 
+//        (title, label, path, icon, parent_id, status, order_by, submenu, submenu_hdr, show_sub_route, submenu_open, time)
+//        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, FALSE, TRUE, NOW())`,
+//       [title, label, path || null, icon || null, parent_id || null, status || 'active', order_by || 0, submenu || false, submenu_hdr || null]
+//     );
+
+//     const menuId = menuResult.insertId;
+
+  
+//     if (roles && roles.length > 0) {
+//       const [roleRows] = await connection.query(
+//         `SELECT id, name FROM roles WHERE name IN (${roles.map(() => '?').join(',')})`,
+//         roles
+//       );
+
+//       for (const role of roleRows) {
+//         await connection.execute(
+//           `INSERT INTO menu_item_roles (menu_item_id, role_id) VALUES (?, ?)`,
+//           [menuId, role.id]
+//         );
+//       }
+//     }
+
+//     await connection.commit();
+//     res.status(201).json({ message: 'Menu item created successfully', id: menuId });
+//   } catch (err) {
+//     await connection.rollback();
+//     console.error('Error adding menu item:', err);
+//     res.status(500).json({ error: 'Internal server error' });
+//   } finally {
+//     connection.release();
+//   }
+// };
+
+
+// // export const putMenu = async (req, res) => {
+// //   const connection = await pool.getConnection();
+// //   try {
+// //     const { id } = req.params;
+// //     const { title, label, path, icon, roles, parent_id, status, order_by, submenu, submenu_hdr } = req.body;
+
+// //     await connection.beginTransaction();
+
+// //     const [result] = await connection.execute(
+// //       `UPDATE menu_items
+// //        SET title=?, label=?, path=?, icon=?, parent_id=?, status=?, order_by=?, submenu=?, submenu_hdr=?
+// //        WHERE id=?`,
+// //       [title, label, path || null, icon || null, parent_id || null, status, order_by || 0, submenu || false, submenu_hdr || null, id]
+// //     );
+
+// //     if (result.affectedRows === 0) {
+// //       await connection.rollback();
+// //       return res.status(404).json({ error: 'Menu item not found' });
+// //     }
+
+// //     // Update roles
+// //     await connection.execute(`DELETE FROM menu_item_roles WHERE menu_item_id = ?`, [id]);
+// //     if (roles && roles.length > 0) {
+// //       const [roleRows] = await connection.query(
+// //         `SELECT id FROM roles WHERE name IN (${roles.map(() => '?').join(',')})`,
+// //         roles
+// //       );
+// //       for (const role of roleRows) {
+// //         await connection.execute(`INSERT INTO menu_item_roles (menu_item_id, role_id) VALUES (?, ?)`, [id, role.id]);
+// //       }
+// //     }
+
+// //     await connection.commit();
+// //     res.status(200).json({ message: 'Menu item updated successfully' });
+// //   } catch (err) {
+// //     await connection.rollback();
+// //     console.error('Error updating menu item:', err);
+// //     res.status(500).json({ error: 'Internal server error' });
+// //   } finally {
+// //     connection.release();
+// //   }
+// // };
+
+
+// export const putMenu = async (req, res) => {
+//   const connection = await pool.getConnection();
+//   try {
+//     const { id } = req.params;
+//     const {
+//       title,
+//       label,
+//       path,
+//       icon,
+//       roles,
+//       parent_id,
+//       status,
+//       order_by,
+//       submenu,
+//       submenu_hdr,
+//     } = req.body;
+
+//     await connection.beginTransaction();
+
+
+//     const [result] = await connection.execute(
+//       `UPDATE menu_items
+//        SET title=?, label=?, path=?, icon=?, parent_id=?, status=?, order_by=?, submenu=?, submenu_hdr=?
+//        WHERE id=?`,
+//       [
+//         title,
+//         label,
+//         path || null,
+//         icon || null,
+//         parent_id || null,
+//         status,
+//         order_by || 0,
+//         submenu || false,
+//         submenu_hdr || null,
+//         id,
+//       ]
+//     );
+
+//     if (result.affectedRows === 0) {
+//       await connection.rollback();
+//       return res.status(404).json({ error: 'Menu item not found' });
+//     }
+
+ 
+//     await connection.execute(`DELETE FROM menu_item_roles WHERE menu_item_id = ?`, [id]);
+
+
+//     const rolesArray = Array.isArray(roles) ? roles : roles ? [roles] : [];
+
+//     if (rolesArray.length > 0) {
+//       let roleIds = [];
+
+     
+//       if (typeof rolesArray[0] === 'number') {
+//         roleIds = rolesArray;
+//       } else {
+       
+//         const placeholders = rolesArray.map(() => '?').join(',');
+//         const [roleRows] = await connection.query(
+//           `SELECT id FROM roles WHERE name IN (${placeholders})`,
+//           rolesArray
+//         );
+//         roleIds = roleRows.map(r => r.id);
+//       }
+
+//       for (const roleId of roleIds) {
+//         await connection.execute(
+//           `INSERT INTO menu_item_roles (menu_item_id, role_id) VALUES (?, ?)`,
+//           [id, roleId]
+//         );
+//       }
+//     }
+
+//     await connection.commit();
+//     res.status(200).json({ message: 'Menu item updated successfully' });
+//   } catch (err) {
+//     await connection.rollback();
+//     console.error('Error updating menu item:', err);
+//     res.status(500).json({ error: 'Internal server error' });
+//   } finally {
+//     connection.release();
+//   }
+// };
+
+
+
+
+
+// // DELETE - unchanged
+// export const deleteMenu = async (req, res) => {
+//   try {
+//     const { id } = req.params;
+//     const [result] = await pool.execute(`DELETE FROM menu_items WHERE id = ?`, [id]);
+//     if (result.affectedRows === 0) {
+//       return res.status(404).json({ error: 'Menu item not found' });
+//     }
+//     res.status(200).json({ message: 'Menu item deleted successfully' });
+//   } catch (err) {
+//     console.error('Error deleting menu items:', err);
+//     res.status(500).json({ error: 'Internal server error' });
+//   }
+// };
+
+
+// // PATCH - Update menu item status
+// export const patchMenu = async (req, res) => {
+//   try {
+//     const { id } = req.params;
+//     const { status } = req.body;
+
+//     if (!['active', 'inactive'].includes(status)) {
+//       return res.status(400).json({ error: 'Invalid status value' });
+//     }
+
+//     const [result] = await pool.execute(
+//       `UPDATE menu_items SET status = ? WHERE id = ?`,
+//       [status, id]
+//     );
+
+//     if (result.affectedRows === 0) {
+//       return res.status(404).json({ error: 'Menu item not found' });
+//     }
+
+//     res.status(200).json({ message: `Menu item status updated to ${status}` });
+//   } catch (err) {
+//     console.error('Error updating menu item status:', err);
+//     res.status(500).json({ error: 'Internal server error' });
+//   }
+// };
+
+// // POST - Reorder menu items
+// export const postReorderMenu = async (req, res) => {
+//   try {
+//     const { menu } = req.body;
+
+//     if (!Array.isArray(menu)) {
+//       return res.status(400).json({ error: 'Invalid menu format' });
+//     }
+
+//     const connection = await pool.getConnection();
+//     try {
+//       await connection.beginTransaction();
+
+//       for (let index = 0; index < menu.length; index++) {
+//         const item = menu[index];
+//         await connection.execute(
+//           `UPDATE menu_items SET order_by = ? WHERE id = ?`,
+//           [index, item.id]
+//         );
+//       }
+
+//       await connection.commit();
+//       res.status(200).json({ message: 'Menu order updated successfully' });
+//     } catch (err) {
+//       await connection.rollback();
+//       throw err;
+//     } finally {
+//       connection.release();
+//     }
+//   } catch (err) {
+//     console.error('Error reordering menu:', err);
+//     res.status(500).json({ error: 'Internal server error' });
+//   }
+// };
+
+
+
+
+
 // controllers/menuController.js
 import pool from '../db.js';
 
 // Helper function to convert icon string to React component format
-const formatIconForFrontend = (iconName) => (iconName ? iconName : null);
+const formatIconForFrontend = (iconName) => iconName || null;
 
 // Helper function to organize flat menu into nested structure
 const organizeMenu = (items) => {
@@ -452,6 +788,7 @@ const organizeMenu = (items) => {
       submenuOpen: Boolean(item.submenu_open),
       submenuHdr: item.submenu_hdr,
       submenuItems: [],
+      roles: item.roles ? item.roles.split(',') : [], 
     });
   });
 
@@ -470,25 +807,58 @@ const organizeMenu = (items) => {
   return result;
 };
 
+// // GET all menus for user
+// export const getMenu = async (req, res) => {
+//   try {
+//     const userRoles = req.user?.roles || [req.user?.role || 'super admin'];
+//     const showAll = req.query.showAll === 'true';
 
+//     const placeholders = userRoles.map(() => '?').join(',');
+
+//     const query = `
+//       SELECT DISTINCT m.*,
+//         GROUP_CONCAT(r.name) AS roles
+//       FROM menu_items m
+//       LEFT JOIN menu_item_roles mir ON m.id = mir.menu_item_id
+//       LEFT JOIN roles r ON mir.role_id = r.id
+//       WHERE r.name IN (${placeholders})
+//       ${showAll ? '' : "AND m.status = 'active'"}
+//       GROUP BY m.id
+//       ORDER BY m.order_by ASC
+//     `;
+
+//     const [results] = await pool.execute(query, userRoles);
+//     res.json(organizeMenu(results));
+//   } catch (err) {
+//     console.error('Error fetching menu items:', err);
+//     res.status(500).json({ error: 'Internal server error' });
+//   }
+// };
+
+
+// GET all menus for user
 export const getMenu = async (req, res) => {
   try {
-    const userRoles = req.user?.roles || [req.user?.role || 'super admin'];
-    const showAll = req.query.showAll === 'true';
+    const userRoles = req.user?.roles || [req.user?.role || 'super admin']; // Ensure correct roles
+    const showAll = req.query.showAll === 'true'; // Check for query parameter 'showAll'
 
-    const placeholders = userRoles.map(() => '?').join(',');
+    const placeholders = userRoles.map(() => '?').join(','); // Add placeholders for role-based filtering
+
+    // Construct the query
     const query = `
-      SELECT DISTINCT m.*
+      SELECT DISTINCT m.*, GROUP_CONCAT(r.name) AS roles
       FROM menu_items m
-      JOIN menu_item_roles mir ON m.id = mir.menu_item_id
-      JOIN roles r ON mir.role_id = r.id
+      LEFT JOIN menu_item_roles mir ON m.id = mir.menu_item_id
+      LEFT JOIN roles r ON mir.role_id = r.id
       WHERE r.name IN (${placeholders})
       ${showAll ? '' : "AND m.status = 'active'"}
+      GROUP BY m.id
       ORDER BY m.order_by ASC
     `;
 
+    // Fetch results from database
     const [results] = await pool.execute(query, userRoles);
-    res.json(organizeMenu(results));
+    res.json(organizeMenu(results)); // Call helper function to structure the nested menu
   } catch (err) {
     console.error('Error fetching menu items:', err);
     res.status(500).json({ error: 'Internal server error' });
@@ -496,6 +866,126 @@ export const getMenu = async (req, res) => {
 };
 
 
+// GET single menu item
+// export const getMenuItem = async (req, res) => {
+//   const { id } = req.params;
+//   try {
+//     const [menuRows] = await pool.execute(
+//       `SELECT m.*, GROUP_CONCAT(r.name) AS roles
+//        FROM menu_items m
+//        LEFT JOIN menu_item_roles mir ON m.id = mir.menu_item_id
+//        LEFT JOIN roles r ON mir.role_id = r.id
+//        WHERE m.id = ?
+//        GROUP BY m.id`,
+//       [id]
+//     );
+
+//     if (menuRows.length === 0) {
+//       return res.status(404).json({ error: 'Menu item not found' });
+//     }
+
+//     const menuItem = menuRows[0];
+//     menuItem.roles = menuItem.roles ? menuItem.roles.split(',') : [];
+
+//     res.status(200).json(menuItem);
+//   } catch (err) {
+//     console.error('Error fetching menu item:', err);
+//     res.status(500).json({ error: 'Internal server error' });
+//   }
+// };
+
+
+
+// GET single menu item
+export const getMenuItem = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const [menuRows] = await pool.execute(
+      `SELECT m.*, GROUP_CONCAT(r.name) AS roles
+       FROM menu_items m
+       LEFT JOIN menu_item_roles mir ON m.id = mir.menu_item_id
+       LEFT JOIN roles r ON mir.role_id = r.id
+       WHERE m.id = ?
+       GROUP BY m.id`,
+      [id]
+    );
+
+    if (menuRows.length === 0) {
+      return res.status(404).json({ error: 'Menu item not found' });
+    }
+
+    const menuItem = menuRows[0];
+    menuItem.roles = menuItem.roles ? menuItem.roles.split(',') : []; // Convert roles from comma-separated string to array
+
+    res.status(200).json(menuItem);
+  } catch (err) {
+    console.error('Error fetching menu item:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+
+// POST - create menu
+// export const postMenu = async (req, res) => {
+//   const connection = await pool.getConnection();
+//   try {
+//     const {
+//       title,
+//       label,
+//       path,
+//       icon,
+//       roles, 
+//       parent_id,
+//       status,
+//       order_by,
+//       submenu,
+//       submenu_hdr,
+//     } = req.body;
+
+//     if (!title || !label) {
+//       return res.status(400).json({ error: 'Title and label are required' });
+//     }
+
+//     await connection.beginTransaction();
+
+//     const [menuResult] = await connection.execute(
+//       `INSERT INTO menu_items 
+//        (title, label, path, icon, parent_id, status, order_by, submenu, submenu_hdr, show_sub_route, submenu_open, time)
+//        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, FALSE, TRUE, NOW())`,
+//       [title, label, path || null, icon || null, parent_id || null, status || 'active', order_by || 0, submenu || false, submenu_hdr || null]
+//     );
+
+//     const menuId = menuResult.insertId;
+
+//     // Insert roles
+//     if (roles && roles.length > 0) {
+//       const [roleRows] = await connection.query(
+//         `SELECT id, name FROM roles WHERE name IN (${roles.map(() => '?').join(',')})`,
+//         roles
+//       );
+
+//       for (const role of roleRows) {
+//         await connection.execute(
+//           `INSERT INTO menu_item_roles (menu_item_id, role_id) VALUES (?, ?)`,
+//           [menuId, role.id]
+//         );
+//       }
+//     }
+
+//     await connection.commit();
+//     res.status(201).json({ message: 'Menu item created successfully', id: menuId });
+//   } catch (err) {
+//     await connection.rollback();
+//     console.error('Error adding menu item:', err);
+//     res.status(500).json({ error: 'Internal server error' });
+//   } finally {
+//     connection.release();
+//   }
+// };
+
+
+
+// POST - create menu
 export const postMenu = async (req, res) => {
   const connection = await pool.getConnection();
   try {
@@ -504,7 +994,7 @@ export const postMenu = async (req, res) => {
       label,
       path,
       icon,
-      roles, 
+      roles, // Array of role names
       parent_id,
       status,
       order_by,
@@ -518,7 +1008,7 @@ export const postMenu = async (req, res) => {
 
     await connection.beginTransaction();
 
-    // Insert menu item
+    // Insert the menu item into the menu_items table
     const [menuResult] = await connection.execute(
       `INSERT INTO menu_items 
        (title, label, path, icon, parent_id, status, order_by, submenu, submenu_hdr, show_sub_route, submenu_open, time)
@@ -528,7 +1018,7 @@ export const postMenu = async (req, res) => {
 
     const menuId = menuResult.insertId;
 
-  
+    // Insert the roles into the menu_item_roles table
     if (roles && roles.length > 0) {
       const [roleRows] = await connection.query(
         `SELECT id, name FROM roles WHERE name IN (${roles.map(() => '?').join(',')})`,
@@ -555,14 +1045,83 @@ export const postMenu = async (req, res) => {
 };
 
 
+// PUT - update menu
+// export const putMenu = async (req, res) => {
+//   const connection = await pool.getConnection();
+//   try {
+//     const { id } = req.params;
+//     const {
+//       title,
+//       label,
+//       path,
+//       icon,
+//       roles,
+//       parent_id,
+//       status,
+//       order_by,
+//       submenu,
+//       submenu_hdr,
+//     } = req.body;
+
+//     await connection.beginTransaction();
+
+//     const [result] = await connection.execute(
+//       `UPDATE menu_items
+//        SET title=?, label=?, path=?, icon=?, parent_id=?, status=?, order_by=?, submenu=?, submenu_hdr=?
+//        WHERE id=?`,
+//       [title, label, path || null, icon || null, parent_id || null, status, order_by || 0, submenu || false, submenu_hdr || null, id]
+//     );
+
+//     if (result.affectedRows === 0) {
+//       await connection.rollback();
+//       return res.status(404).json({ error: 'Menu item not found' });
+//     }
+
+//     // Update roles
+//     await connection.execute(`DELETE FROM menu_item_roles WHERE menu_item_id = ?`, [id]);
+
+//     if (roles && roles.length > 0) {
+//       const [roleRows] = await connection.query(
+//         `SELECT id, name FROM roles WHERE name IN (${roles.map(() => '?').join(',')})`,
+//         roles
+//       );
+//       for (const role of roleRows) {
+//         await connection.execute(`INSERT INTO menu_item_roles (menu_item_id, role_id) VALUES (?, ?)`, [id, role.id]);
+//       }
+//     }
+
+//     await connection.commit();
+//     res.status(200).json({ message: 'Menu item updated successfully' });
+//   } catch (err) {
+//     await connection.rollback();
+//     console.error('Error updating menu item:', err);
+//     res.status(500).json({ error: 'Internal server error' });
+//   } finally {
+//     connection.release();
+//   }
+// };
+
+// PUT - update menu
 export const putMenu = async (req, res) => {
   const connection = await pool.getConnection();
   try {
     const { id } = req.params;
-    const { title, label, path, icon, roles, parent_id, status, order_by, submenu, submenu_hdr } = req.body;
+    const {
+      title,
+      label,
+      path,
+      icon,
+      roles,
+      parent_id,
+      status,
+      order_by,
+      submenu,
+      submenu_hdr,
+    } = req.body;
 
     await connection.beginTransaction();
 
+    // Update the menu item
     const [result] = await connection.execute(
       `UPDATE menu_items
        SET title=?, label=?, path=?, icon=?, parent_id=?, status=?, order_by=?, submenu=?, submenu_hdr=?
@@ -575,11 +1134,12 @@ export const putMenu = async (req, res) => {
       return res.status(404).json({ error: 'Menu item not found' });
     }
 
-    // Update roles
+    // Update roles for the menu item
     await connection.execute(`DELETE FROM menu_item_roles WHERE menu_item_id = ?`, [id]);
+
     if (roles && roles.length > 0) {
       const [roleRows] = await connection.query(
-        `SELECT id FROM roles WHERE name IN (${roles.map(() => '?').join(',')})`,
+        `SELECT id, name FROM roles WHERE name IN (${roles.map(() => '?').join(',')})`,
         roles
       );
       for (const role of roleRows) {
@@ -598,32 +1158,99 @@ export const putMenu = async (req, res) => {
   }
 };
 
+
 // DELETE - unchanged
+// export const deleteMenu = async (req, res) => {
+//   try {
+//     const { id } = req.params;
+//     const [result] = await pool.execute(`DELETE FROM menu_items WHERE id = ?`, [id]);
+//     if (result.affectedRows === 0) {
+//       return res.status(404).json({ error: 'Menu item not found' });
+//     }
+//     res.status(200).json({ message: 'Menu item deleted successfully' });
+//   } catch (err) {
+//     console.error('Error deleting menu items:', err);
+//     res.status(500).json({ error: 'Internal server error' });
+//   }
+// };
+
+
+
+// DELETE - Delete a menu item
 export const deleteMenu = async (req, res) => {
+  const { id } = req.params; // Menu item ID to delete
+  const connection = await pool.getConnection();
+
   try {
-    const { id } = req.params;
-    const [result] = await pool.execute(`DELETE FROM menu_items WHERE id = ?`, [id]);
+    // Begin transaction
+    await connection.beginTransaction();
+
+    // First, delete any related entries in the `menu_item_roles` table to avoid foreign key violations
+    await connection.execute(`DELETE FROM menu_item_roles WHERE menu_item_id = ?`, [id]);
+
+    // Now delete the menu item from the `menu_items` table
+    const [result] = await connection.execute(`DELETE FROM menu_items WHERE id = ?`, [id]);
+
+    // If no rows are affected, the menu item wasn't found
     if (result.affectedRows === 0) {
+      await connection.rollback();
       return res.status(404).json({ error: 'Menu item not found' });
     }
+
+    // Commit the transaction if the deletion is successful
+    await connection.commit();
     res.status(200).json({ message: 'Menu item deleted successfully' });
   } catch (err) {
-    console.error('Error deleting menu items:', err);
+    // Rollback in case of error
+    await connection.rollback();
+    console.error('Error deleting menu item:', err);
     res.status(500).json({ error: 'Internal server error' });
+  } finally {
+    connection.release();
   }
 };
 
 
 // PATCH - Update menu item status
+// export const patchMenu = async (req, res) => {
+//   try {
+//     const { id } = req.params;
+//     const { status } = req.body;
+
+//     if (!['active', 'inactive'].includes(status)) {
+//       return res.status(400).json({ error: 'Invalid status value' });
+//     }
+
+//     const [result] = await pool.execute(
+//       `UPDATE menu_items SET status = ? WHERE id = ?`,
+//       [status, id]
+//     );
+
+//     if (result.affectedRows === 0) {
+//       return res.status(404).json({ error: 'Menu item not found' });
+//     }
+
+//     res.status(200).json({ message: `Menu item status updated to ${status}` });
+//   } catch (err) {
+//     console.error('Error updating menu item status:', err);
+//     res.status(500).json({ error: 'Internal server error' });
+//   }
+// };
+
+
+
+// PATCH - Update menu item status
 export const patchMenu = async (req, res) => {
   try {
-    const { id } = req.params;
-    const { status } = req.body;
+    const { id } = req.params; // Menu item ID
+    const { status } = req.body; // New status ('active' or 'inactive')
 
+    // Validate the status
     if (!['active', 'inactive'].includes(status)) {
       return res.status(400).json({ error: 'Invalid status value' });
     }
 
+    // Update the menu item's status
     const [result] = await pool.execute(
       `UPDATE menu_items SET status = ? WHERE id = ?`,
       [status, id]
@@ -640,32 +1267,80 @@ export const patchMenu = async (req, res) => {
   }
 };
 
+
+// POST - Reorder menu items
+// export const postReorderMenu = async (req, res) => {
+//   try {
+//     const { menu } = req.body;
+
+//     if (!Array.isArray(menu)) {
+//       return res.status(400).json({ error: 'Invalid menu format' });
+//     }
+
+//     const connection = await pool.getConnection();
+//     try {
+//       await connection.beginTransaction();
+
+//       for (let index = 0; index < menu.length; index++) {
+//         const item = menu[index];
+//         await connection.execute(
+//           `UPDATE menu_items SET order_by = ? WHERE id = ?`,
+//           [index, item.id]
+//         );
+//       }
+
+//       await connection.commit();
+//       res.status(200).json({ message: 'Menu order updated successfully' });
+//     } catch (err) {
+//       await connection.rollback();
+//       throw err;
+//     } finally {
+//       connection.release();
+//     }
+//   } catch (err) {
+//     console.error('Error reordering menu:', err);
+//     res.status(500).json({ error: 'Internal server error' });
+//   }
+// };
+
+
+
+
+
 // POST - Reorder menu items
 export const postReorderMenu = async (req, res) => {
   try {
-    const { menu } = req.body;
+    const { menu } = req.body;  // Expecting an array of menu items with {id, order_by} or just ids
 
+    // Ensure menu is an array
     if (!Array.isArray(menu)) {
       return res.status(400).json({ error: 'Invalid menu format' });
     }
 
+    // If the menu item structure is just the IDs, we'll assume the order is implicit.
     const connection = await pool.getConnection();
     try {
       await connection.beginTransaction();
 
+      // Iterate over the menu array and update the `order_by` field for each menu item
       for (let index = 0; index < menu.length; index++) {
-        const item = menu[index];
+        const itemId = menu[index].id || menu[index]; // Ensure the item has the ID key if it's nested
+        const newOrder = index;
+
+        // Update the `order_by` field for each item
         await connection.execute(
           `UPDATE menu_items SET order_by = ? WHERE id = ?`,
-          [index, item.id]
+          [newOrder, itemId]
         );
       }
 
+      // Commit the transaction if all updates are successful
       await connection.commit();
       res.status(200).json({ message: 'Menu order updated successfully' });
     } catch (err) {
-      await connection.rollback();
-      throw err;
+      await connection.rollback();  // Rollback in case of error
+      console.error('Error reordering menu:', err);
+      res.status(500).json({ error: 'Internal server error' });
     } finally {
       connection.release();
     }
@@ -674,6 +1349,3 @@ export const postReorderMenu = async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 };
-
-
-

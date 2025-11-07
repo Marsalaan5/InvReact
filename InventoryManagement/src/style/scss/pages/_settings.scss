@@ -67,6 +67,7 @@
                     border-bottom: 0;
                     padding: 0;
                     .submenu {
+                        margin-bottom: 8px;
                         a {
                             &.active {
                                 background-color: $white;
@@ -92,8 +93,19 @@
                                     color: $secondary;
                                 }
                             }
+                            display: flex !important;
+                            align-items: center;
+                            @include margin-padding(null, 10px 15px);
+                            position: relative;
                             svg {
                                 color: $secondary;
+                                width: 18px !important;
+                                height: 18px !important;
+                                min-width: 18px !important;
+                                max-width: 18px !important;
+                                flex-shrink: 0 !important;
+                                flex-grow: 0 !important;
+                                margin-right: 10px;
                             }
                             span {
                                 color: $secondary;
@@ -103,11 +115,37 @@
                                     font-size: $font-size-base;
                                 }
                             }
+                            &:hover {
+                                svg {
+                                    width: 18px !important;
+                                    height: 18px !important;
+                                    min-width: 18px !important;
+                                    max-width: 18px !important;
+                                    flex-shrink: 0 !important;
+                                    flex-grow: 0 !important;
+                                }
+                            }
+                            &.active {
+                                svg {
+                                    width: 18px !important;
+                                    height: 18px !important;
+                                    min-width: 18px !important;
+                                    max-width: 18px !important;
+                                    flex-shrink: 0 !important;
+                                    flex-grow: 0 !important;
+                                }
+                            }
                         }
                         ul {
+                            margin-top: 4px;
                             li {
+                                margin-bottom: 4px;
                                 a {
                                     margin-left: 0;
+                                    display: flex !important;
+                                    align-items: center;
+                                    padding: 8px 15px !important;
+                                    position: relative;
                                     &::after {
                                         display: none;
                                     }
@@ -115,7 +153,7 @@
                                         background-color: rgba(254, 159, 67, 0.08);
                                         color: $primary;
                                         border-radius: 8px;
-                                        padding: 10px 18px;
+                                        padding: 10px 18px !important;
                                         &::after {
                                             content: "";
                                             width: 7px;
@@ -283,7 +321,38 @@
         .sidebar-menu {
             .submenu-open {
                 ul {
+                    margin: 0 !important;
+                    padding: 0 !important;
                     .submenu {
+                        margin-bottom: 4px !important;
+                        a {
+                            padding: 10px 15px !important;
+                            margin-bottom: 0 !important;
+                            display: flex !important;
+                            align-items: center;
+                            svg {
+                                width: 18px !important;
+                                height: 18px !important;
+                                min-width: 18px !important;
+                                max-width: 18px !important;
+                                flex-shrink: 0 !important;
+                                flex-grow: 0 !important;
+                                margin-right: 10px;
+                            }
+                            &.subdrop {
+                                margin-bottom: 4px !important;
+                            }
+                        }
+                        ul {
+                            margin-top: 4px !important;
+                            li {
+                                margin-bottom: 4px !important;
+                                a {
+                                    padding: 8px 15px !important;
+                                    margin-bottom: 0 !important;
+                                }
+                            }
+                        }
                         .menu-arrow {
                             display: block !important;
                         } 
@@ -295,6 +364,32 @@
             } 
         } 
     } 
+}
+.mini-sidebar.expand-menu {
+    .sidebars.settings-sidebar {
+        .sidebar-menu {
+            .submenu-open {
+                ul {
+                    .submenu {
+                        margin-bottom: 4px !important;
+                        a {
+                            padding: 10px 15px !important;
+                            margin-bottom: 0 !important;
+                        }
+                        ul {
+                            li {
+                                margin-bottom: 4px !important;
+                                a {
+                                    padding: 8px 15px !important;
+                                    margin-bottom: 0 !important;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 .settings-bottom-btn {
     margin-top: 40px;

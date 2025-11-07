@@ -73,16 +73,30 @@
                         position: relative;
                         top: 3px;
                         width: 18px;
+                        height: 18px;
+                        flex-shrink: 0;
+                        flex-grow: 0;
                         margin-right: 7px;
                         filter:  brightness(0) invert(1);
                     }
                     svg {
                         width: 18px;
+                        height: 18px;
+                        min-width: 18px;
+                        flex-shrink: 0;
+                        flex-grow: 0;
                         margin-right: 7px;
                     }
                     &:hover {                        
                         img, svg {                                        
                             filter: brightness(0) saturate(100%) invert(75%) sepia(10%) saturate(5676%) hue-rotate(326deg) brightness(105%) contrast(112%);
+                        }
+                        svg {
+                            width: 18px;
+                            height: 18px;
+                            min-width: 18px;
+                            flex-shrink: 0;
+                            flex-grow: 0;
                         }
                     }
                 }
@@ -113,10 +127,17 @@
                                     position: relative;
                                     top: 3px;
                                     width: 18px;
+                                    height: 18px;
+                                    flex-shrink: 0;
+                                    flex-grow: 0;
                                     margin-right: 7px;
                                 }
                                 svg {
                                     width: 18px;
+                                    height: 18px;
+                                    min-width: 18px;
+                                    flex-shrink: 0;
+                                    flex-grow: 0;
                                     margin-right: 7px;
                                 }
                                 &:hover {
@@ -142,8 +163,23 @@
                         }
                         a {
                             padding: 8px 15px !important;
+                            display: flex;
+                            align-items: center;
+                            svg {
+                                width: 18px;
+                                height: 18px;
+                                min-width: 18px;
+                                flex-shrink: 0;
+                                flex-grow: 0;
+                                margin-right: 7px;
+                            }
                             &::after {
                                 content: none !important;
+                            }
+                            // Hide ::after when icon is present
+                            &:has(svg)::after,
+                            &.has-icon::after {
+                                display: none !important;
                             }
                         }
                     }

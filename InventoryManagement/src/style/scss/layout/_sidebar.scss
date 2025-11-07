@@ -46,6 +46,8 @@
                     width:  16px;
                     height:  16px;
                     margin-right: 10px;
+                    flex-shrink: 0;
+                    flex-grow: 0;
                 }
                 > a{
                     display: -webkit-box;
@@ -59,10 +61,14 @@
                     color: $secondary;
                     svg{
                         color: #637381;
+                        flex-shrink: 0;
+                        flex-grow: 0;
                     }
                     img{
                         width:18px;
                         color: #637381;
+                        flex-shrink: 0;
+                        flex-grow: 0;
                     }
                     &:hover{
                         background: rgba(254, 159, 67, 0.08);
@@ -76,6 +82,11 @@
                         }
                         svg{
                             color: #FE9F43;
+                            width: 16px;
+                            height: 16px;
+                            min-width: 16px;
+                            flex-shrink: 0;
+                            flex-grow: 0;
                         }
                     }
                     &.active{
@@ -84,6 +95,11 @@
                         border-radius: 5px;
                         svg{
                             color: $white;
+                            width: 16px;
+                            height: 16px;
+                            min-width: 16px;
+                            flex-shrink: 0;
+                            flex-grow: 0;
                         }
                         img {
                             filter: invert(72%) sepia(76%) saturate(1430%) hue-rotate(327deg) brightness(103%) contrast(101%);
@@ -127,8 +143,17 @@
                                font-size: $font-size-base;
                                color: $secondary;
                                position: relative;
-                               display: block;
+                               display: flex;
+                               align-items: center;
                                @include margin-padding(null, 8px 8px 8px 40px);
+                               svg {
+                                width: 16px;
+                                height: 16px;
+                                min-width: 16px;
+                                flex-shrink: 0;
+                                flex-grow: 0;
+                                margin-right: 10px;
+                               }
                                &.active{
                                    color: $secondary;
                                    &:after{
@@ -145,8 +170,20 @@
                                 @include rounded(50px);
                                 @include position(absolute,16px,null,null,16px);
                                }
+                               // Hide ::after circle when icon (svg) is present
+                               &:has(svg)::after,
+                               &.has-icon::after {
+                                   display: none;
+                               }
                                &:hover{
                                    color:$primary;
+                                   svg {
+                                    width: 16px;
+                                    height: 16px;
+                                    min-width: 16px;
+                                    flex-shrink: 0;
+                                    flex-grow: 0;
+                                   }
                                    &:after{
                                     background: #FE9F43;
                                     border: 2px solid #FDB;
@@ -175,6 +212,14 @@
                                 position: relative;
                                 width: 100%;
                                 @include margin-padding(null, 10px 10px 10px 18px);
+                               svg {
+                                width: 16px;
+                                height: 16px;
+                                min-width: 16px;
+                                flex-shrink: 0;
+                                flex-grow: 0;
+                                margin-right: 10px;
+                               }
                                span {
                                 white-space: nowrap;
                                 font-size: $font-size-base;
@@ -309,6 +354,14 @@
                         padding-bottom: 4px;
                         font-size: $font-size-base;
                         color: $sub-title;
+                        svg {
+                            width: 16px;
+                            height: 16px;
+                            min-width: 16px;
+                            flex-shrink: 0;
+                            flex-grow: 0;
+                            margin-right: 10px;
+                        }
                         &::after{
                             content: "";
                             background: rgba(50, 71, 92, 0.38);
@@ -318,8 +371,20 @@
                             @include rounded(50px);
                             @include position(absolute,16px,null,null,0);
                             }
+                            // Hide ::after circle when icon (svg) is present
+                            &:has(svg)::after,
+                            &.has-icon::after {
+                                display: none;
+                            }
                             &:hover{
                                 color:$primary;
+                                svg {
+                                    width: 16px;
+                                    height: 16px;
+                                    min-width: 16px;
+                                    flex-shrink: 0;
+                                    flex-grow: 0;
+                                }
                                 &:after{
                                 background: #FE9F43;
                                 border: 2px solid #FDB;

@@ -1,0 +1,44 @@
+// // src/utils/iconMapper.jsx
+// import React from 'react';
+// import * as Icon from 'react-feather';
+
+
+// export const getIconComponent = (iconName) => {
+//   if (!iconName) return null;
+  
+
+//   const IconComponent = Icon[iconName];
+  
+//   if (IconComponent) {
+//     return <IconComponent />;
+//   }
+  
+
+//   return <Icon.Circle />;
+// };
+
+// export default getIconComponent;
+
+
+
+// src/utils/iconMapper.jsx
+import React from 'react';
+import * as Icon from 'react-feather';
+
+// Map icon names (strings) to React Feather components
+export const getIconComponent = (iconName) => {
+  if (!iconName) return null;
+  
+  // Check if the icon exists in react-feather
+  const IconComponent = Icon[iconName];
+  
+  if (IconComponent) {
+    return <IconComponent />;
+  }
+  
+  // Fallback icon if not found
+  console.warn(`Icon "${iconName}" not found in react-feather, using Circle as fallback`);
+  return <Icon.Circle />;
+};
+
+export default getIconComponent;

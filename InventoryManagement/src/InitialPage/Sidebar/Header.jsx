@@ -1,6 +1,6 @@
 /* eslint-disable no-unused-vars */
 import React, { useEffect, useState } from "react";
-import { Link,useNavigate,} from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import FeatherIcon from "feather-icons-react";
 import ImageWithBasePath from "../../core/img/imagewithbasebath";
 import { Search, XCircle } from "react-feather";
@@ -12,6 +12,7 @@ import { useDispatch ,useSelector} from 'react-redux';
 
 const Header = () => {
   const route = all_routes;
+  const location = useLocation();
   const [toggle, SetToggle] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
     // const [user, setUser] = useState(null);
@@ -53,6 +54,7 @@ const Header = () => {
   };
 
   const isElementVisible = (element) => {
+    if (!element) return false;
     return element.offsetWidth > 0 || element.offsetHeight > 0;
   };
 
@@ -77,27 +79,50 @@ const Header = () => {
   };
 
   useEffect(() => {
+    let expandTimeout = null;
+    
     const handleMouseover = (e) => {
-      e.stopPropagation();
-
       const body = document.body;
       const toggleBtn = document.getElementById("toggle_btn");
 
-      if (
-        body.classList.contains("mini-sidebar") &&
-        isElementVisible(toggleBtn)
-      ) {
-        const target = e.target.closest(".sidebar, .header-left");
+      // Only handle if mini-sidebar is active
+      if (!body.classList.contains("mini-sidebar")) {
+        return;
+      }
 
-        if (target) {
+      // Check if toggle button exists and is visible
+      if (!toggleBtn) {
+        return;
+      }
+
+      // Check if toggle button is visible (not hidden by CSS)
+      const toggleBtnStyle = window.getComputedStyle(toggleBtn);
+      if (toggleBtnStyle.display === 'none' || toggleBtnStyle.visibility === 'hidden') {
+        return;
+      }
+
+      const target = e.target.closest(".sidebar, .header-left, #sidebar, #collapsed-sidebar");
+
+      // Clear any pending timeout
+      if (expandTimeout) {
+        clearTimeout(expandTimeout);
+        expandTimeout = null;
+      }
+
+      if (target) {
+        // Expand menu when hovering over sidebar or header-left
+        if (!body.classList.contains("expand-menu")) {
           body.classList.add("expand-menu");
           slideDownSubmenu();
-        } else {
-          body.classList.remove("expand-menu");
-          slideUpSubmenu();
         }
-
-        e.preventDefault();
+      } else {
+        // Collapse menu when not hovering (with small delay to prevent flickering)
+        if (body.classList.contains("expand-menu")) {
+          expandTimeout = setTimeout(() => {
+            body.classList.remove("expand-menu");
+            slideUpSubmenu();
+          }, 100);
+        }
       }
     };
 
@@ -105,6 +130,9 @@ const Header = () => {
 
     return () => {
       document.removeEventListener("mouseover", handleMouseover);
+      if (expandTimeout) {
+        clearTimeout(expandTimeout);
+      }
     };
   }, []);
   useEffect(() => {
@@ -139,14 +167,33 @@ const Header = () => {
     };
   }, []);
   const handlesidebar = () => {
-    document.body.classList.toggle("mini-sidebar");
+    const body = document.body;
+    const isMiniSidebar = body.classList.contains("mini-sidebar");
+    
+    body.classList.toggle("mini-sidebar");
     SetToggle((current) => !current);
+    
+    // If toggling off mini-sidebar, remove expand-menu
+    if (isMiniSidebar) {
+      body.classList.remove("expand-menu");
+      slideUpSubmenu();
+    }
   };
+  
   const expandMenu = () => {
-    document.body.classList.remove("expand-menu");
+    // Only remove expand-menu if we're in mini-sidebar mode
+    if (document.body.classList.contains("mini-sidebar")) {
+      document.body.classList.remove("expand-menu");
+      slideUpSubmenu();
+    }
   };
+  
   const expandMenuOpen = () => {
-    document.body.classList.add("expand-menu");
+    // Only add expand-menu if we're in mini-sidebar mode
+    if (document.body.classList.contains("mini-sidebar")) {
+      document.body.classList.add("expand-menu");
+      slideDownSubmenu();
+    }
   };
   const sidebarOverlay = () => {
     document?.querySelector(".main-wrapper")?.classList?.toggle("slide-nav");
@@ -154,7 +201,7 @@ const Header = () => {
     document?.querySelector("html")?.classList?.toggle("menu-opened");
   };
 
-  let pathname = location.pathname;
+  const pathname = location.pathname;
 
   const exclusionArray = [
     "/reactjs/template/dream-pos/index-three",
@@ -203,8 +250,6 @@ const Header = () => {
         {/* Logo */}
         <div
           className={`header-left ${toggle ? "" : "active"}`}
-          onMouseLeave={expandMenu}
-          onMouseOver={expandMenuOpen}
         >
           <Link to="/dashboard" className="logo logo-normal">
             <ImageWithBasePath src="assets/img/logo.png" alt="img" />

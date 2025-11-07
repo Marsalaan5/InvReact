@@ -74,16 +74,20 @@ const SettingsSideBar = (props) => {
                 <li className="submenu-open">
                   <ul>
                     <li
-                      className={`submenu${
+                      className={`submenu ${
                         isGeneralSettingsOpen ? "active subdrop" : ""
                       }`}
                     >
-                      <Link to="#" onClick={toggleGeneralSettings}>
+                      <Link to="#" onClick={toggleGeneralSettings} className="has-icon">
                         <Settings />
                         <span>General Settings</span>
                         <span className="menu-arrow" />
                       </Link>
-                      <ul>
+                      <ul
+                        style={{
+                          display: isGeneralSettingsOpen ? "block" : "none",
+                        }}
+                      >
                         <li>
                           <Link
                             to={route.generalsettings}
@@ -135,14 +139,14 @@ const SettingsSideBar = (props) => {
                       </ul>
                     </li>
                     <li
-                      className={`submenu${
+                      className={`submenu ${
                         isWebsiteSettingsOpen ? "active subdrop" : ""
                       }`}
                     >
                       <Link
                         to="#"
                         onClick={toggleWebsiteSettings}
-                        className={`active ${
+                        className={`active has-icon ${
                           isWebsiteSettingsOpen ? "subdrop" : ""
                         }`}
                       >
@@ -258,7 +262,7 @@ const SettingsSideBar = (props) => {
                         isAppSettingsOpen ? " subdrop" : ""
                       }`}
                     >
-                      <Link to="#" onClick={toggleAppSettings}>
+                      <Link to="#" onClick={toggleAppSettings} className="has-icon">
                         <Archive />
                         <span>App Settings</span>
                         <span className="menu-arrow" />
@@ -323,7 +327,7 @@ const SettingsSideBar = (props) => {
                         isSystemSettingsOpen ? " subdrop" : ""
                       }`}
                     >
-                      <Link to="#" onClick={toggleSystemSettings}>
+                      <Link to="#" onClick={toggleSystemSettings} className="has-icon">
                         <Server />
                         <span>System Settings</span>
                         <span className="menu-arrow" />
@@ -390,7 +394,7 @@ const SettingsSideBar = (props) => {
                     >
                       <Link
                         to="#"
-                        className={`active ${
+                        className={`active has-icon ${
                           isFinancialSettingsOpen ? "subdrop" : ""
                         }`}
                         onClick={toggleFinancialSettings}
@@ -459,7 +463,7 @@ const SettingsSideBar = (props) => {
                         isOtherSettingsOpen ? " subdrop" : ""
                       }`}
                     >
-                      <Link to="#" onClick={toggleOtherSettings}>
+                      <Link to="#" onClick={toggleOtherSettings} className="has-icon">
                         <Layout />
                         <span>Other Settings</span>
                         <span className="menu-arrow" />
