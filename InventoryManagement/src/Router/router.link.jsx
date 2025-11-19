@@ -50,7 +50,7 @@ import Apexchart from "../feature-module/uiinterface/charts/apexcharts";
 import ChartJs from "../feature-module/uiinterface/charts/chartjs";
 import RangeSlides from "../feature-module/uiinterface/rangeslider";
 import FontawesomeIcons from "../feature-module/uiinterface/icons/fontawesome";
-import FeatherIcons from "../feature-module/uiinterface/icons/feathericon";
+// import FeatherIcons from "../feature-module/uiinterface/icons/feathericon";
 import IonicIcons from "../feature-module/uiinterface/icons/ionicicons";
 import MaterialIcons from "../feature-module/uiinterface/icons/materialicon";
 import PE7Icons from "../feature-module/uiinterface/icons/pe7icons";
@@ -58,7 +58,7 @@ import SimplelineIcons from "../feature-module/uiinterface/icons/simplelineicon"
 import ThemifyIcons from "../feature-module/uiinterface/icons/themify";
 import WeatherIcons from "../feature-module/uiinterface/icons/weathericons";
 import TypiconIcons from "../feature-module/uiinterface/icons/typicons";
-import FlagIcons from "../feature-module/uiinterface/icons/flagicons";
+// import FlagIcons from "../feature-module/uiinterface/icons/flagicons";
 
 const routes = all_routes;
 
@@ -626,13 +626,13 @@ export const publicRoutes = [
     element: <FontawesomeIcons />,
     route: Route,
   },
-  {
-    id: 50,
-    path: routes.feathericon,
-    name: "feathericon",
-    element: <FeatherIcons />,
-    route: Route,
-  },
+  // {
+  //   id: 50,
+  //   path: routes.feathericon,
+  //   name: "feathericon",
+  //   element: <FeatherIcons />,
+  //   route: Route,
+  // },
   {
     id: 51,
     path: routes.ionicicons,
@@ -682,13 +682,13 @@ export const publicRoutes = [
     element: <TypiconIcons />,
     route: Route,
   },
-  {
-    id: 58,
-    path: routes.flagicons,
-    name: "flagicons",
-    element: <FlagIcons />,
-    route: Route,
-  },
+  // {
+  //   id: 58,
+  //   path: routes.flagicons,
+  //   name: "flagicons",
+  //   element: <FlagIcons />,
+  //   route: Route,
+  // },
   {
     id: 58,
     path: routes.inputgroup,

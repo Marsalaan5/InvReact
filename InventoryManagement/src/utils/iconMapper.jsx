@@ -25,11 +25,11 @@
 import React from 'react';
 import * as Icon from 'react-feather';
 
-// Map icon names (strings) to React Feather components
+
 export const getIconComponent = (iconName) => {
   if (!iconName) return null;
   
-  // Check if the icon exists in react-feather
+
   const IconComponent = Icon[iconName];
   
   if (IconComponent) {

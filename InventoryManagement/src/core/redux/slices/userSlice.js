@@ -40,13 +40,10 @@
 
 
 
-// TO DO 
-
-
-
+// userSlice.js
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import axiosInstance from '../../../services/axiosInstance'; // ✅ Use your axios instance
 
-// Replace these static imports by initial empty arrays (or suitable defaults)
 const initialState = {
   userlist_data: [],
   rolesandpermission_data: [],
@@ -55,33 +52,42 @@ const initialState = {
   error: null,
 };
 
-// Async thunk to fetch user list
+// ✅ Async thunk to fetch user list
 export const fetchUserList = createAsyncThunk(
   'user/fetchUserList',
-  async () => {
-    const response = await fetch('/api/users');
-    if (!response.ok) throw new Error('Failed to fetch user list');
-    return response.json();
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await axiosInstance.get('/users');
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to fetch user list');
+    }
   }
 );
 
-// Async thunk to fetch roles and permissions
+// ✅ Async thunk to fetch roles and permissions
 export const fetchRolesAndPermission = createAsyncThunk(
   'user/fetchRolesAndPermission',
-  async () => {
-    const response = await fetch('/api/roles-permissions');
-    if (!response.ok) throw new Error('Failed to fetch roles and permissions');
-    return response.json();
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await axiosInstance.get('/roles-permissions');
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to fetch roles and permissions');
+    }
   }
 );
 
-// Async thunk to fetch delete account data
+// ✅ Async thunk to fetch delete account data
 export const fetchDeleteAccountData = createAsyncThunk(
   'user/fetchDeleteAccountData',
-  async () => {
-    const response = await fetch('/api/delete-account');
-    if (!response.ok) throw new Error('Failed to fetch delete account data');
-    return response.json();
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await axiosInstance.get('/delete-account');
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to fetch delete account data');
+    }
   }
 );
 
@@ -98,46 +104,53 @@ const userSlice = createSlice({
     setDeleteAccountData: (state, action) => {
       state.deleteaccount_data = action.payload;
     },
+    clearUserError: (state) => {
+      state.error = null;
+    },
   },
   extraReducers: (builder) => {
     builder
       // User List
       .addCase(fetchUserList.pending, (state) => {
         state.status = 'loading';
+        state.error = null;
       })
       .addCase(fetchUserList.fulfilled, (state, action) => {
         state.status = 'succeeded';
         state.userlist_data = action.payload;
+        state.error = null;
       })
       .addCase(fetchUserList.rejected, (state, action) => {
         state.status = 'failed';
-        state.error = action.error.message;
+        state.error = action.payload || action.error.message;
       })
-
       // Roles & Permission
       .addCase(fetchRolesAndPermission.pending, (state) => {
         state.status = 'loading';
+        state.error = null;
       })
       .addCase(fetchRolesAndPermission.fulfilled, (state, action) => {
         state.status = 'succeeded';
         state.rolesandpermission_data = action.payload;
+        state.error = null;
       })
       .addCase(fetchRolesAndPermission.rejected, (state, action) => {
         state.status = 'failed';
-        state.error = action.error.message;
+        state.error = action.payload || action.error.message;
       })
-
       // Delete Account Data
       .addCase(fetchDeleteAccountData.pending, (state) => {
         state.status = 'loading';
+        state.error = null;
       })
       .addCase(fetchDeleteAccountData.fulfilled, (state, action) => {
         state.status = 'succeeded';
         state.deleteaccount_data = action.payload;
+        state.error = null;
       })
       .addCase(fetchDeleteAccountData.rejected, (state, action) => {
         state.status = 'failed';
-        state.error = action.error.message;
+        state.error = action.payload || action.error.message;
       });
   },
 });
@@ -146,6 +159,7 @@ export const {
   setUserList,
   setRolesAndPermission,
   setDeleteAccountData,
+  clearUserError,
 } = userSlice.actions;
 
 export default userSlice.reducer;

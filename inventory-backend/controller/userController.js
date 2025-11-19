@@ -1,419 +1,3 @@
-// import express from 'express';
-// import pool from '../db.js';
-// import bcrypt from 'bcryptjs';
-// import dotenv from 'dotenv';
-// import multer from 'multer';
-// import path from 'path';
-// import fs from 'fs';
-
-// dotenv.config();
-
-// const router = express.Router();
-
-
-// const storage = multer.diskStorage({
-//   destination: function (req, file, cb) {
-//     const uploadDir = 'uploads/avatars';
-
-//     if (!fs.existsSync(uploadDir)) {
-//       fs.mkdirSync(uploadDir, { recursive: true });
-//     }
-//     cb(null, uploadDir);
-//   },
-//   filename: function (req, file, cb) {
-  
-//     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-//     cb(null, 'avatar-' + uniqueSuffix + path.extname(file.originalname));
-//   }
-// });
-
-
-// const fileFilter = (req, file, cb) => {
-//   const allowedTypes = /jpeg|jpg|png|gif|webp/;
-//   const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-//   const mimetype = allowedTypes.test(file.mimetype);
-
-//   if (mimetype && extname) {
-//     return cb(null, true);
-//   } else {
-//     cb(new Error('Only image files are allowed!'));
-//   }
-// };
-
-
-// const upload = multer({
-//   storage: storage,
-//   limits: { fileSize: 5 * 1024 * 1024 }, 
-//   fileFilter: fileFilter
-// });
-
-
-// //users api 
-
-// export const createUser = async (req, res) => {
-//   const { name, email, password } = req.body;
-
-//   if (!name || !email || !password) {
-//     return res.status(400).json({ message: "All fields (name, email, password) are required" });
-//   }
-
-//   if (password.length < 6) {
-//     return res.status(400).json({ message: "Password must be at least 6 characters long" });
-//   }
-
-//   try {
-//     const [existingUser] = await pool.execute("SELECT * FROM users WHERE email = ?", [email]);
-//     if (existingUser.length) return res.status(400).json({ message: "Email already exists" });
-
-//     const hashedPassword = await bcrypt.hash(password, 10);
-
-//     const [result] = await pool.execute(
-//       "INSERT INTO users (name, email, password, role_id) VALUES (?, ?, ?, ?)",
-//       [name, email, hashedPassword, 3]
-//     );
-
-//     res.status(201).json({
-//       message: "User created successfully",
-//       user: {
-//         id: result.insertId,
-//         name: name,
-//         email: email,
-//         role_id: 3,
-//       }
-//     });
-//   } catch (err) {
-//     console.error("Error in user creation:", err);
-//     res.status(500).json({ message: "Internal Server Error" });
-//   }
-// };
-
-// export const getUser = async (req, res) => {
-//   const { page = 1, limit = 10 } = req.query;
-
-//   if (isNaN(page) || page < 1) {
-//     return res.status(400).json({ message: "Invalid page number. Must be a positive integer." });
-//   }
-//   if (isNaN(limit) || limit < 1) {
-//     return res.status(400).json({ message: "Invalid limit. Must be a positive integer." });
-//   }
-
-//   try {
-//     const offset = (page - 1) * limit;
-
-//     const [users] = await pool.execute(
-//       "SELECT id, name, email, phone, username, avatar, role_id, created_at, updated_at FROM users LIMIT ? OFFSET ?",
-//       [Number(limit), Number(offset)]
-//     );
-
-//     const [totalUsers] = await pool.execute("SELECT COUNT(*) AS count FROM users");
-//     const totalCount = totalUsers[0].count;
-
-//     res.json({
-//       users,
-//       page: Number(page),
-//       limit: Number(limit),
-//       totalCount,
-//       totalPages: Math.ceil(totalCount / limit),
-//     });
-//   } catch (err) {
-//     console.error("Error fetching users:", err);
-//     res.status(500).json({ message: "Internal Server Error", error: err.message });
-//   }
-// };
-
-// export const getUserById = async (req, res) => {
-//   const userId = req.params.id;
-
-//   if (!Number.isInteger(Number(userId)) || Number(userId) <= 0) {
-//     return res.status(400).json({ message: "Invalid user ID. ID must be a positive integer." });
-//   }
-
-//   try {
-//     const [user] = await pool.execute(
-//       "SELECT id, name, email, phone, username, avatar, role_id, created_at, updated_at FROM users WHERE id = ?",
-//       [userId]
-//     );
-
-//     if (user.length === 0) {
-//       return res.status(404).json({ message: `User with ID ${userId} not found` });
-//     }
-
-//     res.json(user[0]);
-//   } catch (err) {
-//     console.error("Error fetching user:", err);
-//     res.status(500).json({ message: "Internal Server Error", error: err.message });
-//   }
-// };
-
-// export const editUserById = (req, res) => {
-//   upload.single('avatar')(req, res, async (err) => {
-//     if (err) {
-//       console.error("File upload error:", err);
-//       return res.status(400).json({ message: "File upload failed", error: err.message });
-//     }
-
-//     const { name, email, phone, username } = req.body;
-//     const userId = req.params.id;
-
-//     console.log("=== Update User Request ===");
-//     console.log("User ID:", userId);
-//     console.log("Body:", req.body);
-//     console.log("File:", req.file);
-
-//     try {
-    
-//       if (!Number.isInteger(Number(userId)) || Number(userId) <= 0) {
-//         return res.status(400).json({ message: "Invalid user ID" });
-//       }
-
-    
-//       const [existingUser] = await pool.execute(
-//         "SELECT * FROM users WHERE id = ?",
-//         [userId]
-//       );
-
-//       if (existingUser.length === 0) {
-//         return res.status(404).json({ message: "User not found" });
-//       }
-
-    
-//       const updates = [];
-//       const values = [];
-
-//       if (name) {
-//         updates.push("name = ?");
-//         values.push(name);
-//       }
-
-//       if (email) {
-//         updates.push("email = ?");
-//         values.push(email);
-//       }
-
-//       if (phone !== undefined) {
-//         updates.push("phone = ?");
-//         values.push(phone);
-//       }
-
-//       if (username) {
-//         updates.push("username = ?");
-//         values.push(username);
-//       }
-
-  
-//       if (req.file) {
-      
-//         const normalizedPath = req.file.path.replace(/\\/g, '/');
-//         updates.push("avatar = ?");
-//         values.push(normalizedPath);
-
-      
-//         if (existingUser[0].avatar && fs.existsSync(existingUser[0].avatar)) {
-//           fs.unlinkSync(existingUser[0].avatar);
-//         }
-//       }
-
-  
-//       if (updates.length === 0) {
-//         return res.status(400).json({ message: "No fields to update" });
-//       }
-
-  
-//       values.push(userId);
-
-
-//       const query = `UPDATE users SET ${updates.join(", ")} WHERE id = ?`;
-//       await pool.execute(query, values);
-
-      
-//       const [updatedUser] = await pool.execute(
-//         "SELECT id, name, email, phone, username, avatar, role_id FROM users WHERE id = ?",
-//         [userId]
-//       );
-
-//       res.json({
-//         message: "User updated successfully",
-//         user: updatedUser[0]
-//       });
-//     } catch (err) {
-//       console.error("Error updating user:", err);
-//       res.status(500).json({ 
-//         message: "Internal Server Error", 
-//         error: err.message 
-//       });
-//     }
-//   });
-// };
-
-// export const deleteUserById = async (req, res) => {
-//   const userId = req.params.id;
-
-//   try {
-//     const [user] = await pool.execute("SELECT * FROM users WHERE id = ?", [userId]);
-
-//     if (user.length === 0) {
-//       return res.status(404).json({ message: "User not found" });
-//     }
-
-  
-//     if (user[0].avatar && fs.existsSync(user[0].avatar)) {
-//       fs.unlinkSync(user[0].avatar);
-//     }
-
-//     await pool.execute("DELETE FROM users WHERE id = ?", [userId]);
-
-//     res.json({ message: "User deleted successfully" });
-//   } catch (err) {
-//     console.error("Error deleting user:", err);
-//     res.status(500).json({ message: "Internal Server Error" });
-//   }
-// };
-
-
-
-
-
-
-
-
-
-
-// //roles api 
-
-// export const createRole = async (req, res) => {
-//   const { name, permission } = req.body;
-
-//   if (!name || !permission) {
-//     return res.status(400).json({ message: "Role name and permissions are required" });
-//   }
-
-//   try {
-//     const [existingRole] = await pool.execute("SELECT * FROM roles WHERE name = ?", [name]);
-//     if (existingRole.length) return res.status(400).json({ message: "Role already exists" });
-
-//     const [result] = await pool.execute(
-//       "INSERT INTO roles (name, permission) VALUES (?, ?)",
-//       [name, permission]
-//     );
-
-//     res.status(201).json({
-//       message: "Role created successfully",
-//       role: {
-//         id: result.insertId,
-//         name,
-//         permission,
-//       }
-//     });
-//   } catch (err) {
-//     console.error("Error creating role:", err);
-//     res.status(500).json({ message: "Internal Server Error" });
-//   }
-// };
-
-
-
-// export const getRoles = async (req, res) => {
-//   try {
-//     const [roles] = await pool.execute("SELECT id, name, permission FROM roles");
-//     res.json({ roles });
-//   } catch (err) {
-//     console.error("Error fetching roles:", err);
-//     res.status(500).json({ message: "Internal Server Error" });
-//   }
-// };
- 
-
-
-// export const getRoleById = async (req, res) => {
-//   const roleId = req.params.id;
-
-//   if (!Number.isInteger(Number(roleId)) || Number(roleId) <= 0) {
-//     return res.status(400).json({ message: "Invalid role ID" });
-//   }
-
-//   try {
-//     const [role] = await pool.execute(
-//       "SELECT id, name, permission FROM roles WHERE id = ?",
-//       [roleId]
-//     );
-
-//     if (role.length === 0) {
-//       return res.status(404).json({ message: `Role with ID ${roleId} not found` });
-//     }
-
-//     res.json(role[0]);
-//   } catch (err) {
-//     console.error("Error fetching role:", err);
-//     res.status(500).json({ message: "Internal Server Error" });
-//   }
-// };
-
-
-
-
-// export const updateRoleById = async (req, res) => {
-//   const roleId = req.params.id;
-//   const { name, permission } = req.body;
-
-//   if (!name || !description) {
-//     return res.status(400).json({ message: "Role name and permissions are required" });
-//   }
-
-//   try {
-//     const [existingRole] = await pool.execute("SELECT * FROM roles WHERE id = ?", [roleId]);
-//     if (existingRole.length === 0) {
-//       return res.status(404).json({ message: "Role not found" });
-//     }
-
-//     await pool.execute(
-//       "UPDATE roles SET name = ?, permission = ? WHERE id = ?",
-//       [name, description, roleId]
-//     );
-
-//     const [updatedRole] = await pool.execute(
-//       "SELECT id, name, permission FROM roles WHERE id = ?",
-//       [roleId]
-//     );
-
-//     res.json({
-//       message: "Role updated successfully",
-//       role: updatedRole[0]
-//     });
-//   } catch (err) {
-//     console.error("Error updating role:", err);
-//     res.status(500).json({ message: "Internal Server Error" });
-//   }
-// };
-
-
-
-
-// export const deleteRoleById = async (req, res) => {
-//   const roleId = req.params.id;
-
-//   try {
-//     const [role] = await pool.execute("SELECT * FROM roles WHERE id = ?", [roleId]);
-
-//     if (role.length === 0) {
-//       return res.status(404).json({ message: "Role not found" });
-//     }
-
-//     await pool.execute("DELETE FROM roles WHERE id = ?", [roleId]);
-
-//     res.json({ message: "Role deleted successfully" });
-//   } catch (err) {
-//     console.error("Error deleting role:", err);
-//     res.status(500).json({ message: "Internal Server Error" });
-//   }
-// };
-
-
-
-// export { upload };
-
-
-
-
 
 import express from 'express';
 import pool from '../db.js';
@@ -458,56 +42,6 @@ const upload = multer({
   limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: fileFilter
 });
-
-
-
-// ============= USERS API =============
-
-// export const createUser = async (req, res) => {
-//   const { name, email, password, phone, username, role_id } = req.body;
-
-//   if (!name || !email || !password) {
-//     return res.status(400).json({ message: "Name, email, and password are required" });
-//   }
-
-//   if (password.length < 6) {
-//     return res.status(400).json({ message: "Password must be at least 6 characters long" });
-//   }
-
-//   try {
-//     const [existingUser] = await pool.execute(
-//       "SELECT * FROM users WHERE email = ? OR username = ?", 
-//       [email, username || email]
-//     );
-//     if (existingUser.length) {
-//       return res.status(400).json({ message: "Email or username already exists" });
-//     }
-
-//     const hashedPassword = await bcrypt.hash(password, 10);
-
-//     const [result] = await pool.execute(
-//       "INSERT INTO users (name, email, password, phone, username, role_id) VALUES (?, ?, ?, ?, ?, ?)",
-//       [name, email, hashedPassword, phone || null, username || email, role_id || 3]
-//     );
-
-//     res.status(201).json({
-//       message: "User created successfully",
-//       user: {
-//         id: result.insertId,
-//         name,
-//         email,
-//         phone,
-//         username: username || email,
-//         role_id: role_id || 3,
-//       }
-//     });
-//   } catch (err) {
-//     console.error("Error in user creation:", err);
-//     res.status(500).json({ message: "Internal Server Error" });
-//   }
-// };
-
-
 
 
 
@@ -590,6 +124,20 @@ export const createUser = (req, res) => {
     }
   });
 };
+
+// In your auth controller
+   export const getCurrentUser = async (req, res) => {
+     try {
+       const userId = req.user.id;
+       const [users] = await pool.execute(
+         'SELECT id, username, email, role_id FROM users WHERE id = ?',
+         [userId]
+       );
+       res.json(users[0]);
+     } catch (error) {
+       res.status(500).json({ message: 'Error fetching user' });
+     }
+   };
 
 export const getUser = async (req, res) => {
   const { 
@@ -1006,57 +554,67 @@ export default {
 };
 
 
-// ============= ROLES API =============
 
 export const createRole = async (req, res) => {
-  const { name, permissions } = req.body;
+  let { name, permissions } = req.body;
 
-  if (!name || !permissions) {
-    return res.status(400).json({ message: "Role name and permissions are required" });
+  if (!name) {
+    return res.status(400).json({ message: "Role name is required" });
   }
 
-
-  let permissionJson;
-  try {
-    permissionJson = typeof permissions === 'string' ? permissions : JSON.stringify(permissions);
-    JSON.parse(permissionJson);
-  } catch (err) {
-    return res.status(400).json({ message: "Permission must be valid JSON" });
-  }
+  const normalizedName = name.trim().toLowerCase();   // FIX
 
   try {
-    const [existingRole] = await pool.execute("SELECT * FROM roles WHERE name = ?", [name]);
+    const [existingRole] = await pool.execute(
+      "SELECT * FROM roles WHERE name = ?", 
+      [normalizedName]
+    );
+
     if (existingRole.length) {
       return res.status(400).json({ message: "Role already exists" });
     }
 
+    const permissionsJson = permissions 
+      ? JSON.stringify(permissions) 
+      : JSON.stringify({});
+
     const [result] = await pool.execute(
       "INSERT INTO roles (name, permissions) VALUES (?, ?)",
-      [name, permissionJson]
+      [normalizedName, permissionsJson]
     );
 
     res.status(201).json({
       message: "Role created successfully",
       role: {
         id: result.insertId,
-        name,
-        permissions: JSON.parse(permissionJson),
+        name: normalizedName,
+        permissions: permissions || {}
       }
     });
+
   } catch (err) {
     console.error("Error creating role:", err);
     res.status(500).json({ message: "Internal Server Error" });
   }
 };
 
+
 export const getRoles = async (req, res) => {
   try {
-    const [roles] = await pool.execute("SELECT id, name, permissions FROM roles");
+    const [roles] = await pool.execute(`
+      SELECT 
+        id, 
+        name,
+        permissions,
+        created_at
+      FROM roles
+      ORDER BY created_at DESC
+    `);
     
-  
+    // Parse JSON permissions
     const parsedRoles = roles.map(role => ({
       ...role,
-      permissions: typeof role.permissions === 'string' ? JSON.parse(role.permissions) : role.permissions
+      permissions: role.permissions ? JSON.parse(role.permissions) : {}
     }));
 
     res.json({ roles: parsedRoles });
@@ -1075,7 +633,7 @@ export const getRoleById = async (req, res) => {
 
   try {
     const [role] = await pool.execute(
-      "SELECT id, name, permissions FROM roles WHERE id = ?",
+      "SELECT id, name, permissions, created_at FROM roles WHERE id = ?",
       [roleId]
     );
 
@@ -1083,86 +641,91 @@ export const getRoleById = async (req, res) => {
       return res.status(404).json({ message: `Role with ID ${roleId} not found` });
     }
 
-    const parsedRole = {
+    const roleData = {
       ...role[0],
-      permissions: typeof role[0].permissions === 'string' ? JSON.parse(role[0].permissions) : role[0].permissions
+      permissions: role[0].permissions ? JSON.parse(role[0].permissions) : {}
     };
 
-    res.json(parsedRole);
+    res.json(roleData);
   } catch (err) {
     console.error("Error fetching role:", err);
     res.status(500).json({ message: "Internal Server Error" });
   }
 };
 
+
+
 export const updateRoleById = async (req, res) => {
   const roleId = req.params.id;
-  const { name, permissions } = req.body;
+  let { name, permissions } = req.body;
 
-  if (!name || !permissions) {
-    return res.status(400).json({ message: "Role name and permissions are required" });
+  if (!name) {
+    return res.status(400).json({ message: "Role name is required" });
   }
 
-  
-  let permissionJson;
-  try {
-    permissionJson = typeof permissions === 'string' ? permissions : JSON.stringify(permissions);
-    JSON.parse(permissionJson);
-  } catch (err) {
-    return res.status(400).json({ message: "Permission must be valid JSON" });
-  }
+  const normalizedName = name.trim().toLowerCase(); // FIX
 
   try {
-    const [existingRole] = await pool.execute("SELECT * FROM roles WHERE id = ?", [roleId]);
+    const [existingRole] = await pool.execute(
+      "SELECT * FROM roles WHERE id = ?", 
+      [roleId]
+    );
+
     if (existingRole.length === 0) {
       return res.status(404).json({ message: "Role not found" });
     }
 
-  
+    // Check duplicate name
     const [duplicate] = await pool.execute(
       "SELECT * FROM roles WHERE name = ? AND id != ?",
-      [name, roleId]
+      [normalizedName, roleId]
     );
+
     if (duplicate.length > 0) {
       return res.status(400).json({ message: "Role name already exists" });
     }
 
+    const permissionsJson = permissions 
+      ? JSON.stringify(permissions) 
+      : JSON.stringify({});
+
     await pool.execute(
       "UPDATE roles SET name = ?, permissions = ? WHERE id = ?",
-      [name, permissionJson, roleId]
+      [normalizedName, permissionsJson, roleId]
     );
-
-    const [updatedRole] = await pool.execute(
-      "SELECT id, name, permissions FROM roles WHERE id = ?",
-      [roleId]
-    );
-
-    const parsedRole = {
-      ...updatedRole[0],
-      permissions: JSON.parse(updatedRole[0].permissions)
-    };
 
     res.json({
       message: "Role updated successfully",
-      role: parsedRole
+      role: {
+        id: roleId,
+        name: normalizedName,
+        permissions: permissions || {}
+      }
     });
+
   } catch (err) {
     console.error("Error updating role:", err);
     res.status(500).json({ message: "Internal Server Error" });
   }
 };
 
+
+
+
 export const deleteRoleById = async (req, res) => {
   const roleId = req.params.id;
 
   try {
-    const [role] = await pool.execute("SELECT * FROM roles WHERE id = ?", [roleId]);
+    const [role] = await pool.execute(
+      "SELECT * FROM roles WHERE id = ?", 
+      [roleId]
+    );
 
     if (role.length === 0) {
       return res.status(404).json({ message: "Role not found" });
     }
 
-
+    // Check if users are assigned to this role
     const [usersWithRole] = await pool.execute(
       "SELECT COUNT(*) as count FROM users WHERE role_id = ?",
       [roleId]
@@ -1174,7 +737,11 @@ export const deleteRoleById = async (req, res) => {
       });
     }
 
-    await pool.execute("DELETE FROM roles WHERE id = ?", [roleId]);
+    // Delete role
+    await pool.execute(
+      "DELETE FROM roles WHERE id = ?", 
+      [roleId]
+    );
 
     res.json({ message: "Role deleted successfully" });
   } catch (err) {
@@ -1182,5 +749,189 @@ export const deleteRoleById = async (req, res) => {
     res.status(500).json({ message: "Internal Server Error" });
   }
 };
+
+// ============= PERMISSIONS API =============
+
+// GET - Fetch all modules
+export const getModules = async (req, res) => {
+  try {
+    console.log('=== getModules called ===');
+    
+    const modules = [
+      'Inventory',
+      'Expense',
+      'Product',
+      'Settings',
+      'Category',
+      'Sales',
+      'Purchase',
+      'User Management',
+      'Reports',
+      'Dashboard',
+      'Customers',
+      'Suppliers',
+      'Stock',
+      'Menu Management'
+    ];
+
+    console.log('Returning modules:', modules);
+    res.json({ data: modules });
+  } catch (err) {
+    console.error('Error fetching modules:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+// GET - Fetch permissions for a specific role (from JSON column)
+export const getPermissionsByRole = async (req, res) => {
+  try {
+    const { roleId } = req.params;
+    
+    console.log('=== getPermissionsByRole DEBUG ===');
+    console.log('Requested roleId:', roleId);
+
+    if (!roleId || isNaN(roleId)) {
+      console.log('Invalid roleId provided');
+      return res.status(400).json({ error: 'Invalid role ID' });
+    }
+
+    // Get role with permissions
+    const [role] = await pool.execute(
+      'SELECT id, name, permissions FROM roles WHERE id = ?',
+      [roleId]
+    );
+    
+    console.log('Role found:', role.length > 0);
+    if (role.length === 0) {
+      return res.status(404).json({ error: 'Role not found' });
+    }
+
+    // Parse JSON permissions
+    let permissions = {};
+    try {
+      permissions = role[0].permissions ? JSON.parse(role[0].permissions) : {};
+    } catch (parseError) {
+      console.error('Error parsing permissions JSON:', parseError);
+      permissions = {};
+    }
+
+    console.log('Parsed permissions:', permissions);
+
+    // Convert JSON object to array format for frontend
+    const permissionsArray = Object.keys(permissions).map(module => ({
+      module,
+      can_create: Boolean(permissions[module].can_create),
+      can_edit: Boolean(permissions[module].can_edit),
+      can_delete: Boolean(permissions[module].can_delete),
+      can_view: Boolean(permissions[module].can_view)
+    }));
+
+    console.log('Returning permissions array:', permissionsArray);
+    res.json({ data: permissionsArray });
+  } catch (err) {
+    console.error('Error fetching role permissions:', err);
+    res.status(500).json({ 
+      error: 'Internal server error',
+      message: err.message 
+    });
+  }
+};
+
+// POST - Update permissions for a role (store as JSON)
+export const updatePermissions = async (req, res) => {
+  try {
+    const { roleId, permissions } = req.body;
+
+    console.log('=== updatePermissions DEBUG ===');
+    console.log('roleId:', roleId);
+    console.log('permissions:', permissions);
+
+    if (!roleId || !Array.isArray(permissions)) {
+      return res.status(400).json({ error: 'Invalid request data' });
+    }
+
+    // Check if role exists
+    const [role] = await pool.execute(
+      'SELECT id FROM roles WHERE id = ?',
+      [roleId]
+    );
+
+    if (role.length === 0) {
+      return res.status(404).json({ error: 'Role not found' });
+    }
+
+    // Convert array to JSON object format
+    const permissionsObject = {};
+    permissions.forEach(perm => {
+      permissionsObject[perm.module] = {
+        can_create: Boolean(perm.can_create),
+        can_edit: Boolean(perm.can_edit),
+        can_delete: Boolean(perm.can_delete),
+        can_view: Boolean(perm.can_view)
+      };
+    });
+
+    console.log('Permissions object to save:', permissionsObject);
+
+    // Update role with new permissions
+    await pool.execute(
+      'UPDATE roles SET permissions = ? WHERE id = ?',
+      [JSON.stringify(permissionsObject), roleId]
+    );
+
+    res.json({ message: 'Permissions updated successfully' });
+  } catch (err) {
+    console.error('Error updating permissions:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+export const getAllPermissions = async (req, res) => {
+  try {
+    const query = `
+      SELECT 
+        r.id as role_id,
+        r.name as role_name,
+        rp.module,
+        rp.can_create,
+        rp.can_edit,
+        rp.can_delete,
+        rp.can_view
+      FROM roles r
+      LEFT JOIN role_permissions rp ON r.id = rp.role_id
+      WHERE r.status = 'active'
+      ORDER BY r.id, rp.module
+    `;
+
+    const [results] = await pool.execute(query);
+
+    // Organize by role
+    const permissionsByRole = {};
+    results.forEach(row => {
+      if (!permissionsByRole[row.role_id]) {
+        permissionsByRole[row.role_id] = {
+          role_id: row.role_id,
+          role_name: row.role_name,
+          permissions: []
+        };
+      }
+      if (row.module) {
+        permissionsByRole[row.role_id].permissions.push({
+          module: row.module,
+          can_create: Boolean(row.can_create),
+          can_edit: Boolean(row.can_edit),
+          can_delete: Boolean(row.can_delete),
+          can_view: Boolean(row.can_view)
+        });
+      }
+    });
+
+    res.json(Object.values(permissionsByRole));
+  } catch (err) {
+    console.error('Error fetching permissions:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
 
 export { upload };

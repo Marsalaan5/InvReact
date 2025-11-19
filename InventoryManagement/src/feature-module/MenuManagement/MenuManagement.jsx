@@ -1182,6 +1182,8 @@
 
 
 
+
+
 // src/feature-module/settings/menu/MenuManagement.jsx
 import React, { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, Eye, EyeOff, GripVertical, ChevronDown, ChevronRight } from 'lucide-react';
@@ -1225,26 +1227,83 @@ const MenuManagement = () => {
     fetchAvailableRoles();
   }, []);
 
-  const fetchMenuItems = async () => {
-    try {
-      setLoading(true);
-      const response = await AuthService.getAllMenuItems();
-      console.log('Menu items fetched:', response.data);
+const fetchMenuItems = async () => {
+  try {
+    setLoading(true);
+    const response = await AuthService.getAllMenuItems();
+    console.log('=== FETCH MENU ITEMS ===');
+    console.log('Raw API response:', response);
+    console.log('Response data:', response.data);
+    
+    let rawData = response.data || response;
+    
+    // Flatten the menu if it comes back hierarchical
+    const flattenMenu = (items, result = []) => {
+      items.forEach(item => {
+        // Add the item itself (without nested children for now)
+        const flatItem = { ...item };
+        
+        // Store children separately if they exist
+        const children = flatItem.submenuItems || flatItem.children || [];
+        
+        // Remove nested structures from the item
+        delete flatItem.submenuItems;
+        delete flatItem.children;
+        
+        result.push(flatItem);
+        
+        // Recursively flatten children
+        if (children.length > 0) {
+          flattenMenu(children, result);
+        }
+      });
+      return result;
+    };
+    
+    // Check if data is already flat or hierarchical
+    let flatData = [];
+    if (Array.isArray(rawData)) {
+      // Check if any item has submenuItems (hierarchical)
+      const hasNesting = rawData.some(item => 
+        (item.submenuItems && item.submenuItems.length > 0) || 
+        (item.children && item.children.length > 0)
+      );
       
-      // Normalize roles data - ensure roles is always an array
-      const normalizedData = (response.data || []).map(item => ({
-        ...item,
-        roles: normalizeRoles(item.roles)
-      }));
-      
-      setMenuItems(normalizedData);
-    } catch (error) {
-      console.error('Error fetching menu items:', error);
-      alert('Failed to fetch menu items: ' + (error.response?.data?.message || error.message));
-    } finally {
-      setLoading(false);
+      if (hasNesting) {
+        console.log('Menu data is hierarchical, flattening...');
+        flatData = flattenMenu(rawData);
+      } else {
+        console.log('Menu data is already flat');
+        flatData = rawData;
+      }
     }
-  };
+    
+    console.log('Flat menu items:', flatData.length);
+    console.log('Items:', flatData.map(i => ({
+      id: i.id,
+      label: i.label,
+      parent_id: i.parent_id
+    })));
+    
+    // Normalize roles data
+    const normalizedData = flatData.map(item => ({
+      ...item,
+      roles: normalizeRoles(item.roles)
+    }));
+    
+    console.log('Setting', normalizedData.length, 'menu items');
+    console.log('==================');
+    
+    setMenuItems(normalizedData);
+  } catch (error) {
+    console.error('Error fetching menu items:', error);
+    console.error('Error response:', error.response?.data);
+    alert('Failed to fetch menu items: ' + (error.response?.data?.message || error.message));
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   const fetchAvailableRoles = async () => {
     try {
@@ -1432,47 +1491,93 @@ const MenuManagement = () => {
   };
 
   // Organize menu hierarchically
-  const organizeMenuHierarchy = (items) => {
-    const itemMap = new Map();
-    const roots = [];
-
-    items.forEach(item => {
-      itemMap.set(item.id, { ...item, children: item.submenuItems || [] });
+ 
+const organizeMenuHierarchy = (items) => {
+  console.log('=== ORGANIZING MENU ===');
+  console.log('Total items received:', items.length);
+  console.log('Items:', items.map(i => ({ id: i.id, label: i.label, parent_id: i.parent_id })));
+  
+  // Create a map of all items by their ID
+  const itemMap = new Map();
+  
+  // First pass: Add all items to the map
+  items.forEach(item => {
+    itemMap.set(item.id, {
+      ...item,
+      children: [] // Initialize empty children array
     });
-
-    items.forEach(item => {
-      if (item.parent_id === null) {
-        roots.push(itemMap.get(item.id)); 
+  });
+  
+  console.log('Item map created with', itemMap.size, 'items');
+  
+  // Second pass: Build the hierarchy
+  const roots = [];
+  
+  items.forEach(item => {
+    const currentItem = itemMap.get(item.id);
+    
+    if (item.parent_id === null || item.parent_id === 0) {
+      // This is a root item
+      roots.push(currentItem);
+      console.log('Root item:', item.label);
+    } else {
+      // This is a child item, add it to parent's children
+      const parent = itemMap.get(item.parent_id);
+      if (parent) {
+        parent.children.push(currentItem);
+        parent.submenu = true; // Mark parent as having submenu
+        console.log('Child item:', item.label, '-> Parent:', parent.label);
       } else {
-        const parent = itemMap.get(item.parent_id);
-        if (parent) {
-          parent.children.push(itemMap.get(item.id)); 
-        }
+        console.warn('Orphan item (no parent found):', item.label, 'parent_id:', item.parent_id);
+        // Treat orphans as root items
+        roots.push(currentItem);
       }
-    });
+    }
+  });
+  
+  console.log('Organized into', roots.length, 'root items');
+  console.log('==================');
+  
+  return roots;
+};
 
-    return roots;
-  };
-
-  const renderMenuTree = (items, level = 0) => {
-    return items.map(item => (
+// Fixed renderMenuTree function
+const renderMenuTree = (items, level = 0) => {
+  if (!items || items.length === 0) return null;
+  
+  return items.map(item => {
+    const hasChildren = item.children && item.children.length > 0;
+    
+    return (
       <React.Fragment key={item.id}>
-        <tr style={{ backgroundColor: level === 0 ? '#f8f9fa' : 'white' }}>
+        <tr style={{ 
+          backgroundColor: level === 0 ? '#f8f9fa' : 'white',
+          borderLeft: level > 0 ? `3px solid #${level * 2}98a0` : 'none'
+        }}>
           <td style={{ paddingLeft: `${level * 30 + 10}px` }}>
             <div className="d-flex align-items-center gap-2">
-              {item.submenuItems?.length > 0 && (
+              {hasChildren && (
                 <button
                   className="btn btn-sm p-0"
                   onClick={() => toggleExpand(item.id)}
                   style={{ border: 'none', background: 'none' }}
                 >
-                  {expandedItems[item.id] ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                  {expandedItems[item.id] ? 
+                    <ChevronDown size={16} /> : 
+                    <ChevronRight size={16} />
+                  }
                 </button>
               )}
+              {!hasChildren && <span style={{ width: '16px', display: 'inline-block' }}></span>}
               <GripVertical size={16} className="text-muted" />
               <span style={{ fontWeight: level === 0 ? 'bold' : 'normal' }}>
                 {item.label}
               </span>
+              {hasChildren && (
+                <span className="badge bg-secondary ms-2" style={{ fontSize: '0.7rem' }}>
+                  {item.children.length} item{item.children.length !== 1 ? 's' : ''}
+                </span>
+              )}
             </div>
           </td>
           <td>{item.title}</td>
@@ -1480,13 +1585,6 @@ const MenuManagement = () => {
           <td>
             {item.icon && <span className="badge bg-light text-dark">{item.icon}</span>}
           </td>
-          {/* <td>
-            <div className="d-flex gap-1 flex-wrap">
-              {normalizeRoles(item.roles).map((role, idx) => (
-                <span key={idx} className="badge bg-primary">{role}</span>
-              ))}
-            </div>
-          </td> */}
           <td>{item.submenu_hdr || '-'}</td>
           <td>
             <span className={`badge ${item.status === 'active' ? 'bg-success' : 'bg-danger'}`}>
@@ -1519,11 +1617,12 @@ const MenuManagement = () => {
             </div>
           </td>
         </tr>
-        {expandedItems[item.id] && item.submenuItems?.length > 0 && renderMenuTree(item.submenuItems, level + 1)}
+        {/* Render children if expanded */}
+        {expandedItems[item.id] && hasChildren && renderMenuTree(item.children, level + 1)}
       </React.Fragment>
-    ));
-  };
-
+    );
+  });
+};
   const hierarchicalMenu = organizeMenuHierarchy(menuItems);
   const parentMenuItems = menuItems.filter(item => item.parent_id === null || !item.path);
 

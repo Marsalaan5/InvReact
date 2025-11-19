@@ -33,6 +33,8 @@ export const signup = async (req, res) => {
     }
 };
 
+
+
 // Signin
 // export const signin = async (req, res) => {
 //     const { email, password } = req.body;
@@ -71,52 +73,99 @@ export const signup = async (req, res) => {
 
 
 // Signin
+// Fixed Signin with role and permissions
 export const signin = async (req, res) => {
     const { email, password } = req.body;
 
     try {
+        // Get user with role information and permissions
+        const [user] = await pool.execute(`
+            SELECT 
+                u.id, 
+                u.name, 
+                u.email, 
+                u.password, 
+                u.role_id, 
+                u.status,
+                r.name as role_name,
+                r.permissions
+            FROM users u
+            LEFT JOIN roles r ON u.role_id = r.id
+            WHERE u.email = ?
+        `, [email]);
         
-        const [user] = await pool.execute("SELECT id, name, email, password, role_id, status FROM users WHERE email = ?", [email]);
-        
-        if (!user.length) return res.status(404).json({ message: "User not found" });
-
-    
-        console.log("User from DB:", user[0]);
-        console.log("User status:", user[0].status);
-
-        if (user[0].status.trim().toLowerCase() === 'inactive') {
-            console.log("User is inactive.");
-            return res.status(403).json({ message: "Your account is inactive. Please contact support." });
+        if (!user.length) {
+            return res.status(404).json({ message: "User not found" });
         }
 
+        console.log("User from DB:", user[0]);
+        console.log("User status:", user[0].status);
+        console.log("User role:", user[0].role_name);
+        console.log("User permissions (raw):", user[0].permissions);
 
+        // Check if user is active
+        if (user[0].status && user[0].status.trim().toLowerCase() === 'inactive') {
+            console.log("User is inactive.");
+            return res.status(403).json({ 
+                message: "Your account is inactive. Please contact support." 
+            });
+        }
+
+        // Verify password
         const validPassword = await bcrypt.compare(password, user[0].password);
-        if (!validPassword) return res.status(400).json({ message: "Invalid password" });
+        if (!validPassword) {
+            return res.status(400).json({ message: "Invalid password" });
+        }
 
+        // Parse permissions from JSON
+        let permissions = {};
+        try {
+            if (user[0].permissions) {
+                permissions = typeof user[0].permissions === 'string' 
+                    ? JSON.parse(user[0].permissions) 
+                    : user[0].permissions;
+            }
+        } catch (e) {
+            console.error('Error parsing permissions:', e);
+            permissions = {};
+        }
 
+        console.log("Parsed permissions:", permissions);
+
+        // Generate JWT token
         const token = jwt.sign(
             { 
                 id: user[0].id,
                 email: user[0].email,
                 role_id: user[0].role_id,
+                role: user[0].role_name,
                 status: user[0].status
             }, 
             process.env.JWT_SECRET, 
             { expiresIn: "1d" }
         );
 
-    
+        // Return complete user data with permissions
         res.json({
             token, 
             user: { 
                 id: user[0].id, 
-                name: user[0].name, 
-                role_id: user[0].role_id, 
-                status: user[0].status 
+                name: user[0].name,
+                email: user[0].email,
+                role_id: user[0].role_id,
+                role: user[0].role_name,
+                roleName: user[0].role_name,
+                status: user[0].status,
+                permissions: permissions // This is the key addition!
             }
         });
+
+        console.log("Login successful for user:", user[0].email);
+        console.log("Returned permissions:", permissions);
+
     } catch (err) {
-        res.status(500).json({ message: err.message });
+        console.error('Login error:', err);
+        res.status(500).json({ message: "Internal server error" });
     }
 };
 
