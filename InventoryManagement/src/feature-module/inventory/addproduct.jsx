@@ -1011,3 +1011,789 @@ const AddProduct = () => {
 };
 
 export default AddProduct;
+
+
+
+// import React, { useState, useEffect } from "react";
+// import { Link, useNavigate } from "react-router-dom";
+// import Select from "react-select";
+// import { all_routes } from "../../Router/all_routes";
+// import { DatePicker } from "antd";
+// import axios from "axios";
+// import { toast } from "react-toastify";
+// import {
+//   ArrowLeft,
+//   Calendar,
+//   // ChevronDown,
+//   Info,
+//   LifeBuoy,
+//   List,
+//   PlusCircle,
+//   X,
+// } from "feather-icons-react/build/IconComponents";
+
+// const API_URL = 'http://localhost:5000/api';
+
+// const AddProduct = () => {
+//   const route = all_routes;
+//   const navigate = useNavigate();
+
+//   // Form state
+//   const [formData, setFormData] = useState({
+//     title: "",
+//     sku: "",
+//     barcode: "",
+//     warehouse_id: "",
+//     description: "",
+//     quantity: "",
+//     quantity_alert: "",
+//     status: "new",
+//     count: 1,
+//     location: "",
+//   });
+
+//   // Dropdown options state
+//   // const [stores, setStores] = useState([]);
+//   const [warehouses, setWarehouses] = useState([]);
+//   // const [categories, setCategories] = useState([]);
+//   // const [subcategories, setSubcategories] = useState([]);
+//   // const [brands, setBrands] = useState([]);
+//   // const [units, setUnits] = useState([]);
+
+//   // Image state
+//   // const [images, setImages] = useState([]);
+//   // const [imagePreviews, setImagePreviews] = useState([]);
+
+//   // Loading state
+//   const [loading, setLoading] = useState(false);
+//   const [dataLoading, setDataLoading] = useState(true);
+
+//   // Fetch all required data on component mount
+//   useEffect(() => {
+//     fetchInitialData();
+//   }, []);
+
+//   // Fetch subcategories when category changes
+//   // useEffect(() => {
+//   //   if (formData.category_id) {
+//   //     fetchSubcategories(formData.category_id);
+//   //   } else {
+//   //     setSubcategories([]);
+//   //   }
+//   // }, [formData.category_id]);
+
+//   const fetchInitialData = async () => {
+//     setDataLoading(true);
+//     try {
+//       const [
+//         warehousesRes,
+  
+//       ] = await Promise.all([
+//         axios.get(`${API_URL}/warehouses`),
+//             ])
+
+//       setWarehouses(
+//         warehousesRes.data.data.map(item => ({
+//           value: item.id,
+//           label: item.name,
+        
+
+//     } catch (error) {
+//       console.error("Error fetching initial data:", error);
+//       toast.error("Failed to load form data");
+//     } finally {
+//       setDataLoading(false);
+//     }
+//   };
+
+//   // const fetchSubcategories = async (categoryId) => {
+//   //   try {
+//   //     const response = await axios.get(`${API_URL}/subcategories/${categoryId}`);
+//   //     setSubcategories(
+//   //       response.data.data.map(item => ({
+//   //         value: item.id,
+//   //         label: item.name,
+//   //       }))
+//   //     );
+//   //   } catch (error) {
+//   //     console.error("Error fetching subcategories:", error);
+//   //   }
+//   // };
+
+//   const handleInputChange = (e) => {
+//     const { name, value } = e.target;
+//     setFormData(prev => ({
+//       ...prev,
+//       [name]: value,
+//     }));
+
+//     // Auto-generate slug from product name
+//     if (name === "product_name") {
+//       const slug = value
+//         .toLowerCase()
+//         .replace(/[^a-z0-9]+/g, "-")
+//         .replace(/(^-|-$)/g, "");
+//       setFormData(prev => ({
+//         ...prev,
+//         slug: slug,
+//       }));
+//     }
+//   };
+
+//   const handleSelectChange = (name, selectedOption) => {
+//     setFormData(prev => ({
+//       ...prev,
+//       [name]: selectedOption ? selectedOption.value : "",
+//     }));
+//   };
+
+//   const handleDateChange = (name, date) => {
+//     setFormData(prev => ({
+//       ...prev,
+//       [name]: date ? date.format("YYYY-MM-DD") : null,
+//     }));
+//   };
+
+//   const generateSKU = async () => {
+//     try {
+//       const response = await axios.get(`${API_URL}/products/generate/sku`);
+//       setFormData(prev => ({
+//         ...prev,
+//         sku: response.data.sku,
+//       }));
+//       toast.success("SKU generated successfully");
+//     } catch (error) {
+//       console.error("Error generating SKU:", error);
+//       toast.error("Failed to generate SKU");
+//     }
+//   };
+
+//   const generateBarcode = async () => {
+//     try {
+//       const response = await axios.get(`${API_URL}/products/generate/barcode`);
+//       setFormData(prev => ({
+//         ...prev,
+//         barcode: response.data.barcode,
+//       }));
+//       toast.success("Barcode generated successfully");
+//     } catch (error) {
+//       console.error("Error generating barcode:", error);
+//       toast.error("Failed to generate barcode");
+//     }
+//   };
+
+
+
+
+//   const validateForm = () => {
+//     if (!formData.product_name) {
+//       toast.error("Product name is required");
+//       return false;
+//     }
+//     if (!formData.sku) {
+//       toast.error("SKU is required");
+//       return false;
+//     }
+
+//     if (!formData.quantity || formData.quantity < 0) {
+//       toast.error("Valid quantity is required");
+//       return false;
+//     }
+//     return true;
+//   };
+
+//   const handleSubmit = async (e) => {
+//     e.preventDefault();
+
+//     if (!validateForm()) return;
+
+//     setLoading(true);
+
+//     try {
+//       const formDataToSend = new FormData();
+
+//       // Append all form fields
+//       Object.keys(formData).forEach(key => {
+//         if (formData[key] !== null && formData[key] !== "") {
+//           formDataToSend.append(key, formData[key]);
+//         }
+//       });
+
+//       // Append images
+//       images.forEach(image => {
+//         formDataToSend.append("images", image);
+//       });
+
+//       // Add user ID (get from auth context or local storage)
+//       formDataToSend.append("last_updated_by", 1); // Replace with actual user ID
+
+//       const response = await axios.post(
+//         `${API_URL}/products`,
+//         formDataToSend,
+//         {
+//           headers: {
+//             "Content-Type": "multipart/form-data",
+//           },
+//         }
+//       );
+
+//       toast.success("Product created successfully");
+//       navigate(route.productlist);
+
+//     } catch (error) {
+//       console.error("Error creating product:", error);
+//       toast.error(
+//         error.response?.data?.message || "Failed to create product"
+//       );
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
+
+//   const sellingTypeOptions = [
+//     { value: "transactional", label: "Transactional Selling" },
+//     { value: "solution", label: "Solution Selling" },
+//   ];
+
+//   const barcodeSymbologyOptions = [
+//     { value: "code128", label: "Code 128" },
+//     { value: "code39", label: "Code 39" },
+//     { value: "ean13", label: "EAN-13" },
+//   ];
+
+//   const taxTypeOptions = [
+//     { value: "exclusive", label: "Exclusive" },
+//     { value: "inclusive", label: "Inclusive" },
+//   ];
+
+//   const discountTypeOptions = [
+//     { value: "percentage", label: "Percentage" },
+//     { value: "fixed", label: "Fixed Amount" },
+//   ];
+
+//   const statusOptions = [
+//     { value: "new", label: "New" },
+//     { value: "used", label: "Used" },
+//     { value: "repaired", label: "Repaired" },
+//   ];
+
+//   if (dataLoading) {
+//     return (
+//       <div className="page-wrapper">
+//         <div className="content">
+//           <div className="text-center p-5">
+//             <div className="spinner-border" role="status">
+//               <span className="visually-hidden">Loading...</span>
+//             </div>
+//           </div>
+//         </div>
+//       </div>
+//     );
+//   }
+
+//   return (
+//     <div className="page-wrapper">
+//       <div className="content">
+//         <div className="page-header">
+//           <div className="add-item d-flex">
+//             <div className="page-title">
+//               <h4>New Product</h4>
+//               <h6>Create new product</h6>
+//             </div>
+//           </div>
+//           <ul className="table-top-head">
+//             <li>
+//               <div className="page-btn">
+//                 <Link to={route.productlist} className="btn btn-secondary">
+//                   <ArrowLeft className="me-2" />
+//                   Back to Product
+//                 </Link>
+//               </div>
+//             </li>
+//           </ul>
+//         </div>
+
+//         <form onSubmit={handleSubmit}>
+//           <div className="card">
+//             <div className="card-body add-product pb-0">
+//               {/* Product Information Section */}
+//               <div className="accordion-card-one accordion">
+//                 <div className="accordion-item">
+//                   <div className="accordion-header">
+//                     <div className="accordion-button">
+//                       <div className="addproduct-icon">
+//                         <h5>
+//                           <Info className="add-info" />
+//                           <span>Product Information</span>
+//                         </h5>
+//                       </div>
+//                     </div>
+//                   </div>
+//                   <div className="accordion-collapse collapse show">
+//                     <div className="accordion-body">
+//                       <div className="row">
+//                         <div className="col-lg-4 col-sm-6 col-12">
+//                           <div className="mb-3 add-product">
+//                             <label className="form-label">Store</label>
+//                             <Select
+//                               className="select"
+//                               options={stores}
+//                               placeholder="Choose Store"
+//                               onChange={(option) =>
+//                                 handleSelectChange("store_id", option)
+//                               }
+//                             />
+//                           </div>
+//                         </div>
+//                         <div className="col-lg-4 col-sm-6 col-12">
+//                           <div className="mb-3 add-product">
+//                             <label className="form-label">Warehouse</label>
+//                             <Select
+//                               className="select"
+//                               options={warehouses}
+//                               placeholder="Choose Warehouse"
+//                               onChange={(option) =>
+//                                 handleSelectChange("warehouse_id", option)
+//                               }
+//                             />
+//                           </div>
+//                         </div>
+//                         <div className="col-lg-4 col-sm-6 col-12">
+//                           <div className="mb-3 add-product">
+//                             <label className="form-label">Status</label>
+//                             <Select
+//                               className="select"
+//                               options={statusOptions}
+//                               placeholder="Choose Status"
+//                               defaultValue={statusOptions[0]}
+//                               onChange={(option) =>
+//                                 handleSelectChange("status", option)
+//                               }
+//                             />
+//                           </div>
+//                         </div>
+//                       </div>
+
+//                       <div className="row">
+//                         <div className="col-lg-4 col-sm-6 col-12">
+//                           <div className="mb-3 add-product">
+//                             <label className="form-label">
+//                               Product Name <span className="text-danger">*</span>
+//                             </label>
+//                             <input
+//                               type="text"
+//                               className="form-control"
+//                               name="product_name"
+//                               value={formData.product_name}
+//                               onChange={handleInputChange}
+//                               required
+//                             />
+//                           </div>
+//                         </div>
+//                         <div className="col-lg-4 col-sm-6 col-12">
+//                           <div className="mb-3 add-product">
+//                             <label className="form-label">Slug</label>
+//                             <input
+//                               type="text"
+//                               className="form-control"
+//                               name="slug"
+//                               value={formData.slug}
+//                               onChange={handleInputChange}
+//                             />
+//                           </div>
+//                         </div>
+//                         <div className="col-lg-4 col-sm-6 col-12">
+//                           <div className="input-blocks add-product list">
+//                             <label>SKU <span className="text-danger">*</span></label>
+//                             <input
+//                               type="text"
+//                               className="form-control list"
+//                               placeholder="Enter SKU"
+//                               name="sku"
+//                               value={formData.sku}
+//                               onChange={handleInputChange}
+//                               required
+//                             />
+//                             <button
+//                               type="button"
+//                               onClick={generateSKU}
+//                               className="btn btn-primaryadd"
+//                             >
+//                               Generate Code
+//                             </button>
+//                           </div>
+//                         </div>
+//                       </div>
+
+//                       <div className="row">
+//                         <div className="col-lg-4 col-sm-6 col-12">
+//                           <div className="mb-3 add-product">
+//                             <label className="form-label">
+//                               Category <span className="text-danger">*</span>
+//                             </label>
+//                             <Select
+//                               className="select"
+//                               options={categories}
+//                               placeholder="Choose Category"
+//                               onChange={(option) =>
+//                                 handleSelectChange("category_id", option)
+//                               }
+//                             />
+//                           </div>
+//                         </div>
+//                         <div className="col-lg-4 col-sm-6 col-12">
+//                           <div className="mb-3 add-product">
+//                             <label className="form-label">Sub Category</label>
+//                             <Select
+//                               className="select"
+//                               options={subcategories}
+//                               placeholder="Choose Sub Category"
+//                               onChange={(option) =>
+//                                 handleSelectChange("subcategory_id", option)
+//                               }
+//                               isDisabled={!formData.category_id}
+//                             />
+//                           </div>
+//                         </div>
+//                         <div className="col-lg-4 col-sm-6 col-12">
+//                           <div className="mb-3 add-product">
+//                             <label className="form-label">Brand</label>
+//                             <Select
+//                               className="select"
+//                               options={brands}
+//                               placeholder="Choose Brand"
+//                               onChange={(option) =>
+//                                 handleSelectChange("brand_id", option)
+//                               }
+//                             />
+//                           </div>
+//                         </div>
+//                       </div>
+
+//                       <div className="row">
+//                         <div className="col-lg-4 col-sm-6 col-12">
+//                           <div className="mb-3 add-product">
+//                             <label className="form-label">Unit</label>
+//                             <Select
+//                               className="select"
+//                               options={units}
+//                               placeholder="Choose Unit"
+//                               onChange={(option) =>
+//                                 handleSelectChange("unit_id", option)
+//                               }
+//                             />
+//                           </div>
+//                         </div>
+//                         <div className="col-lg-4 col-sm-6 col-12">
+//                           <div className="mb-3 add-product">
+//                             <label className="form-label">Selling Type</label>
+//                             <Select
+//                               className="select"
+//                               options={sellingTypeOptions}
+//                               placeholder="Choose Selling Type"
+//                               onChange={(option) =>
+//                                 handleSelectChange("selling_type", option)
+//                               }
+//                             />
+//                           </div>
+//                         </div>
+//                         <div className="col-lg-4 col-sm-6 col-12">
+//                           <div className="mb-3 add-product">
+//                             <label className="form-label">
+//                               Barcode Symbology
+//                             </label>
+//                             <Select
+//                               className="select"
+//                               options={barcodeSymbologyOptions}
+//                               placeholder="Choose Symbology"
+//                               onChange={(option) =>
+//                                 handleSelectChange("barcode_symbology", option)
+//                               }
+//                             />
+//                           </div>
+//                         </div>
+//                       </div>
+
+//                       <div className="row">
+//                         <div className="col-lg-12">
+//                           <div className="input-blocks add-product list">
+//                             <label>Item Code / Barcode</label>
+//                             <input
+//                               type="text"
+//                               className="form-control list"
+//                               placeholder="Enter Barcode"
+//                               name="barcode"
+//                               value={formData.barcode}
+//                               onChange={handleInputChange}
+//                             />
+//                             <button
+//                               type="button"
+//                               onClick={generateBarcode}
+//                               className="btn btn-primaryadd"
+//                             >
+//                               Generate Code
+//                             </button>
+//                           </div>
+//                         </div>
+//                       </div>
+
+//                       <div className="col-lg-12">
+//                         <div className="input-blocks summer-description-box transfer mb-3">
+//                           <label>Description</label>
+//                           <textarea
+//                             className="form-control h-100"
+//                             rows={5}
+//                             name="description"
+//                             value={formData.description}
+//                             onChange={handleInputChange}
+//                             maxLength={255}
+//                           />
+//                           <p className="mt-1">Maximum 255 Characters</p>
+//                         </div>
+//                       </div>
+//                     </div>
+//                   </div>
+//                 </div>
+//               </div>
+
+//               {/* Pricing & Stock Section */}
+//               <div className="accordion-card-one accordion">
+//                 <div className="accordion-item">
+//                   <div className="accordion-header">
+//                     <div className="accordion-button">
+//                       <div className="addproduct-icon">
+//                         <h5>
+//                           <LifeBuoy className="add-info" />
+//                           <span>Pricing & Stocks</span>
+//                         </h5>
+//                       </div>
+//                     </div>
+//                   </div>
+//                   <div className="accordion-collapse collapse show">
+//                     <div className="accordion-body">
+//                       <div className="row">
+//                         <div className="col-lg-4 col-sm-6 col-12">
+//                           <div className="input-blocks add-product">
+//                             <label>Quantity <span className="text-danger">*</span></label>
+//                             <input
+//                               type="number"
+//                               className="form-control"
+//                               name="quantity"
+//                               value={formData.quantity}
+//                               onChange={handleInputChange}
+//                               min="0"
+//                               required
+//                             />
+//                           </div>
+//                         </div>
+//                         <div className="col-lg-4 col-sm-6 col-12">
+//                           <div className="input-blocks add-product">
+//                             <label>Price <span className="text-danger">*</span></label>
+//                             <input
+//                               type="number"
+//                               className="form-control"
+//                               name="price"
+//                               value={formData.price}
+//                               onChange={handleInputChange}
+//                               min="0"
+//                               step="0.01"
+//                               required
+//                             />
+//                           </div>
+//                         </div>
+//                         <div className="col-lg-4 col-sm-6 col-12">
+//                           <div className="input-blocks add-product">
+//                             <label>Tax Type</label>
+//                             <Select
+//                               className="select"
+//                               options={taxTypeOptions}
+//                               placeholder="Select Tax Type"
+//                               defaultValue={taxTypeOptions[0]}
+//                               onChange={(option) =>
+//                                 handleSelectChange("tax_type", option)
+//                               }
+//                             />
+//                           </div>
+//                         </div>
+//                       </div>
+
+//                       <div className="row">
+//                         <div className="col-lg-4 col-sm-6 col-12">
+//                           <div className="input-blocks add-product">
+//                             <label>Discount Type</label>
+//                             <Select
+//                               className="select"
+//                               options={discountTypeOptions}
+//                               placeholder="Choose Discount Type"
+//                               onChange={(option) =>
+//                                 handleSelectChange("discount_type", option)
+//                               }
+//                             />
+//                           </div>
+//                         </div>
+//                         <div className="col-lg-4 col-sm-6 col-12">
+//                           <div className="input-blocks add-product">
+//                             <label>Discount Value</label>
+//                             <input
+//                               type="number"
+//                               className="form-control"
+//                               placeholder="Enter discount value"
+//                               name="discount_value"
+//                               value={formData.discount_value}
+//                               onChange={handleInputChange}
+//                               min="0"
+//                             />
+//                           </div>
+//                         </div>
+//                         <div className="col-lg-4 col-sm-6 col-12">
+//                           <div className="input-blocks add-product">
+//                             <label>Quantity Alert</label>
+//                             <input
+//                               type="number"
+//                               className="form-control"
+//                               name="quantity_alert"
+//                               value={formData.quantity_alert}
+//                               onChange={handleInputChange}
+//                               min="0"
+//                             />
+//                           </div>
+//                         </div>
+//                       </div>
+
+//                       {/* Images Section */}
+//                       <div className="row">
+//                         <div className="col-lg-12">
+//                           <div className="addproduct-icon list">
+//                             <h5>
+//                               <span>Product Images</span>
+//                             </h5>
+//                           </div>
+//                           <div className="add-choosen">
+//                             <div className="input-blocks">
+//                               <div className="image-upload">
+//                                 <input
+//                                   type="file"
+//                                   accept="image/*"
+//                                   multiple
+//                                   onChange={handleImageChange}
+//                                 />
+//                                 <div className="image-uploads">
+//                                   <PlusCircle className="plus-down-add me-0" />
+//                                   <h4>Add Images (Max 5)</h4>
+//                                 </div>
+//                               </div>
+//                             </div>
+
+//                             {imagePreviews.map((preview, index) => (
+//                               <div key={index} className="phone-img">
+//                                 <img src={preview} alt={`preview-${index}`} />
+//                                 <button
+//                                   type="button"
+//                                   onClick={() => removeImage(index)}
+//                                 >
+//                                   <X className="x-square-add remove-product" />
+//                                 </button>
+//                               </div>
+//                             ))}
+//                           </div>
+//                         </div>
+//                       </div>
+//                     </div>
+//                   </div>
+//                 </div>
+//               </div>
+
+//               {/* Custom Fields Section */}
+//               <div className="accordion-card-one accordion">
+//                 <div className="accordion-item">
+//                   <div className="accordion-header">
+//                     <div className="accordion-button">
+//                       <div className="addproduct-icon">
+//                         <h5>
+//                           <List className="add-info" />
+//                           <span>Additional Information</span>
+//                         </h5>
+//                       </div>
+//                     </div>
+//                   </div>
+//                   <div className="accordion-collapse collapse show">
+//                     <div className="accordion-body">
+//                       <div className="row">
+//                         <div className="col-lg-4 col-sm-6 col-12">
+//                           <div className="input-blocks">
+//                             <label>Manufactured Date</label>
+//                             <div className="input-groupicon calender-input">
+//                               <Calendar className="info-img" />
+//                               <DatePicker
+//                                 onChange={(date) =>
+//                                   handleDateChange("manufactured_date", date)
+//                                 }
+//                                 className="datetimepicker form-control"
+//                                 format="DD-MM-YYYY"
+//                                 placeholder="Choose Date"
+//                               />
+//                             </div>
+//                           </div>
+//                         </div>
+//                         <div className="col-lg-4 col-sm-6 col-12">
+//                           <div className="input-blocks">
+//                             <label>Expiry Date</label>
+//                             <div className="input-groupicon calender-input">
+//                               <Calendar className="info-img" />
+//                               <DatePicker
+//                                 onChange={(date) =>
+//                                   handleDateChange("expiry_date", date)
+//                                 }
+//                                 className="datetimepicker form-control"
+//                                 format="DD-MM-YYYY"
+//                                 placeholder="Choose Date"
+//                               />
+//                             </div>
+//                           </div>
+//                         </div>
+//                         <div className="col-lg-4 col-sm-6 col-12">
+//                           <div className="input-blocks add-product">
+//                             <label>Location</label>
+//                             <input
+//                               type="text"
+//                               className="form-control"
+//                               name="location"
+//                               value={formData.location}
+//                               onChange={handleInputChange}
+//                               placeholder="Enter location"
+//                             />
+//                           </div>
+//                         </div>
+//                       </div>
+//                     </div>
+//                   </div>
+//                 </div>
+//               </div>
+//             </div>
+//           </div>
+
+//           <div className="col-lg-12">
+//             <div className="btn-addproduct mb-4">
+//               <button
+//                 type="button"
+//                 className="btn btn-cancel me-2"
+//                 onClick={() => navigate(route.productlist)}
+//               >
+//                 Cancel
+//               </button>
+//               <button
+//                 type="submit"
+//                 className="btn btn-submit"
+//                 disabled={loading}
+//               >
+//                 {loading ? "Saving..." : "Save Product"}
+//               </button>
+//             </div>
+//           </div>
+//         </form>
+//       </div>
+//     </div>
+//   );
+// };
+
+// export default AddProduct;

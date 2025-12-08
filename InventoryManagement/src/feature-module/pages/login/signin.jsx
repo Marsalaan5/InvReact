@@ -391,10 +391,10 @@ const Signin = () => {
 
   const { isAuthenticated } = useSelector((state) => state.auth);
 
-  // ✅ Redirect if already authenticated
+  //  Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated) {
-      console.log('✅ Already authenticated, redirecting to dashboard');
+      console.log(' Already authenticated, redirecting to dashboard');
       navigate(route.dashboard);
     }
   }, [isAuthenticated, navigate, route.dashboard]);
@@ -409,12 +409,12 @@ const Signin = () => {
 
     try {
       setLoading(true);
-      console.log('🔐 Attempting login...');
+      console.log(' Attempting login...');
       
       const { data } = await AuthService.login({ email, password });
-      console.log('📥 Login API response:', data);
+      console.log(' Login API response:', data);
 
-      // ✅ Prepare user data
+      //  Prepare user data
       const userData = {
         name: data.user.name,
         role: data.user.role,
@@ -425,29 +425,29 @@ const Signin = () => {
 
       const storage = rememberMe ? localStorage : sessionStorage;
       
-      // ✅ Store all auth data
+      //  Store all auth data
       storage.setItem("token", data.token);
       storage.setItem("user", JSON.stringify(userData));
       storage.setItem("user_id", data.user.id.toString());
       
-      console.log(`✅ Stored in ${rememberMe ? 'localStorage' : 'sessionStorage'}`);
+      console.log(`Stored in ${rememberMe ? 'localStorage' : 'sessionStorage'}`);
       console.log('  - Token:', data.token.substring(0, 20) + '...');
       console.log('  - User ID:', data.user.id);
       console.log('  - User Name:', userData.name);
 
-      // ✅ Update Redux state
+      //  Update Redux state
       dispatch(loginSuccess({
         user: userData,
         token: data.token
       }));
 
-      console.log('✅ Redux state updated');
-      console.log('🚀 Navigating to dashboard...');
+      console.log(' Redux state updated');
+      console.log(' Navigating to dashboard...');
       
       // Navigation will happen via useEffect
       
     } catch (err) {
-      console.error('❌ Login error:', err);
+      console.error(' Login error:', err);
       setError(err.response?.data?.message || "Invalid email or password");
     } finally {
       setLoading(false);
@@ -471,7 +471,7 @@ const Signin = () => {
 
                 <div className="login-userheading">
                   <h3>Sign In</h3>
-                  <h4>Access the DreamsPOS panel using your email and passcode.</h4>
+                  <h4>Access the StockWISE panel using your email and passcode.</h4>
                 </div>
 
                 <div className="form-login mb-3">

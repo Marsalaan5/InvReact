@@ -833,6 +833,10 @@
 
 // export default Permissions;
 
+
+
+
+
 // src/feature-module/usermanagement/Permissions.jsx
 import React, { useState, useEffect } from 'react';
 import ImageWithBasePath from '../../core/img/imagewithbasebath';

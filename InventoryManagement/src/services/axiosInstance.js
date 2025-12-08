@@ -87,7 +87,7 @@ const axiosInstance = axios.create({
   },
 });
 
-// ✅ Request Interceptor - Add token to every request
+//  Request Interceptor - Add token to every request
 axiosInstance.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token') || sessionStorage.getItem('token');
@@ -105,17 +105,17 @@ axiosInstance.interceptors.request.use(
   }
 );
 
-// ✅ Response Interceptor - Handle 401 errors
+//  Response Interceptor - Handle 401 errors
 axiosInstance.interceptors.response.use(
   (response) => {
-    console.log('✅ API Response:', response.config.url, response.status);
+    console.log(' API Response:', response.config.url, response.status);
     return response;
   },
   (error) => {
-    console.error('❌ API Error:', error.response?.status, error.config?.url);
+    console.error(' API Error:', error.response?.status, error.config?.url);
     
     if (error.response?.status === 401) {
-      console.warn('🔒 Unauthorized - Clearing auth and redirecting to login');
+      console.warn(' Unauthorized - Clearing auth and redirecting to login');
       
       // Clear all storage
       localStorage.removeItem('token');

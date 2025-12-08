@@ -5,12 +5,27 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
 import crypto from 'crypto';
+import { validate } from 'uuid';
+import { signupSchema } from '../validator/validator.js';
+// import { signupSchema,signinSchema,forgotPasswordSchema,resetPasswordSchema } from '../validator/validator.js';
 
 dotenv.config();
 
 
+// const validate = (schema,data,res) =>{
+//     const {error} = schema.validate(data)
+//     if(error){
+//         return res.status(400).json({message:error.details[0].message})
+//     }
+// }
+
+
 // Signup
 export const signup = async (req, res) => {
+
+    // const validationError = validate(signupSchema,req.body,res)
+    // if(validationError) return;
+
     const { name, email, password } = req.body;
 
     try {
@@ -21,7 +36,7 @@ export const signup = async (req, res) => {
     
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        // Insert new user into the database
+      
         await pool.execute(
             "INSERT INTO users (name, email, password, role_id) VALUES (?,?,?,?)",
             [name, email, hashedPassword, 3] 
@@ -30,7 +45,7 @@ export const signup = async (req, res) => {
         res.json({ message: "User registered successfully" });
     } catch (err) {
         res.status(500).json({ message: err.message });
-    }
+    } 
 };
 
 
@@ -73,12 +88,17 @@ export const signup = async (req, res) => {
 
 
 // Signin
-// Fixed Signin with role and permissions
+
 export const signin = async (req, res) => {
+
+    // const validationError = validate(signinSchema,req.body,res)
+    // if(validationError) return;
+
+
     const { email, password } = req.body;
 
     try {
-        // Get user with role information and permissions
+    
         const [user] = await pool.execute(`
             SELECT 
                 u.id, 
@@ -103,7 +123,7 @@ export const signin = async (req, res) => {
         console.log("User role:", user[0].role_name);
         console.log("User permissions (raw):", user[0].permissions);
 
-        // Check if user is active
+    
         if (user[0].status && user[0].status.trim().toLowerCase() === 'inactive') {
             console.log("User is inactive.");
             return res.status(403).json({ 
@@ -111,7 +131,7 @@ export const signin = async (req, res) => {
             });
         }
 
-        // Verify password
+        
         const validPassword = await bcrypt.compare(password, user[0].password);
         if (!validPassword) {
             return res.status(400).json({ message: "Invalid password" });
@@ -156,7 +176,7 @@ export const signin = async (req, res) => {
                 role: user[0].role_name,
                 roleName: user[0].role_name,
                 status: user[0].status,
-                permissions: permissions // This is the key addition!
+                permissions: permissions
             }
         });
 
@@ -172,6 +192,10 @@ export const signin = async (req, res) => {
 
 // Forgot Password
 export const forgotPassword = async (req, res) => {
+
+    // const validationError = validate(forgotPasswordSchema,req.body,res)
+    // if (validationError) return;
+
     const { email } = req.body;
     try {
         const [user] = await pool.execute("SELECT * FROM users WHERE email = ?", [email]);
@@ -186,8 +210,13 @@ export const forgotPassword = async (req, res) => {
     }
 };
 
+
 // Reset Password
 export const resetPassword = async (req, res) => {
+
+    // const validationError = validate(resetPasswordSchema,req.body,res)
+    // if(validationError) return;
+
     const { resetToken, newPassword } = req.body;
 
     try {

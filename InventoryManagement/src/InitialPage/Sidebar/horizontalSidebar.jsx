@@ -1610,7 +1610,7 @@ const HorizontalSidebar = () => {
               onClick={() => level === 0 ? toggleTopLevelMenu(menuKey) : toggleMenu(menuKey)}
               className={`${isOpen ? 'subdrop' : ''} ${item.icon ? 'has-icon' : ''}`}
             >
-              {/* ✅ Show icon at all levels */}
+              {/*  Show icon at all levels */}
               {item.icon && renderIcon(item.icon)}
               <span>{item.label || item.title}</span>
               <span className={`menu-arrow ${level > 0 ? 'inside-submenu' : ''} ${level > 1 ? 'inside-submenu-two' : ''}`} />
@@ -1628,7 +1628,7 @@ const HorizontalSidebar = () => {
             to={item.path || '#'}
             className={`${isActive ? 'active' : ''} ${item.icon ? 'has-icon' : ''}`}
           >
-            {/* ✅ Show icon at all levels */}
+            {/*  Show icon at all levels */}
             {item.icon && renderIcon(item.icon)}
             <span>{item.label || item.title}</span>
           </Link>

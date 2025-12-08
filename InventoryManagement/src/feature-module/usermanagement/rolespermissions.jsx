@@ -1444,7 +1444,7 @@ import Swal from "sweetalert2";
 import Table from "../../core/pagination/datatable";
 import AddRole from "../../core/modals/usermanagement/addrole";
 import EditRole from "../../core/modals/usermanagement/editrole";
-import AuthService from "../../services/authService";
+import AuthService from "../../services/authService.js";
 import { all_routes } from "../../Router/all_routes";
 // import { usePermissions } from "../../hooks/usePermission.js";
 import { RoleGuard } from "../../guard/RoleGuard.jsx";

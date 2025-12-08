@@ -232,6 +232,7 @@ const PrintBarcode = () => {
                                             </td>
                                             <td>PT003</td>
                                             <td>TEUIU7</td>
+                                            
                                             <td>
                                             <div className="product-quantity">
                                             <span className="quantity-btn" onClick={handleDecrement1}>
