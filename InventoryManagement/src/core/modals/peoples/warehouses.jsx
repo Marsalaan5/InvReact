@@ -685,13 +685,6 @@
 
 // export default WareHouses;
 
-
-
-
-
-
-
-
 // import React, { useState, useEffect } from "react";
 // import { Link } from "react-router-dom";
 // import { Filter, Sliders } from "react-feather";
@@ -709,13 +702,13 @@
 //   const [users, setUsers] = useState([]);
 //   // const [countries, setCountries] = useState([]);
 //   // const [storeNames, setStoreNames] = useState([]);
-  
+
 //   // Filter states
 //   const [searchTerm, setSearchTerm] = useState("");
 //   // const [selectedStore, setSelectedStore] = useState(null);
 //   // const [selectedCountry, setSelectedCountry] = useState(null);
 //   const [sortBy, setSortBy] = useState(null);
-  
+
 //   // Form states
 //   const [formData, setFormData] = useState({
 //     title: "",
@@ -737,8 +730,7 @@
 //   const fetchWarehouses = async () => {
 //     try {
 //       setLoading(true);
-    
-      
+
 //       const response = await AuthService.getWarehouse();
 //       setWarehouses(response.data.data);
 //     } catch (error) {
@@ -764,7 +756,7 @@
 //   //       WarehouseService.getCountries(),
 //   //       WarehouseService.getStoreNames()
 //   //     ]);
-      
+
 //   //     setCountries(
 //   //       countriesRes.data.data.map(c => ({ label: c, value: c }))
 //   //     );
@@ -864,9 +856,9 @@
 //     { value: "date_asc", label: "Sort by Date (Oldest)" },
 //   ];
 
-//   const userOptions = users.map(u => ({ 
-//     label: u.name, 
-//     value: u.id 
+//   const userOptions = users.map(u => ({
+//     label: u.name,
+//     value: u.id
 //   }));
 
 //   // const countryOptions = [
@@ -942,8 +934,7 @@
 //             >
 //               <div className="card-body pb-0">
 //                 <div className="row">
-              
-                 
+
 //                   <div className="col-lg-3 col-sm-6 col-12 ms-auto">
 //                     <div className="input-blocks">
 //                       <Link className="btn btn-filters ms-auto" onClick={handleSearch}>
@@ -964,8 +955,8 @@
 //                     <tr>
 //                       <th className="no-sort">
 //                         <label className="checkboxs">
-//                           <input 
-//                             type="checkbox" 
+//                           <input
+//                             type="checkbox"
 //                             id="select-all"
 //                             checked={selectedIds.length === warehouses.length && warehouses.length > 0}
 //                             onChange={handleSelectAll}
@@ -995,7 +986,7 @@
 //                         <tr key={warehouse.id}>
 //                           <td>
 //                             <label className="checkboxs">
-//                               <input 
+//                               <input
 //                                 type="checkbox"
 //                                 checked={selectedIds.includes(warehouse.id)}
 //                                 onChange={() => handleSelectOne(warehouse.id)}
@@ -1045,8 +1036,8 @@
 //                               >
 //                                 <i data-feather="edit" className="feather-edit" />
 //                               </Link>
-//                               <Link 
-//                                 className="confirm-text p-2" 
+//                               <Link
+//                                 className="confirm-text p-2"
 //                                 to="#"
 //                                 onClick={() => handleDelete(warehouse.id)}
 //                               >
@@ -1099,8 +1090,8 @@
 //                       <div className="col-lg-6">
 //                         <div className="mb-3">
 //                           <label className="form-label">Title *</label>
-//                           <input 
-//                             type="text" 
+//                           <input
+//                             type="text"
 //                             className="form-control"
 //                             name="title"
 //                             value={formData.title}
@@ -1112,8 +1103,8 @@
 //                       <div className="col-lg-6">
 //                         <div className="input-blocks">
 //                           <label>Contact Person</label>
-//                           <Select 
-//                             className="select" 
+//                           <Select
+//                             className="select"
 //                             options={userOptions}
 //                             value={userOptions.find(u => u.value === formData.contact_person_id)}
 //                             onChange={(option) => setFormData({...formData, contact_person_id: option?.value || ""})}
@@ -1133,12 +1124,12 @@
 //                           />
 //                         </div>
 //                       </div>
-                    
+
 //                       <div className="col-lg-12">
 //                         <div className="mb-3">
 //                           <label className="form-label">Email</label>
-//                           <input 
-//                             type="email" 
+//                           <input
+//                             type="email"
 //                             className="form-control"
 //                             name="email"
 //                             value={formData.email_1}
@@ -1157,8 +1148,8 @@
 //                       <div className="col-lg-12">
 //                         <div className="mb-3">
 //                           <label className="form-label">Address 1</label>
-//                           <input 
-//                             type="text" 
+//                           <input
+//                             type="text"
 //                             className="form-control"
 //                             name="address_1"
 //                             value={formData.address}
@@ -1166,11 +1157,7 @@
 //                           />
 //                         </div>
 //                       </div>
-                    
-                      
-                    
-                    
-                     
+
 //                     </div>
 //                     <div className="modal-footer-btn">
 //                       <button
@@ -1198,8 +1185,6 @@
 
 // export default WareHouses;
 
-
-
 // import React, { useState, useEffect } from "react";
 // import { Link } from "react-router-dom";
 // import { Filter, Sliders } from "react-feather";
@@ -1208,9 +1193,7 @@
 // import Breadcrumbs from "../../breadcrumbs";
 // import AuthService from "../../../services/authService";
 
-
 // const WareHouses = () => {
-
 
 //   const [isFilterVisible, setIsFilterVisible] = useState(false);
 //   const [warehouses, setWarehouses] = useState([]);
@@ -1410,8 +1393,7 @@
 //             >
 //               <div className="card-body pb-0">
 //                 <div className="row">
-              
-                 
+
 //                   <div className="col-lg-3 col-sm-6 col-12 ms-auto">
 //                     <div className="input-blocks">
 //                       <Link className="btn btn-filters ms-auto" onClick={handleSearch}>
@@ -1432,8 +1414,8 @@
 //                     <tr>
 //                       <th className="no-sort">
 //                         <label className="checkboxs">
-//                           <input 
-//                             type="checkbox" 
+//                           <input
+//                             type="checkbox"
 //                             id="select-all"
 //                             checked={selectedIds.length === warehouses.length && warehouses.length > 0}
 //                             onChange={handleSelectAll}
@@ -1463,7 +1445,7 @@
 //                         <tr key={warehouse.id}>
 //                           <td>
 //                             <label className="checkboxs">
-//                               <input 
+//                               <input
 //                                 type="checkbox"
 //                                 checked={selectedIds.includes(warehouse.id)}
 //                                 onChange={() => handleSelectOne(warehouse.id)}
@@ -1513,8 +1495,8 @@
 //                               >
 //                                 <i data-feather="edit" className="feather-edit" />
 //                               </Link>
-//                               <Link 
-//                                 className="confirm-text p-2" 
+//                               <Link
+//                                 className="confirm-text p-2"
 //                                 to="#"
 //                                 onClick={() => handleDelete(warehouse.id)}
 //                               >
@@ -1554,7 +1536,7 @@
 //                   </button>
 //                 </div>
 //                 <div className="modal-body custom-modal-body">
-               
+
 //                  <form onSubmit={handleSubmit}>
 //   <div className="modal-title-head">
 //     <h6>
@@ -1568,11 +1550,11 @@
 //     <div className="col-lg-6">
 //       <div className="mb-3">
 //         <label className="form-label">Title *</label>
-//         <input 
-//           type="text" 
+//         <input
+//           type="text"
 //           className="form-control"
 //           name="wh_title"
-//           value={formData.wh_title} 
+//           value={formData.wh_title}
 //           onChange={handleInputChange}
 //           required
 //         />
@@ -1581,8 +1563,8 @@
 //     <div className="col-lg-6">
 //       <div className="input-blocks">
 //         <label>Contact Person</label>
-//         <Select 
-//           className="select" 
+//         <Select
+//           className="select"
 //           options={userOptions}
 //           value={userOptions.find(u => u.value === formData.user_id)}
 //           onChange={(option) => setFormData({...formData, user_id: option?.value || ""})}
@@ -1596,21 +1578,21 @@
 //         <input
 //           type="text"
 //           className="form-control"
-//           name="phone_1" 
-//           value={formData.phone_1} 
+//           name="phone_1"
+//           value={formData.phone_1}
 //           onChange={handleInputChange}
 //         />
 //       </div>
 //     </div>
-  
+
 //     <div className="col-lg-12">
 //       <div className="mb-3">
 //         <label className="form-label">Email</label>
-//         <input 
-//           type="email" 
+//         <input
+//           type="email"
 //           className="form-control"
-//           name="email_1" 
-//           value={formData.email_1}  
+//           name="email_1"
+//           value={formData.email_1}
 //           onChange={handleInputChange}
 //         />
 //       </div>
@@ -1626,8 +1608,8 @@
 //     <div className="col-lg-12">
 //       <div className="mb-3">
 //         <label className="form-label">Address</label>
-//         <input 
-//           type="text" 
+//         <input
+//           type="text"
 //           className="form-control"
 //           name="address"  // This should match formData
 //           value={formData.address}  // This should match formData
@@ -1651,7 +1633,6 @@
 //   </div>
 // </form>
 
-
 //                 </div>
 //               </div>
 //             </div>
@@ -1662,10 +1643,7 @@
 //   );
 // };
 
-
 // export default WareHouses;
-
-
 
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
@@ -1704,9 +1682,10 @@ const WareHouses = () => {
       const params = {};
       if (searchTerm) params.searchTerm = searchTerm;
       if (sortBy) params.sortBy = sortBy.value;
-      
+
       const response = await AuthService.getWarehouse(params);
       setWarehouses(response.data.data || []);
+      console.log(response.data);
     } catch (error) {
       console.error("Error fetching warehouses:", error);
       Swal.fire({
@@ -1737,9 +1716,62 @@ const WareHouses = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  // const handleSubmit = async (e) => {
+  //   e.preventDefault();
+
+  //   try {
+  //     if (editingId) {
+  //       await AuthService.updateWarehouseById(editingId, formData);
+  //       Swal.fire({
+  //         icon: "success",
+  //         title: "Success",
+  //         text: "Warehouse updated successfully",
+  //         timer: 2000,
+  //         showConfirmButton: false,
+  //       });
+  //     } else {
+  //       await AuthService.createWarehouse(formData);
+  //       Swal.fire({
+  //         icon: "success",
+  //         title: "Success",
+  //         text: "Warehouse created successfully",
+  //         timer: 2000,
+  //         showConfirmButton: false,
+  //       });
+  //     }
+
+  //     // Close modal
+  //     const modalElement = document.getElementById(editingId ? "edit-units" : "add-units");
+  //     const modal = window.bootstrap.Modal.getInstance(modalElement);
+  //     if (modal) {
+  //       modal.hide();
+  //     }
+
+  //     // Remove backdrop manually if it persists
+  //     const backdrop = document.querySelector('.modal-backdrop');
+  //     if (backdrop) {
+  //       backdrop.remove();
+  //     }
+  //     document.body.classList.remove('modal-open');
+  //     document.body.style.removeProperty('overflow');
+  //     document.body.style.removeProperty('padding-right');
+
+  //     resetForm();
+  //     fetchWarehouses();
+  //   } catch (error) {
+  //     console.error("Error saving warehouse:", error);
+  //     Swal.fire({
+  //       icon: "error",
+  //       title: "Error",
+  //       text: error.response?.data?.message || "Failed to save warehouse",
+  //       timer: 3000,
+  //     });
+  //   }
+  // };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     try {
       if (editingId) {
         await AuthService.updateWarehouseById(editingId, formData);
@@ -1760,24 +1792,28 @@ const WareHouses = () => {
           showConfirmButton: false,
         });
       }
-      
-      // Close modal
-      const modalElement = document.getElementById(editingId ? "edit-units" : "add-units");
-      const modal = window.bootstrap.Modal.getInstance(modalElement);
+
+      // Reset form
+      resetForm();
+
+      // Hide modal manually (like AddUsers)
+      const modalId = editingId ? "edit-units" : "add-units";
+      const modal = document.getElementById(modalId);
+      const backdrop = document.querySelector(".modal-backdrop");
+
       if (modal) {
-        modal.hide();
+        modal.classList.remove("show");
+        modal.style.display = "none";
+        document.body.classList.remove("modal-open");
+        document.body.style.removeProperty("overflow");
+        document.body.style.removeProperty("padding-right");
       }
-      
-      // Remove backdrop manually if it persists
-      const backdrop = document.querySelector('.modal-backdrop');
+
       if (backdrop) {
         backdrop.remove();
       }
-      document.body.classList.remove('modal-open');
-      document.body.style.removeProperty('overflow');
-      document.body.style.removeProperty('padding-right');
-      
-      resetForm();
+
+      // Refresh warehouses
       fetchWarehouses();
     } catch (error) {
       console.error("Error saving warehouse:", error);
@@ -1904,20 +1940,29 @@ const WareHouses = () => {
                     onChange={(e) => setSearchTerm(e.target.value)}
                     onKeyPress={(e) => e.key === "Enter" && handleSearch()}
                   />
-                  <Link to="#" className="btn btn-searchset" onClick={handleSearch}>
+                  <Link
+                    to="#"
+                    className="btn btn-searchset"
+                    onClick={handleSearch}
+                  >
                     <i data-feather="search" className="feather-search" />
                   </Link>
                 </div>
               </div>
               <div className="search-path">
                 <Link
-                  className={`btn btn-filter ${isFilterVisible ? "setclose" : ""}`}
+                  className={`btn btn-filter ${
+                    isFilterVisible ? "setclose" : ""
+                  }`}
                   id="filter_search"
                   onClick={toggleFilterVisibility}
                 >
                   <Filter className="filter-icon" />
                   <span>
-                    <ImageWithBasePath src="assets/img/icons/closes.svg" alt="img" />
+                    <ImageWithBasePath
+                      src="assets/img/icons/closes.svg"
+                      alt="img"
+                    />
                   </span>
                 </Link>
               </div>
@@ -1946,8 +1991,12 @@ const WareHouses = () => {
                 <div className="row">
                   <div className="col-lg-3 col-sm-6 col-12 ms-auto">
                     <div className="input-blocks">
-                      <Link className="btn btn-filters ms-auto" onClick={handleSearch}>
-                        <i data-feather="search" className="feather-search" /> Search
+                      <Link
+                        className="btn btn-filters ms-auto"
+                        onClick={handleSearch}
+                      >
+                        <i data-feather="search" className="feather-search" />{" "}
+                        Search
                       </Link>
                     </div>
                   </div>
@@ -1967,7 +2016,10 @@ const WareHouses = () => {
                           <input
                             type="checkbox"
                             id="select-all"
-                            checked={selectedIds.length === warehouses.length && warehouses.length > 0}
+                            checked={
+                              selectedIds.length === warehouses.length &&
+                              warehouses.length > 0
+                            }
                             onChange={handleSelectAll}
                           />
                           <span className="checkmarks" />
@@ -2012,27 +2064,53 @@ const WareHouses = () => {
                             <div className="userimgname">
                               <Link to="#" className="product-img">
                                 <ImageWithBasePath
-                                  src={warehouse.contact_person_image || "assets/img/users/user-08.jpg"}
+                                  src={
+                                    warehouse.contact_person_image ||
+                                    "assets/img/users/user-08.jpg"
+                                  }
                                   alt="product"
                                 />
                               </Link>
-                              <Link to="#">{warehouse.contact_person_name || "N/A"}</Link>
+                              <Link to="#">
+                                {warehouse.contact_person_name || "N/A"}
+                              </Link>
                             </div>
                           </td>
                           <td>{warehouse.phone || "N/A"}</td>
                           <td>{warehouse.email || "N/A"}</td>
-                          <td>{warehouse.address || "N/A"}</td>
+                          {/* <td>{warehouse.address || "N/A"}</td> */}
+                          <td
+                            style={{
+                              maxWidth: "200px",
+                              whiteSpace: "nowrap",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                            }}
+                          >
+                            <span title={warehouse.address || "N/A"}>
+                              {warehouse.address || "N/A"}
+                            </span>
+                          </td>
+
                           <td>{warehouse.total_products}</td>
                           {/* <td>{warehouse.total_stock}</td> */}
                           <td>{warehouse.total_qty}</td>
-                          <td>{new Date(warehouse.created_at).toLocaleDateString()}</td>
+                          <td>
+                            {new Date(
+                              warehouse.created_at
+                            ).toLocaleDateString()}
+                          </td>
                           <td>
                             <span
                               className={`badge ${
-                                warehouse.status === "active" ? "badge-linesuccess" : "badge-linedanger"
+                                warehouse.status === "active"
+                                  ? "badge-linesuccess"
+                                  : "badge-linedanger"
                               }`}
                             >
-                              {warehouse.status === "active" ? "Active" : "Inactive"}
+                              {warehouse.status === "active"
+                                ? "Active"
+                                : "Inactive"}
                             </span>
                           </td>
                           <td className="action-table-data">
@@ -2053,10 +2131,20 @@ const WareHouses = () => {
                                 data-bs-toggle="modal"
                                 data-bs-target="#edit-units"
                               >
-                                <i data-feather="edit" className="feather-edit" />
+                                <i
+                                  data-feather="edit"
+                                  className="feather-edit"
+                                />
                               </Link>
-                              <Link className="confirm-text p-2" to="#" onClick={() => handleDelete(warehouse.id)}>
-                                <i data-feather="trash-2" className="feather-trash-2" />
+                              <Link
+                                className="confirm-text p-2"
+                                to="#"
+                                onClick={() => handleDelete(warehouse.id)}
+                              >
+                                <i
+                                  data-feather="trash-2"
+                                  className="feather-trash-2"
+                                />
                               </Link>
                             </div>
                           </td>
@@ -2121,8 +2209,15 @@ const WareHouses = () => {
                           <Select
                             className="select"
                             options={userOptions}
-                            value={userOptions.find((u) => u.value === formData.user_id)}
-                            onChange={(option) => setFormData({ ...formData, user_id: option?.value || "" })}
+                            value={userOptions.find(
+                              (u) => u.value === formData.user_id
+                            )}
+                            onChange={(option) =>
+                              setFormData({
+                                ...formData,
+                                user_id: option?.value || "",
+                              })
+                            }
                             isClearable
                             required
                           />
@@ -2250,8 +2345,15 @@ const WareHouses = () => {
                           <Select
                             className="select"
                             options={userOptions}
-                            value={userOptions.find((u) => u.value === formData.user_id)}
-                            onChange={(option) => setFormData({ ...formData, user_id: option?.value || "" })}
+                            value={userOptions.find(
+                              (u) => u.value === formData.user_id
+                            )}
+                            onChange={(option) =>
+                              setFormData({
+                                ...formData,
+                                user_id: option?.value || "",
+                              })
+                            }
                             isClearable
                             required
                           />

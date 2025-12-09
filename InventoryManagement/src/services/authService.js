@@ -147,6 +147,14 @@ const AuthService = {
 
 
 
+  // getArticleProfile: () => axiosInstance.get(`/auth/articleProfile`),
+  // getArticleProfileById: (id) => axiosInstance.get(`/auth/articleProfile/${id}`),
+  // createArticleProfile: (data) => axiosInstance.post(`/auth/articleProfile/create`, data),
+  // updateArticleProfile: (id,data) => axiosInstance.post(`/auth/articleProfile/${id}`, data),
+  // deleteArticleProfile: (data) => axiosInstance.post(`/auth/articleProfile`, data),
+
+
+
   getWarehouse: () => axiosInstance.get(`/auth/warehouse`),
   getWarehouseById: (id) => axiosInstance.get(`/auth/warehouse/${id}`),
   getWarehouseEmail: (idx) => axiosInstance.get(`/auth/warehouse/unique/email/${idx}`),

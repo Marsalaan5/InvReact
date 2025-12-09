@@ -696,7 +696,7 @@ const AddUsers = ({ onSuccess, roles, currentUserRole }) => {
     const [loading, setLoading] = useState(false);
     const [errors, setErrors] = useState({});
 
-    // ✅ Use utility function to filter roles
+    //  Use utility function to filter roles
     const filteredRoles = getFilteredRoles(roles, currentUserRole);
 
     const roleOptions = [
@@ -706,7 +706,7 @@ const AddUsers = ({ onSuccess, roles, currentUserRole }) => {
             label: role.name
         }))
     ];
-
+ 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));

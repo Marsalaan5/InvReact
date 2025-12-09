@@ -184,8 +184,9 @@ export const getAllWarehouses = async (req, res) => {
   try {
     const { searchTerm, sortBy } = req.query;
 
-    let query = `
-      SELECT 
+
+	let query = `
+  SELECT 
     w.id,
     w.title AS name,
     w.phone_1 AS phone,
@@ -196,39 +197,39 @@ export const getAllWarehouses = async (req, res) => {
     w.updated_at,
     u.name AS contact_person_name,
     COALESCE(COUNT(DISTINCT p.id), 0) AS total_products
-FROM warehouse w
-LEFT JOIN users u ON w.contact_person_id = u.id
-LEFT JOIN product p ON p.warehouse_id = w.id
-GROUP BY w.id, w.title, w.phone_1, w.email_1, w.address, w.status, w.created_at, w.updated_at, u.name
-HAVING total_products > 0  -- Example: Only show warehouses with products
-ORDER BY w.created_at DESC
+  FROM warehouse w
+  LEFT JOIN users u ON w.contact_person_id = u.id
+  LEFT JOIN product p ON p.warehouse_id = w.id
+`;
 
-    `;
+let whereConditions = [];
+let queryParams = [];
 
-    let whereConditions = [];
-    let queryParams = [];
+if (searchTerm) {
+    whereConditions.push(`(w.title LIKE ? OR w.phone_1 LIKE ? OR w.email_1 LIKE ? OR w.address LIKE ?)`);
+    const searchPattern = `%${searchTerm}%`;
+    queryParams.push(searchPattern, searchPattern, searchPattern, searchPattern);
+}
 
-    if (searchTerm) {
-      whereConditions.push(`(w.title LIKE ? OR w.phone_1 LIKE ? OR w.email_1 LIKE ? OR w.address LIKE ?)`);
-      const searchPattern = `%${searchTerm}%`;
-      queryParams.push(searchPattern, searchPattern, searchPattern, searchPattern);
-    }
+if (whereConditions.length > 0) {
+    query += ` WHERE ${whereConditions.join(' AND ')}`;
+}
 
-    if (whereConditions.length > 0) {
-      query += ` WHERE ${whereConditions.join(' AND ')}`;
-    }
+// GROUP BY
+query += `
+  GROUP BY w.id, w.title, w.phone_1, w.email_1, w.address, w.status, w.created_at, w.updated_at, u.name
+`;
 
-    // Sorting logic
-    if (sortBy === 'date_desc') {
-      query += ` ORDER BY w.created_at DESC`;
-    } else if (sortBy === 'date_asc') {
-      query += ` ORDER BY w.created_at ASC`;
-    } else {
-      query += ` ORDER BY w.created_at DESC`; // Default sorting
-    }
+// HAVING
+query += ` HAVING total_products > 0`;
 
-    // Group by warehouse
-    query += ` GROUP BY w.id, w.title, w.phone_1, w.email_1, w.address, w.status, w.created_at, w.updated_at, u.name`;
+// ORDER BY
+if (sortBy === 'date_asc') {
+    query += ` ORDER BY w.created_at ASC`;
+} else {
+    query += ` ORDER BY w.created_at DESC`; // default
+}
+
 
     const warehouses = await do_ma_query(query, queryParams);
 
@@ -284,7 +285,7 @@ export const getWarehouseById = async (req, res) => {
 				w.status,
 				w.created_at,
 				w.updated_at,
-				u.name as contact_person_name,
+				u.name as contact_person_name
 				
 			FROM warehouse w
 			LEFT JOIN users u ON w.contact_person_id = u.id

@@ -44,6 +44,7 @@ const Breadcrumbs = (props) => {
   );
   if (
     location.pathname === "/product-list" ||
+    location.pathname === "/article-profile" ||
     location.pathname === "/stock-transfer"
   ) {
     addButton = (

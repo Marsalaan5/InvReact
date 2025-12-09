@@ -419,6 +419,9 @@
 
 // export default ProductList;
 
+
+
+
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import Select from "react-select";
@@ -449,6 +452,7 @@ const ProductList = () => {
 
   // State for products
   const [products, setProducts] = useState([]);
+    // const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isFilterVisible, setIsFilterVisible] = useState(false);
 
@@ -474,9 +478,27 @@ const ProductList = () => {
 
   // Fetch initial data
   useEffect(() => {
+    // fetchUsers();
     fetchProducts();
     fetchFilterOptions();
   }, [currentPage]);
+
+
+  //   const fetchUsers = async () => {
+  //   try {
+  //     const response = await AuthService.getUser();
+  //     setUsers(response.data.users || []);
+  //   } catch (error) {
+  //     console.error("Error fetching users:", error);
+  //   }
+  // };
+
+//   const getUserName = (userId) => {
+//   const user = users.find((u) => u.id === userId);
+//   return user ? user.name : "Unknown";
+// };
+
+
 
   // Fetch products from API
   const fetchProducts = async () => {
@@ -696,6 +718,9 @@ const ProductList = () => {
     return rangeWithDots;
   };
 
+
+    // const userOptions = users.map((u) => ({ label: u.name, value: u.id }));
+
   return (
     <div className="page-wrapper">
       <div className="content">
@@ -885,7 +910,7 @@ const ProductList = () => {
                       <th>Location</th>
                       <th>Quantity</th>
                       <th>Status</th>
-                      <th>Created By</th>
+                      {/* <th>Created By</th> */}
                       <th>Action</th>
                     </tr>
                   </thead>
@@ -898,7 +923,7 @@ const ProductList = () => {
                               to={`${route.productdetails}/${product.id}`}
                               className="product-img stock-img"
                             >
-                              <img
+                              {/* <img
                                 src={
                                   product.barcode
                                     ? `http://localhost:5000${product.barcode}`
@@ -910,7 +935,7 @@ const ProductList = () => {
                                   height: "40px",
                                   objectFit: "cover",
                                 }}
-                              />
+                              /> */}
                             </Link>
                             <Link to={`${route.productdetails}/${product.id}`}>
                               {product.title}
@@ -943,7 +968,7 @@ const ProductList = () => {
                             {product.status}
                           </span>
                         </td>
-                        <td>
+                        {/* <td>
                           <span className="userimgname">
                             <img
                               src={
@@ -958,9 +983,9 @@ const ProductList = () => {
                                 marginRight: "8px",
                               }}
                             />
-                            {product.created_by_name || "Unknown"}
+                            {getUserName(product.created_by)}
                           </span>
-                        </td>
+                        </td> */}
                         <td className="action-table-data">
                           <div className="edit-delete-action">
                             <Link
@@ -997,7 +1022,7 @@ const ProductList = () => {
               
                 <div className="col-sm-12 col-md-6">
                   <div className="dataTables_paginate paging_simple_numbers">
-                    <ul className="pagination justify-content-end">
+                    <ul className="pagination justify-content-end gap-2">
                       <li
                         className={`paginate_button page-item previous ${
                           currentPage === 1 ? "disabled" : ""

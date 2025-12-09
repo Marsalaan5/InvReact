@@ -1,59 +1,94 @@
-import React, { useState } from "react";
+import React, { useState,useEffect } from "react";
 import { Link } from "react-router-dom";
 import Select from "react-select";
 import { all_routes } from "../../Router/all_routes";
-import { DatePicker } from "antd";
+// import { DatePicker } from "antd";
 import Addunits from "../../core/modals/inventory/addunits";
 import AddCategory from "../../core/modals/inventory/addcategory";
 import AddBrand from "../../core/modals/addbrand";
 import {
   ArrowLeft,
-  Calendar,
+  // Calendar,
   ChevronDown,
   ChevronUp,
   Info,
-  LifeBuoy,
-  List,
+  // LifeBuoy,
+  // List,
   PlusCircle,
-  Trash2,
-  X,
+  // Trash2,
+  // X,
 } from "feather-icons-react/build/IconComponents";
 import { useDispatch, useSelector } from "react-redux";
 import { setToogleHeader } from "../../core/redux/action";
 import { OverlayTrigger, Tooltip } from "react-bootstrap";
-import ImageWithBasePath from "../../core/img/imagewithbasebath";
+import AuthService from "../../services/authService";
+// import ImageWithBasePath from "../../core/img/imagewithbasebath";
 
 const AddProduct = () => {
+  const [articleProfile,setArticleProfiles] = useState([])
+  const [warehouse,setWarehouse] = useState([])
+  const [productName,setProductName] = useState([])
+
   const route = all_routes;
   const dispatch = useDispatch();
 
   const data = useSelector((state) => state.toggle_header);
 
-  const [selectedDate, setSelectedDate] = useState(new Date());
-  const handleDateChange = (date) => {
-    setSelectedDate(date);
-  };
-  const [selectedDate1, setSelectedDate1] = useState(new Date());
-  const handleDateChange1 = (date) => {
-    setSelectedDate1(date);
-  };
+ 
+
+    useEffect(() => {
+      // fetchUsers();
+      fetchArticleProfile();
+      fetchWarehouse();
+    }, []);
+
   const renderCollapseTooltip = (props) => (
     <Tooltip id="refresh-tooltip" {...props}>
       Collapse
     </Tooltip>
   );
-  const store = [
-    { value: "choose", label: "Choose" },
-    { value: "thomas", label: "Thomas" },
-    { value: "rasmussen", label: "Rasmussen" },
-    { value: "fredJohn", label: "Fred John" },
-  ];
-  const warehouse = [
-    { value: "choose", label: "Choose" },
-    { value: "legendary", label: "Legendary" },
-    { value: "determined", label: "Determined" },
-    { value: "sincere", label: "Sincere" },
-  ];
+
+const fetchArticleProfile = async() => {
+  try {
+    const res = await AuthService.getArticleProfile();
+
+    const formatted = res.data.data.map(item => ({
+  value: item.id,
+  label: item.name
+}));
+
+    setArticleProfiles(formatted)
+  } catch (error) {
+    console.error("Failed to load Article Profile",error)
+  }
+}
+
+const fetchWarehouse = async() =>{
+  try {
+    const res = await AuthService.getWarehouse();
+   const formatted = res.data.data.map(item => ({
+  value: item.id,
+  label: item.name
+}));
+
+    setWarehouse(formatted)
+  } catch (error) {
+    console.error("Failed to load Warehouses")
+  }
+}
+
+  // const article = [
+  //   { value: "choose", label: "Choose" },
+  //   { value: "thomas", label: "Thomas" },
+  //   { value: "rasmussen", label: "Rasmussen" },
+  //   { value: "fredJohn", label: "Fred John" },
+  // ];
+  // const warehouse = [
+  //   { value: "choose", label: "Choose" },
+  //   { value: "legendary", label: "Legendary" },
+  //   { value: "determined", label: "Determined" },
+  //   { value: "sincere", label: "Sincere" },
+  // ];
   const category = [
     { value: "choose", label: "Choose" },
     { value: "lenovo", label: "Lenovo" },
@@ -84,36 +119,13 @@ const AddProduct = () => {
     { value: "transactionalSelling", label: "Transactional selling" },
     { value: "solutionSelling", label: "Solution selling" },
   ];
-  const barcodesymbol = [
-    { value: "choose", label: "Choose" },
-    { value: "code34", label: "Code34" },
-    { value: "code35", label: "Code35" },
-    { value: "code36", label: "Code36" },
-  ];
-  const taxtype = [
-    { value: "exclusive", label: "Exclusive" },
-    { value: "salesTax", label: "Sales Tax" },
-  ];
-  const discounttype = [
-    { value: "choose", label: "Choose" },
-    { value: "percentage", label: "Percentage" },
-    { value: "cash", label: "Cash" },
-  ];
-  const discounttype1 = [
-    { value: "choose", label: "Choose" },
-    { value: "percentage", label: "Percentage" },
-    { value: "cash", label: "Cash" },
-  ];
-  const [isImageVisible, setIsImageVisible] = useState(true);
+  // const barcodesymbol = [
+  //   { value: "choose", label: "Choose" },
+  //   { value: "code34", label: "Code34" },
+  //   { value: "code35", label: "Code35" },
+  //   { value: "code36", label: "Code36" },
+  // ];
 
-  const handleRemoveProduct = () => {
-    setIsImageVisible(false);
-  };
-  const [isImageVisible1, setIsImageVisible1] = useState(true);
-
-  const handleRemoveProduct1 = () => {
-    setIsImageVisible1(false);
-  };
   return (
     <div className="page-wrapper">
       <div className="content">
@@ -189,10 +201,10 @@ const AddProduct = () => {
                       <div className="row">
                         <div className="col-lg-4 col-sm-6 col-12">
                           <div className="mb-3 add-product">
-                            <label className="form-label">Store</label>
+                            <label className="form-label">Article Profile</label>
                             <Select
                               className="select"
-                              options={store}
+                              options={articleProfile}
                               placeholder="Choose"
                             />
                           </div>
@@ -212,7 +224,12 @@ const AddProduct = () => {
                         <div className="col-lg-4 col-sm-6 col-12">
                           <div className="mb-3 add-product">
                             <label className="form-label">Product Name</label>
-                            <input type="text" className="form-control" />
+                           <input
+  type="text"
+  className="form-control"
+  value={productName}
+  onChange={(e) => setProductName(e.target.value)}
+/>
                           </div>
                         </div>
                         <div className="col-lg-4 col-sm-6 col-12">
@@ -221,7 +238,7 @@ const AddProduct = () => {
                             <input type="text" className="form-control" />
                           </div>
                         </div>
-                        <div className="col-lg-4 col-sm-6 col-12">
+                        {/* <div className="col-lg-4 col-sm-6 col-12">
                           <div className="input-blocks add-product list">
                             <label>SKU</label>
                             <input
@@ -236,7 +253,7 @@ const AddProduct = () => {
                               Generate Code
                             </Link>
                           </div>
-                        </div>
+                        </div> */}
                       </div>
                       <div className="addservice-info">
                         <div className="row">
@@ -339,7 +356,7 @@ const AddProduct = () => {
                         </div>
                       </div>
                       <div className="row">
-                        <div className="col-lg-6 col-sm-6 col-12">
+                        {/* <div className="col-lg-6 col-sm-6 col-12">
                           <div className="mb-3 add-product">
                             <label className="form-label">
                               Barcode Symbology
@@ -350,8 +367,8 @@ const AddProduct = () => {
                               placeholder="Choose"
                             />
                           </div>
-                        </div>
-                        <div className="col-lg-6 col-sm-6 col-12">
+                        </div> */}
+                        {/* <div className="col-lg-6 col-sm-6 col-12">
                           <div className="input-blocks add-product list">
                             <label>Item Code</label>
                             <input
@@ -366,7 +383,7 @@ const AddProduct = () => {
                               Generate Code
                             </Link>
                           </div>
-                        </div>
+                        </div> */}
                       </div>
                       {/* Editor */}
                       <div className="col-lg-12">
@@ -385,7 +402,7 @@ const AddProduct = () => {
                   </div>
                 </div>
               </div>
-              <div
+              {/* <div
                 className="accordion-card-one accordion"
                 id="accordionExample2"
               >
@@ -878,8 +895,8 @@ const AddProduct = () => {
                     </div>
                   </div>
                 </div>
-              </div>
-              <div
+              </div> */}
+              {/* <div
                 className="accordion-card-one accordion"
                 id="accordionExample4"
               >
@@ -987,7 +1004,7 @@ const AddProduct = () => {
                     </div>
                   </div>
                 </div>
-              </div>
+              </div> */}
             </div>
           </div>
           <div className="col-lg-12">

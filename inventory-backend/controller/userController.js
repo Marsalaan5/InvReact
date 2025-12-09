@@ -82,7 +82,7 @@ export const createUser = (req, res) => {
     }
 
     try {
-      // ✅ Fetch target role name from roles table
+      // Fetch target role name from roles table
       const [roleRow] = await pool.execute(
         "SELECT name FROM roles WHERE id = ?",
         [role_id]
@@ -98,7 +98,7 @@ export const createUser = (req, res) => {
       console.log('👤 Creator role:', creatorRoleName);
       console.log('🎯 Target role:', targetRoleName);
 
-      // ✅ Use utility function to check if creator can assign this role
+      // Use utility function to check if creator can assign this role
       if (!canManageRole(creatorRoleName, targetRoleName)) {
         return res.status(403).json({
           message: `Access denied. You can only assign roles lower than "${creatorRoleName}".`,
@@ -168,7 +168,7 @@ export const createUser = (req, res) => {
   });
 };
 
-// ============= GET CURRENT USER - ALREADY CORRECT ✅ =============
+// ============= GET CURRENT USER - ALREADY CORRECT  =============
 export const getCurrentUser = async (req, res) => {
   try {
     const userId = req.user.id;  // User ID from authenticated token
@@ -198,7 +198,7 @@ export const getCurrentUser = async (req, res) => {
   }
 };
 
-// ============= GET USERS - ALREADY CORRECT ✅ =============
+// ============= GET USERS - ALREADY CORRECT  =============
 export const getUser = async (req, res) => {
   const {
     page = 1,
@@ -310,7 +310,7 @@ export const getUser = async (req, res) => {
   }
 };
 
-// ============= GET USER BY ID - ALREADY CORRECT ✅ =============
+// ============= GET USER BY ID - ALREADY CORRECT  =============
 export const getUserById = async (req, res) => {
   const userId = req.params.id;
 

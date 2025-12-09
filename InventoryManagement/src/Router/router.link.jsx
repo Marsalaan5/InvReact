@@ -195,6 +195,7 @@ import WareHouses from "../core/modals/peoples/warehouses";
 import Coupons from "../feature-module/coupons/coupons";
 import { all_routes } from "./all_routes";
 import MenuManagement from "../feature-module/MenuManagement/MenuManagement";
+import ArticleProfile from "../feature-module/inventory/articleprofile";
 
 
 export const publicRoutes = [
@@ -1402,6 +1403,13 @@ export const publicRoutes = [
     path: "/menu-management",
     name: "Menu",
     element: <MenuManagement/>,
+    route: Route,
+  },
+  {
+    id: 117,
+    path: "/article-profile",
+    name: "articleProfile",
+    element: <ArticleProfile/>,
     route: Route,
   },
 
