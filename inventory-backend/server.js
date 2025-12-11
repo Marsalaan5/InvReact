@@ -26,6 +26,11 @@ import path from "path";
 import { fileURLToPath } from "url";
 import authRoutes from "./routes/auth.js";  
 
+import helmet from "helmet";
+import morgan from "morgan";
+import cron from "node-cron";
+import automationService from "./services/automationService.js";
+
 dotenv.config();
 
 const app = express();
@@ -33,7 +38,10 @@ const app = express();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+app.use(helmet()); 
 app.use(cors());
+app.use(morgan("dev"));  
 
 
 app.use(express.json());
@@ -47,6 +55,27 @@ app.use("/api/auth", authRoutes);
 app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', message: 'Server is running' });
 });
+
+
+
+cron.schedule("*/5 * * * *", async () => {
+  try {
+    console.log("⏲ Checking follow-ups...");
+    await automationService.checkFollowUps();
+  } catch (err) {
+    console.error("Follow-ups cron job failed:", err);
+  }
+});
+
+cron.schedule("*/10 * * * *", async () => {
+  try {
+    console.log("⏲ Checking escalations...");
+    await automationService.checkEscalations();
+  } catch (err) {
+    console.error("Escalations cron job failed:", err);
+  }
+});
+
 
 
 app.use((err, req, res, next) => {
@@ -68,3 +97,6 @@ app.listen(PORT, () => {
 });
 
 export default app;
+
+
+

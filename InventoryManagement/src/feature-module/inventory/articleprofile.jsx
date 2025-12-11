@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Filter, Sliders,Package } from "react-feather";
+import { Filter, Sliders } from "react-feather";
 import Select from "react-select";
 import Swal from "sweetalert2";
 import ImageWithBasePath from "../../core/img/imagewithbasebath";
@@ -75,7 +75,7 @@ const ArticleProfile = () => {
     e.preventDefault();
 
     try {
-      // Convert glossary_ids array to JSON string for storage
+    
       const submitData = {
         ...formData,
         glossary_ids: JSON.stringify(formData.glossary_ids),

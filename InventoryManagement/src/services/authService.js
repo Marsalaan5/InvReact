@@ -155,22 +155,34 @@ const AuthService = {
 
 
 
-  getWarehouse: () => axiosInstance.get(`/auth/warehouse`),
-  getWarehouseById: (id) => axiosInstance.get(`/auth/warehouse/${id}`),
-  getWarehouseEmail: (idx) => axiosInstance.get(`/auth/warehouse/unique/email/${idx}`),
-  getWarehouseTitle: (idx) => axiosInstance.get(`/auth/warehouse/unique/title/${idx}`),
-  getWarehousePhone: (idx) => axiosInstance.get(`/auth/warehouse/unique/phone/${idx}`),
-  createWarehouse: (data) => axiosInstance.post(`/auth/warehouse/create`, data),
-  updateWarehouseById: (id,data) => axiosInstance.post(`/auth/warehouse/${id}`, data),
-  deleteWarehouse: (data) => axiosInstance.post(`/auth/warehouse`, data),
+  getWarehouse: () => axiosInstance.get(`/auth/getWarehouse`),
+  getWarehouseById: (id) => axiosInstance.get(`/auth/getWarehouseById/${id}`),
+  getWarehouseEmail: (idx) => axiosInstance.get(`/auth/getWarehouseEmail/unique/email/${idx}`),
+  getWarehouseTitle: (idx) => axiosInstance.get(`/auth/getWarehouseTitle/unique/title/${idx}`),
+  getWarehousePhone: (idx) => axiosInstance.get(`/auth/getWarehousePhone/unique/phone/${idx}`),
+  createWarehouse: (data) => axiosInstance.post(`/auth/createWarehouse/create`, data),
+  updateWarehouseById: (id,data) => axiosInstance.put(`/auth/editWarehouseById/${id}`, data),
+  deleteWarehouse: (id) => axiosInstance.delete(`/auth/deleteWarehouseById/${id}`),
   
   
   //Prodcut
-  getProduct:() => axiosInstance.get(`/auth/product`),
-  getProductById: (id) => axiosInstance.get(`/auth/product/${id}`),
-  createProduct:(data) => axiosInstance.post(`/auth/product`,data),
-  updatProductById: (id,data) => axiosInstance.post(`/auth/product/${id}`, data),
-  deleteProduct: (data) => axiosInstance.post(`/auth/product`, data),
+  getProduct:() => axiosInstance.get(`/auth/getProduct`),
+  getProductById: (id) => axiosInstance.get(`/auth/getProductById/${id}`),
+  createProduct:(data) => axiosInstance.post(`/auth/createProduct`,data),
+  updatProductById: (id,data) => axiosInstance.put(`/auth/editProductById/${id}`, data),
+  deleteProduct: (id) => axiosInstance.delete(`/auth/deleteProductById/${id}`),
+
+
+
+  //Email Service
+  getEmails:() => axiosInstance.get(`/auth/email`),
+  getEmailById: (id) => axiosInstance.get(`/auth/email/${id}`),
+  sendEmails:(data) => axiosInstance.post(`/auth/email`,data),
+  markAsRead: (id,data) => axiosInstance.put(`/auth/email/${id}`, data),
+  toggleStar: (id,data) => axiosInstance.put(`/auth/email/${id}`, data),
+  deleteEmail: (data) => axiosInstance.post(`/auth/email`, data),
+  bulkAction: (data) => axiosInstance.post(`/auth/email`, data),
+  getTemplates: (data) => axiosInstance.get(`/auth/email`, data),
 };
 
 

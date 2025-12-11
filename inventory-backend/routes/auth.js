@@ -13,6 +13,10 @@ import {deleteMenu,getMenu,patchMenu,postMenu,postReorderMenu,putMenu,} from "..
 import { getProduct,getProductById,createProduct,updateProductById,deleteProduct } from "../controller/productController.js";
 import { createWh, getWhEmail, getWhPhone, getWhTitle,getAllWarehouses,getWarehouseById,deleteWarehouse,updateWarehouse } from "../controller/warehouseController.js";
 
+import { getEmails,getEmailById,markAsRead,toggleStar,deleteEmail,bulkAction,getTemplates, sendEmails, getNotifications, createNotification, createNotificationByEmail, deleteNotification, markAllNotificationsAsRead, markNotificationAsRead} from "../controller/emailController.js";
+
+
+
 const router = express.Router();
 
 
@@ -67,24 +71,47 @@ router.post("/menu/reorder",authenticateToken,checkPermission("Menu Management",
 
 //warehouse
 
-router.get("/warehouse",authenticateToken,checkPermission("Warehouse", "view"),getAllWarehouses);
-router.get("/warehouse/:id",authenticateToken,checkPermission("Warehouse", "view"),getWarehouseById);
-router.get("/warehouse/unique/email/:idx",authenticateToken,checkPermission("Warehouse", "view"),getWhEmail);
-router.get("/warehouse/unique/title/:idx",authenticateToken,checkPermission("Warehouse", "view"),getWhTitle);
+router.get("/getWarehouse",authenticateToken,checkPermission("Warehouse", "view"),getAllWarehouses);
+router.get("/getWarehouseById/:id",authenticateToken,checkPermission("Warehouse", "view"),getWarehouseById);
+router.get("/getWarehouseEmail/unique/email/:idx",authenticateToken,checkPermission("Warehouse", "view"),getWhEmail);
+router.get("/getWarehouseTitle/unique/title/:idx",authenticateToken,checkPermission("Warehouse", "view"),getWhTitle);
 
-router.get("/warehouse/unique/phone/:idx",authenticateToken,checkPermission("Warehouse", "view"),getWhPhone);
+router.get("/getWarehousePhone/unique/phone/:idx",authenticateToken,checkPermission("Warehouse", "view"),getWhPhone);
 
-router.post("/warehouse/create",authenticateToken,checkPermission("Warehouse", "create"),createWh);
+router.post("/createWarehouse/create",authenticateToken,checkPermission("Warehouse", "create"),createWh);
 
-router.put("/warehouse/:id",authenticateToken,checkPermission("Warehouse", "edit"),updateWarehouse);
-router.delete("/warehouse/:id",authenticateToken,checkPermission("Warehouse", "delete"),deleteWarehouse);
+router.put("/editWarehouseById/:id",authenticateToken,checkPermission("Warehouse", "edit"),updateWarehouse);
+router.delete("/deleteWarehouseById/:id",authenticateToken,checkPermission("Warehouse", "delete"),deleteWarehouse);
 
 
-router.get("/product",authenticateToken, getProduct)
-router.get("/product/:id",authenticateToken,checkPermission("Product", "view"),getProductById);
-router.post("/product",authenticateToken, createProduct)
-router.put("/product/:id",authenticateToken,checkPermission("Product", "edit"),updateProductById);
-router.delete("/product/:id",authenticateToken,checkPermission("Product", "delete"),deleteProduct);
+router.get("/getProduct",authenticateToken,checkPermission("Product", "view"), getProduct)
+router.get("/getProductById/:id",authenticateToken,checkPermission("Product", "view"),getProductById);
+router.post("/createProduct",authenticateToken,checkPermission("Product", "create"), createProduct)
+router.put("/editProductById/:id",authenticateToken,checkPermission("Product", "edit"),updateProductById);
+router.delete("/deleteProductById/:id",authenticateToken,checkPermission("Product", "delete"),deleteProduct);
+
+
+
+router.get("/notification",authenticateToken,checkPermission("Notification", "view"), getNotifications)
+// router.get("/notification/:id",authenticateToken,checkPermission("Notification", "view"),getNotificationById);
+router.post("/notification",authenticateToken,checkPermission("Notification", "create"), createNotification)
+router.post("/notification/:id",authenticateToken,checkPermission("Notification", "create"),createNotificationByEmail);
+router.put("/notification/:id",authenticateToken,checkPermission("Product", "edit"),markNotificationAsRead);
+router.put("/notification/:id",authenticateToken,checkPermission("Product", "edit"),markAllNotificationsAsRead);
+router.delete("/notification/:id",authenticateToken,checkPermission("Notification", "delete"),deleteNotification);
+
+
+
+
+router.get('/email',authenticateToken,checkPermission("Email", "view") ,getEmails);
+router.get('/email/:id',authenticateToken,checkPermission("Email", "view"), getEmailById);
+router.post('/email',authenticateToken,checkPermission("Email", "create"), sendEmails);
+router.post('/email/bulk/:action',authenticateToken,checkPermission("Email", "create"), bulkAction);
+router.put('/email/:id/read',authenticateToken,checkPermission("Email", "edit"), markAsRead);
+router.put('/email/:id/star',authenticateToken,checkPermission("Email", "edit"), toggleStar);
+router.delete('/email/:id',authenticateToken,checkPermission("Email", "delete"), deleteEmail);
+
+router.get('/templates/all',authenticateToken,checkPermission("templates", "view") ,getTemplates);
 
 
 
