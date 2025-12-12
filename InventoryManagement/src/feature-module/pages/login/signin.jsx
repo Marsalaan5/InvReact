@@ -462,11 +462,11 @@ const Signin = () => {
             <form onSubmit={handleLogin}>
               <div className="login-userset">
                 <div className="login-logo logo-normal">
-                  <ImageWithBasePath src="assets/img/logo.png" alt="DreamsPOS" />
+                  <ImageWithBasePath src="assets/img/logo.png" alt="StockWise" />
                 </div>
 
                 <Link to={route.dashboard} className="login-logo logo-white">
-                  <ImageWithBasePath src="assets/img/logo-white.png" alt="DreamsPOS" />
+                  <ImageWithBasePath src="assets/img/logo-white.png" alt="StockWise" />
                 </Link>
 
                 <div className="login-userheading">
@@ -596,7 +596,7 @@ const Signin = () => {
                 </div>
 
                 <div className="my-4 d-flex justify-content-center align-items-center copyright-text">
-                  <p>Copyright © 2023 DreamsPOS. All rights reserved</p>
+                  <p>Copyright © 2025 StockWise. All rights reserved</p>
                 </div>
               </div>
             </form>

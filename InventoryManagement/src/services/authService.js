@@ -168,6 +168,7 @@ const AuthService = {
   //Prodcut
   getProduct:() => axiosInstance.get(`/auth/getProduct`),
   getProductById: (id) => axiosInstance.get(`/auth/getProductById/${id}`),
+  getProductByScan:(code) => axiosInstance.get(`/auth/getProductByScan/scan/${code}`),
   createProduct:(data) => axiosInstance.post(`/auth/createProduct`,data),
   updatProductById: (id,data) => axiosInstance.put(`/auth/editProductById/${id}`, data),
   deleteProduct: (id) => axiosInstance.delete(`/auth/deleteProductById/${id}`),

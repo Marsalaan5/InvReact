@@ -1014,714 +1014,714 @@
 
 
 
-import React, { useState, useEffect } from "react";
-import { Link, useParams, useNavigate } from "react-router-dom";
-import Select from "react-select";
-import Swal from "sweetalert2";
-import withReactContent from "sweetalert2-react-content";
-import { all_routes } from "../../Router/all_routes";
-import Addunits from "../../core/modals/inventory/addunits";
-import AddCategory from "../../core/modals/inventory/addcategory";
-import AddBrand from "../../core/modals/addbrand";
-import {
-  ArrowLeft,
-  ChevronDown,
-  ChevronUp,
-  Info,
-  // PlusCircle,
-} from "feather-icons-react/build/IconComponents";
-import { useDispatch, useSelector } from "react-redux";
-import { setToogleHeader } from "../../core/redux/action";
-import { OverlayTrigger, Tooltip } from "react-bootstrap";
-import AuthService from "../../services/authService";
+// import React, { useState, useEffect } from "react";
+// import { Link, useParams, useNavigate } from "react-router-dom";
+// import Select from "react-select";
+// import Swal from "sweetalert2";
+// import withReactContent from "sweetalert2-react-content";
+// import { all_routes } from "../../Router/all_routes";
+// import Addunits from "../../core/modals/inventory/addunits";
+// import AddCategory from "../../core/modals/inventory/addcategory";
+// import AddBrand from "../../core/modals/addbrand";
+// import {
+//   ArrowLeft,
+//   ChevronDown,
+//   ChevronUp,
+//   Info,
+//   // PlusCircle,
+// } from "feather-icons-react/build/IconComponents";
+// import { useDispatch, useSelector } from "react-redux";
+// import { setToogleHeader } from "../../core/redux/action";
+// import { OverlayTrigger, Tooltip } from "react-bootstrap";
+// import AuthService from "../../services/authService";
 
-const EditProduct = () => {
-  const { id } = useParams();
-  const route = all_routes;
-  const dispatch = useDispatch();
-  const navigate = useNavigate();
-  const data = useSelector((state) => state.toggle_header);
-  const MySwal = withReactContent(Swal);
+// const EditProduct = () => {
+//   const { id } = useParams();
+//   const route = all_routes;
+//   const dispatch = useDispatch();
+//   const navigate = useNavigate();
+//   const data = useSelector((state) => state.toggle_header);
+//   const MySwal = withReactContent(Swal);
 
-  // Dropdown options state
-  const [articleProfiles, setArticleProfiles] = useState([]);
-  const [warehouses, setWarehouses] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
+//   // Dropdown options state
+//   const [articleProfiles, setArticleProfiles] = useState([]);
+//   const [warehouses, setWarehouses] = useState([]);
+//   const [loading, setLoading] = useState(true);
+//   const [submitting, setSubmitting] = useState(false);
 
-  // Form state
-  const [formData, setFormData] = useState({
-    title: "",
-    slug: "",
-    sku: "",
-    article_profile_id: "",
-    warehouse_id: "",
-    location: "",
-    count: "",
-    status: "",
-    description: "",
-    // category: "",
-    // subcategory: "",
-    // subsubcategory: "",
-    // brand: "",
-    // unit: "",
-    // sellingType: "",
-  });
+//   // Form state
+//   const [formData, setFormData] = useState({
+//     title: "",
+//     slug: "",
+//     sku: "",
+//     article_profile_id: "",
+//     warehouse_id: "",
+//     location: "",
+//     count: "",
+//     status: "",
+//     description: "",
+//     // category: "",
+//     // subcategory: "",
+//     // subsubcategory: "",
+//     // brand: "",
+//     // unit: "",
+//     // sellingType: "",
+//   });
 
-  useEffect(() => {
-    fetchProduct();
-    fetchDropdownOptions();
-  }, [id]);
+//   useEffect(() => {
+//     fetchProduct();
+//     fetchDropdownOptions();
+//   }, [id]);
 
-  // Fetch product details
-  const fetchProduct = async () => {
-    try {
-      setLoading(true);
-      const response = await AuthService.getProductById(id);
-      const product = response.data.data;
+//   // Fetch product details
+//   const fetchProduct = async () => {
+//     try {
+//       setLoading(true);
+//       const response = await AuthService.getProductById(id);
+//       const product = response.data.data;
 
-      setFormData({
-        title: product.title || "",
-        slug: product.slug || "",
-        sku: product.sku || "",
-        article_profile_id: product.article_profile_id || "",
-        warehouse_id: product.warehouse_id || "",
-        location: product.location || "",
-        count: product.count || "",
-        status: product.status || "",
-        description: product.description || "",
-        // category: product.category || "",
-        // subcategory: product.subcategory || "",
-        // subsubcategory: product.subsubcategory || "",
-        // brand: product.brand || "",
-        // unit: product.unit || "",
-        // sellingType: product.sellingType || "",
-      });
-    } catch (error) {
-      console.error("Error fetching product:", error);
-      MySwal.fire({
-        icon: "error",
-        title: "Error",
-        text: "Failed to load product details",
-        timer: 2000,
-      });
-      navigate(route.productlist);
-    } finally {
-      setLoading(false);
-    }
-  };
+//       setFormData({
+//         title: product.title || "",
+//         slug: product.slug || "",
+//         sku: product.sku || "",
+//         article_profile_id: product.article_profile_id || "",
+//         warehouse_id: product.warehouse_id || "",
+//         location: product.location || "",
+//         count: product.count || "",
+//         status: product.status || "",
+//         description: product.description || "",
+//         // category: product.category || "",
+//         // subcategory: product.subcategory || "",
+//         // subsubcategory: product.subsubcategory || "",
+//         // brand: product.brand || "",
+//         // unit: product.unit || "",
+//         // sellingType: product.sellingType || "",
+//       });
+//     } catch (error) {
+//       console.error("Error fetching product:", error);
+//       MySwal.fire({
+//         icon: "error",
+//         title: "Error",
+//         text: "Failed to load product details",
+//         timer: 2000,
+//       });
+//       navigate(route.productlist);
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
 
-  // Fetch dropdown options
-  const fetchDropdownOptions = async () => {
-    try {
-      const [articleProfilesRes, warehousesRes] = await Promise.all([
-        AuthService.getArticleProfiles(),
-        AuthService.getWarehouse(),
-      ]);
+//   // Fetch dropdown options
+//   const fetchDropdownOptions = async () => {
+//     try {
+//       const [articleProfilesRes, warehousesRes] = await Promise.all([
+//         AuthService.getArticleProfiles(),
+//         AuthService.getWarehouse(),
+//       ]);
 
-      setArticleProfiles(
-        (articleProfilesRes.data.data || []).map((item) => ({
-          value: item.id,
-          label: item.name || item.title,
-        }))
-      );
+//       setArticleProfiles(
+//         (articleProfilesRes.data.data || []).map((item) => ({
+//           value: item.id,
+//           label: item.name || item.title,
+//         }))
+//       );
 
-      setWarehouses(
-        (warehousesRes.data.data || []).map((item) => ({
-          value: item.id,
-          label: item.name || item.title,
-        }))
-      );
-    } catch (error) {
-      console.error("Error fetching dropdown options:", error);
-    }
-  };
+//       setWarehouses(
+//         (warehousesRes.data.data || []).map((item) => ({
+//           value: item.id,
+//           label: item.name || item.title,
+//         }))
+//       );
+//     } catch (error) {
+//       console.error("Error fetching dropdown options:", error);
+//     }
+//   };
 
-  // Handle input changes
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
+//   // Handle input changes
+//   const handleInputChange = (e) => {
+//     const { name, value } = e.target;
+//     setFormData((prev) => ({
+//       ...prev,
+//       [name]: value,
+//     }));
+//   };
 
-  // Handle select changes
-  const handleSelectChange = (name, option) => {
-    setFormData((prev) => ({
-      ...prev,
-      [name]: option?.value || "",
-    }));
-  };
+//   // Handle select changes
+//   const handleSelectChange = (name, option) => {
+//     setFormData((prev) => ({
+//       ...prev,
+//       [name]: option?.value || "",
+//     }));
+//   };
 
-  // Generate slug from title
-  const generateSlug = () => {
-    const slug = formData.title
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/(^-|-$)/g, "");
-    setFormData((prev) => ({ ...prev, slug }));
-  };
+//   // Generate slug from title
+//   const generateSlug = () => {
+//     const slug = formData.title
+//       .toLowerCase()
+//       .replace(/[^a-z0-9]+/g, "-")
+//       .replace(/(^-|-$)/g, "");
+//     setFormData((prev) => ({ ...prev, slug }));
+//   };
 
-  // Generate SKU
-  const generateSKU = () => {
-    const sku = `SKU-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-    setFormData((prev) => ({ ...prev, sku }));
-  };
+//   // Generate SKU
+//   const generateSKU = () => {
+//     const sku = `SKU-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+//     setFormData((prev) => ({ ...prev, sku }));
+//   };
 
-  // Handle form submission
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+//   // Handle form submission
+//   const handleSubmit = async (e) => {
+//     e.preventDefault();
 
-    // Validation
-    if (!formData.title) {
-      MySwal.fire({
-        icon: "warning",
-        title: "Validation Error",
-        text: "Product name is required",
-        timer: 2000,
-      });
-      return;
-    }
+//     // Validation
+//     if (!formData.title) {
+//       MySwal.fire({
+//         icon: "warning",
+//         title: "Validation Error",
+//         text: "Product name is required",
+//         timer: 2000,
+//       });
+//       return;
+//     }
 
-    if (!formData.article_profile_id) {
-      MySwal.fire({
-        icon: "warning",
-        title: "Validation Error",
-        text: "Article Profile is required",
-        timer: 2000,
-      });
-      return;
-    }
+//     if (!formData.article_profile_id) {
+//       MySwal.fire({
+//         icon: "warning",
+//         title: "Validation Error",
+//         text: "Article Profile is required",
+//         timer: 2000,
+//       });
+//       return;
+//     }
 
-    if (!formData.warehouse_id) {
-      MySwal.fire({
-        icon: "warning",
-        title: "Validation Error",
-        text: "Warehouse is required",
-        timer: 2000,
-      });
-      return;
-    }
+//     if (!formData.warehouse_id) {
+//       MySwal.fire({
+//         icon: "warning",
+//         title: "Validation Error",
+//         text: "Warehouse is required",
+//         timer: 2000,
+//       });
+//       return;
+//     }
 
-    try {
-      setSubmitting(true);
+//     try {
+//       setSubmitting(true);
 
-      // Prepare data for API
-      const dataToSubmit = {
-        title: formData.title,
-        slug: formData.slug,
-        sku: formData.sku,
-        article_profile_id: formData.article_profile_id,
-        warehouse_id: formData.warehouse_id,
-        location: formData.location,
-        count: parseInt(formData.count) || 0,
-        status: formData.status,
-        description: formData.description,
-      };
+//       // Prepare data for API
+//       const dataToSubmit = {
+//         title: formData.title,
+//         slug: formData.slug,
+//         sku: formData.sku,
+//         article_profile_id: formData.article_profile_id,
+//         warehouse_id: formData.warehouse_id,
+//         location: formData.location,
+//         count: parseInt(formData.count) || 0,
+//         status: formData.status,
+//         description: formData.description,
+//       };
 
-      await AuthService.updateProduct(id, dataToSubmit);
+//       await AuthService.updateProduct(id, dataToSubmit);
 
-      MySwal.fire({
-        icon: "success",
-        title: "Success!",
-        text: "Product updated successfully",
-        timer: 2000,
-        showConfirmButton: false,
-      });
+//       MySwal.fire({
+//         icon: "success",
+//         title: "Success!",
+//         text: "Product updated successfully",
+//         timer: 2000,
+//         showConfirmButton: false,
+//       });
 
-      navigate(route.productlist);
-    } catch (error) {
-      console.error("Error updating product:", error);
-      MySwal.fire({
-        icon: "error",
-        title: "Error",
-        text: error.response?.data?.message || "Failed to update product",
-        timer: 3000,
-      });
-    } finally {
-      setSubmitting(false);
-    }
-  };
+//       navigate(route.productlist);
+//     } catch (error) {
+//       console.error("Error updating product:", error);
+//       MySwal.fire({
+//         icon: "error",
+//         title: "Error",
+//         text: error.response?.data?.message || "Failed to update product",
+//         timer: 3000,
+//       });
+//     } finally {
+//       setSubmitting(false);
+//     }
+//   };
 
-  // Handle cancel
-  const handleCancel = () => {
-    MySwal.fire({
-      title: "Discard changes?",
-      text: "Any unsaved changes will be lost",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#d33",
-      confirmButtonText: "Yes, discard",
-      cancelButtonColor: "#3085d6",
-      cancelButtonText: "No, keep editing",
-    }).then((result) => {
-      if (result.isConfirmed) {
-        navigate(route.productlist);
-      }
-    });
-  };
+//   // Handle cancel
+//   const handleCancel = () => {
+//     MySwal.fire({
+//       title: "Discard changes?",
+//       text: "Any unsaved changes will be lost",
+//       icon: "warning",
+//       showCancelButton: true,
+//       confirmButtonColor: "#d33",
+//       confirmButtonText: "Yes, discard",
+//       cancelButtonColor: "#3085d6",
+//       cancelButtonText: "No, keep editing",
+//     }).then((result) => {
+//       if (result.isConfirmed) {
+//         navigate(route.productlist);
+//       }
+//     });
+//   };
 
-  const renderCollapseTooltip = (props) => (
-    <Tooltip id="refresh-tooltip" {...props}>
-      Collapse
-    </Tooltip>
-  );
+//   const renderCollapseTooltip = (props) => (
+//     <Tooltip id="refresh-tooltip" {...props}>
+//       Collapse
+//     </Tooltip>
+//   );
 
-  // Static dropdown options (can be made dynamic later)
-  const statusOptions = [
-    { value: "new", label: "New" },
-    { value: "used", label: "Used" },
-    { value: "repaired", label: "Repaired" },
-    { value: "broken", label: "Broken" },
-    { value: "installed", label: "Installed" },
-  ];
+//   // Static dropdown options (can be made dynamic later)
+//   const statusOptions = [
+//     { value: "new", label: "New" },
+//     { value: "used", label: "Used" },
+//     { value: "repaired", label: "Repaired" },
+//     { value: "broken", label: "Broken" },
+//     { value: "installed", label: "Installed" },
+//   ];
 
-  // const category = [
-  //   { value: "choose", label: "Choose" },
-  //   { value: "lenovo", label: "Lenovo" },
-  //   { value: "electronics", label: "Electronics" },
-  // ];
+//   // const category = [
+//   //   { value: "choose", label: "Choose" },
+//   //   { value: "lenovo", label: "Lenovo" },
+//   //   { value: "electronics", label: "Electronics" },
+//   // ];
 
-  // const subcategory = [
-  //   { value: "choose", label: "Choose" },
-  //   { value: "lenovo", label: "Lenovo" },
-  //   { value: "electronics", label: "Electronics" },
-  // ];
+//   // const subcategory = [
+//   //   { value: "choose", label: "Choose" },
+//   //   { value: "lenovo", label: "Lenovo" },
+//   //   { value: "electronics", label: "Electronics" },
+//   // ];
 
-  // const subsubcategories = [
-  //   { value: "Fruits", label: "Fruits" },
-  //   { value: "Computer", label: "Computer" },
-  //   { value: "Shoes", label: "Shoes" },
-  // ];
+//   // const subsubcategories = [
+//   //   { value: "Fruits", label: "Fruits" },
+//   //   { value: "Computer", label: "Computer" },
+//   //   { value: "Shoes", label: "Shoes" },
+//   // ];
 
-  // const brand = [
-  //   { value: "choose", label: "Choose" },
-  //   { value: "nike", label: "Nike" },
-  //   { value: "bolt", label: "Bolt" },
-  // ];
+//   // const brand = [
+//   //   { value: "choose", label: "Choose" },
+//   //   { value: "nike", label: "Nike" },
+//   //   { value: "bolt", label: "Bolt" },
+//   // ];
 
-  // const unit = [
-  //   { value: "choose", label: "Choose" },
-  //   { value: "kg", label: "Kg" },
-  //   { value: "pc", label: "Pc" },
-  // ];
+//   // const unit = [
+//   //   { value: "choose", label: "Choose" },
+//   //   { value: "kg", label: "Kg" },
+//   //   { value: "pc", label: "Pc" },
+//   // ];
 
-  // const sellingtype = [
-  //   { value: "choose", label: "Choose" },
-  //   { value: "transactionalSelling", label: "Transactional selling" },
-  //   { value: "solutionSelling", label: "Solution selling" },
-  // ];
+//   // const sellingtype = [
+//   //   { value: "choose", label: "Choose" },
+//   //   { value: "transactionalSelling", label: "Transactional selling" },
+//   //   { value: "solutionSelling", label: "Solution selling" },
+//   // ];
 
-  if (loading) {
-    return (
-      <div className="page-wrapper">
-        <div className="content">
-          <div className="text-center p-5">
-            <div className="spinner-border" role="status">
-              <span className="visually-hidden">Loading...</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
+//   if (loading) {
+//     return (
+//       <div className="page-wrapper">
+//         <div className="content">
+//           <div className="text-center p-5">
+//             <div className="spinner-border" role="status">
+//               <span className="visually-hidden">Loading...</span>
+//             </div>
+//           </div>
+//         </div>
+//       </div>
+//     );
+//   }
 
-  return (
-    <div className="page-wrapper">
-      <div className="content">
-        <div className="page-header">
-          <div className="add-item d-flex">
-            <div className="page-title">
-              <h4>Edit Product</h4>
-              <h6>Update product details</h6>
-            </div>
-          </div>
-          <ul className="table-top-head">
-            <li>
-              <div className="page-btn">
-                <Link to={route.productlist} className="btn btn-secondary">
-                  <ArrowLeft className="me-2" />
-                  Back to Product
-                </Link>
-              </div>
-            </li>
-            <li>
-              <OverlayTrigger placement="top" overlay={renderCollapseTooltip}>
-                <Link
-                  data-bs-toggle="tooltip"
-                  data-bs-placement="top"
-                  title="Collapse"
-                  id="collapse-header"
-                  className={data ? "active" : ""}
-                  onClick={() => {
-                    dispatch(setToogleHeader(!data));
-                  }}
-                >
-                  <ChevronUp className="feather-chevron-up" />
-                </Link>
-              </OverlayTrigger>
-            </li>
-          </ul>
-        </div>
+//   return (
+//     <div className="page-wrapper">
+//       <div className="content">
+//         <div className="page-header">
+//           <div className="add-item d-flex">
+//             <div className="page-title">
+//               <h4>Edit Product</h4>
+//               <h6>Update product details</h6>
+//             </div>
+//           </div>
+//           <ul className="table-top-head">
+//             <li>
+//               <div className="page-btn">
+//                 <Link to={route.productlist} className="btn btn-secondary">
+//                   <ArrowLeft className="me-2" />
+//                   Back to Product
+//                 </Link>
+//               </div>
+//             </li>
+//             <li>
+//               <OverlayTrigger placement="top" overlay={renderCollapseTooltip}>
+//                 <Link
+//                   data-bs-toggle="tooltip"
+//                   data-bs-placement="top"
+//                   title="Collapse"
+//                   id="collapse-header"
+//                   className={data ? "active" : ""}
+//                   onClick={() => {
+//                     dispatch(setToogleHeader(!data));
+//                   }}
+//                 >
+//                   <ChevronUp className="feather-chevron-up" />
+//                 </Link>
+//               </OverlayTrigger>
+//             </li>
+//           </ul>
+//         </div>
 
-        <form onSubmit={handleSubmit}>
-          <div className="card">
-            <div className="card-body add-product pb-0">
-              <div className="accordion-card-one accordion" id="accordionExample">
-                <div className="accordion-item">
-                  <div className="accordion-header" id="headingOne">
-                    <div
-                      className="accordion-button"
-                      data-bs-toggle="collapse"
-                      data-bs-target="#collapseOne"
-                      aria-controls="collapseOne"
-                    >
-                      <div className="addproduct-icon">
-                        <h5>
-                          <Info className="add-info" />
-                          <span>Product Information</span>
-                        </h5>
-                        <Link to="#">
-                          <ChevronDown className="chevron-down-add" />
-                        </Link>
-                      </div>
-                    </div>
-                  </div>
-                  <div
-                    id="collapseOne"
-                    className="accordion-collapse collapse show"
-                    aria-labelledby="headingOne"
-                    data-bs-parent="#accordionExample"
-                  >
-                    <div className="accordion-body">
-                      <div className="row">
-                        <div className="col-lg-4 col-sm-6 col-12">
-                          <div className="mb-3 add-product">
-                            <label className="form-label">
-                              Article Profile <span className="text-danger">*</span>
-                            </label>
-                            <Select
-                              className="select"
-                              options={articleProfiles}
-                              placeholder="Choose"
-                              value={articleProfiles.find(
-                                (opt) => opt.value === formData.article_profile_id
-                              )}
-                              onChange={(option) =>
-                                handleSelectChange("article_profile_id", option)
-                              }
-                            />
-                          </div>
-                        </div>
-                        <div className="col-lg-4 col-sm-6 col-12">
-                          <div className="mb-3 add-product">
-                            <label className="form-label">
-                              Warehouse <span className="text-danger">*</span>
-                            </label>
-                            <Select
-                              className="select"
-                              options={warehouses}
-                              placeholder="Choose"
-                              value={warehouses.find(
-                                (opt) => opt.value === formData.warehouse_id
-                              )}
-                              onChange={(option) =>
-                                handleSelectChange("warehouse_id", option)
-                              }
-                            />
-                          </div>
-                        </div>
-                        <div className="col-lg-4 col-sm-6 col-12">
-                          <div className="mb-3 add-product">
-                            <label className="form-label">Location</label>
-                            <input
-                              type="text"
-                              className="form-control"
-                              name="location"
-                              value={formData.location}
-                              onChange={handleInputChange}
-                              placeholder="Enter location"
-                            />
-                          </div>
-                        </div>
-                      </div>
+//         <form onSubmit={handleSubmit}>
+//           <div className="card">
+//             <div className="card-body add-product pb-0">
+//               <div className="accordion-card-one accordion" id="accordionExample">
+//                 <div className="accordion-item">
+//                   <div className="accordion-header" id="headingOne">
+//                     <div
+//                       className="accordion-button"
+//                       data-bs-toggle="collapse"
+//                       data-bs-target="#collapseOne"
+//                       aria-controls="collapseOne"
+//                     >
+//                       <div className="addproduct-icon">
+//                         <h5>
+//                           <Info className="add-info" />
+//                           <span>Product Information</span>
+//                         </h5>
+//                         <Link to="#">
+//                           <ChevronDown className="chevron-down-add" />
+//                         </Link>
+//                       </div>
+//                     </div>
+//                   </div>
+//                   <div
+//                     id="collapseOne"
+//                     className="accordion-collapse collapse show"
+//                     aria-labelledby="headingOne"
+//                     data-bs-parent="#accordionExample"
+//                   >
+//                     <div className="accordion-body">
+//                       <div className="row">
+//                         <div className="col-lg-4 col-sm-6 col-12">
+//                           <div className="mb-3 add-product">
+//                             <label className="form-label">
+//                               Article Profile <span className="text-danger">*</span>
+//                             </label>
+//                             <Select
+//                               className="select"
+//                               options={articleProfiles}
+//                               placeholder="Choose"
+//                               value={articleProfiles.find(
+//                                 (opt) => opt.value === formData.article_profile_id
+//                               )}
+//                               onChange={(option) =>
+//                                 handleSelectChange("article_profile_id", option)
+//                               }
+//                             />
+//                           </div>
+//                         </div>
+//                         <div className="col-lg-4 col-sm-6 col-12">
+//                           <div className="mb-3 add-product">
+//                             <label className="form-label">
+//                               Warehouse <span className="text-danger">*</span>
+//                             </label>
+//                             <Select
+//                               className="select"
+//                               options={warehouses}
+//                               placeholder="Choose"
+//                               value={warehouses.find(
+//                                 (opt) => opt.value === formData.warehouse_id
+//                               )}
+//                               onChange={(option) =>
+//                                 handleSelectChange("warehouse_id", option)
+//                               }
+//                             />
+//                           </div>
+//                         </div>
+//                         <div className="col-lg-4 col-sm-6 col-12">
+//                           <div className="mb-3 add-product">
+//                             <label className="form-label">Location</label>
+//                             <input
+//                               type="text"
+//                               className="form-control"
+//                               name="location"
+//                               value={formData.location}
+//                               onChange={handleInputChange}
+//                               placeholder="Enter location"
+//                             />
+//                           </div>
+//                         </div>
+//                       </div>
 
-                      <div className="row">
-                        <div className="col-lg-4 col-sm-6 col-12">
-                          <div className="mb-3 add-product">
-                            <label className="form-label">
-                              Product Name <span className="text-danger">*</span>
-                            </label>
-                            <input
-                              type="text"
-                              className="form-control"
-                              name="title"
-                              value={formData.title}
-                              onChange={handleInputChange}
-                              placeholder="Enter product name"
-                            />
-                          </div>
-                        </div>
-                        <div className="col-lg-4 col-sm-6 col-12">
-                          <div className="input-blocks add-product list">
-                            <label>Slug</label>
-                            <input
-                              type="text"
-                              className="form-control list"
-                              name="slug"
-                              value={formData.slug}
-                              onChange={handleInputChange}
-                              placeholder="Enter slug"
-                            />
-                            <button
-                              type="button"
-                              onClick={generateSlug}
-                              className="btn btn-primaryadd"
-                            >
-                              Generate Slug
-                            </button>
-                          </div>
-                        </div>
-                        <div className="col-lg-4 col-sm-6 col-12">
-                          <div className="input-blocks add-product list">
-                            <label>SKU</label>
-                            <input
-                              type="text"
-                              className="form-control list"
-                              name="sku"
-                              value={formData.sku}
-                              onChange={handleInputChange}
-                              placeholder="Enter SKU"
-                            />
-                            <button
-                              type="button"
-                              onClick={generateSKU}
-                              className="btn btn-primaryadd"
-                            >
-                              Generate Code
-                            </button>
-                          </div>
-                        </div>
-                      </div>
+//                       <div className="row">
+//                         <div className="col-lg-4 col-sm-6 col-12">
+//                           <div className="mb-3 add-product">
+//                             <label className="form-label">
+//                               Product Name <span className="text-danger">*</span>
+//                             </label>
+//                             <input
+//                               type="text"
+//                               className="form-control"
+//                               name="title"
+//                               value={formData.title}
+//                               onChange={handleInputChange}
+//                               placeholder="Enter product name"
+//                             />
+//                           </div>
+//                         </div>
+//                         <div className="col-lg-4 col-sm-6 col-12">
+//                           <div className="input-blocks add-product list">
+//                             <label>Slug</label>
+//                             <input
+//                               type="text"
+//                               className="form-control list"
+//                               name="slug"
+//                               value={formData.slug}
+//                               onChange={handleInputChange}
+//                               placeholder="Enter slug"
+//                             />
+//                             <button
+//                               type="button"
+//                               onClick={generateSlug}
+//                               className="btn btn-primaryadd"
+//                             >
+//                               Generate Slug
+//                             </button>
+//                           </div>
+//                         </div>
+//                         <div className="col-lg-4 col-sm-6 col-12">
+//                           <div className="input-blocks add-product list">
+//                             <label>SKU</label>
+//                             <input
+//                               type="text"
+//                               className="form-control list"
+//                               name="sku"
+//                               value={formData.sku}
+//                               onChange={handleInputChange}
+//                               placeholder="Enter SKU"
+//                             />
+//                             <button
+//                               type="button"
+//                               onClick={generateSKU}
+//                               className="btn btn-primaryadd"
+//                             >
+//                               Generate Code
+//                             </button>
+//                           </div>
+//                         </div>
+//                       </div>
 
-                      <div className="row">
-                        <div className="col-lg-4 col-sm-6 col-12">
-                          <div className="mb-3 add-product">
-                            <label className="form-label">Quantity</label>
-                            <input
-                              type="number"
-                              className="form-control"
-                              name="count"
-                              value={formData.count}
-                              onChange={handleInputChange}
-                              placeholder="Enter quantity"
-                              min="0"
-                            />
-                          </div>
-                        </div>
-                        <div className="col-lg-4 col-sm-6 col-12">
-                          <div className="mb-3 add-product">
-                            <label className="form-label">Status</label>
-                            <Select
-                              className="select"
-                              options={statusOptions}
-                              placeholder="Choose Status"
-                              value={statusOptions.find(
-                                (opt) => opt.value === formData.status
-                              )}
-                              onChange={(option) => handleSelectChange("status", option)}
-                            />
-                          </div>
-                        </div>
-                      </div>
-{/* 
-                      <div className="addservice-info">
-                        <div className="row">
-                          <div className="col-lg-4 col-sm-6 col-12">
-                            <div className="mb-3 add-product">
-                              <div className="add-newplus">
-                                <label className="form-label">Category</label>
-                                <Link
-                                  to="#"
-                                  data-bs-toggle="modal"
-                                  data-bs-target="#add-units-category"
-                                >
-                                  <PlusCircle className="plus-down-add" />
-                                  <span>Add New</span>
-                                </Link>
-                              </div>
-                              <Select
-                                className="select"
-                                options={category}
-                                placeholder="Choose"
-                                value={category.find(
-                                  (opt) => opt.value === formData.category
-                                )}
-                                onChange={(option) =>
-                                  handleSelectChange("category", option)
-                                }
-                              />
-                            </div>
-                          </div>
-                          <div className="col-lg-4 col-sm-6 col-12">
-                            <div className="mb-3 add-product">
-                              <label className="form-label">Sub Category</label>
-                              <Select
-                                className="select"
-                                options={subcategory}
-                                placeholder="Choose"
-                                value={subcategory.find(
-                                  (opt) => opt.value === formData.subcategory
-                                )}
-                                onChange={(option) =>
-                                  handleSelectChange("subcategory", option)
-                                }
-                              />
-                            </div>
-                          </div>
-                          <div className="col-lg-4 col-sm-6 col-12">
-                            <div className="mb-3 add-product">
-                              <label className="form-label">Sub Sub Category</label>
-                              <Select
-                                className="select"
-                                options={subsubcategories}
-                                placeholder="Choose"
-                                value={subsubcategories.find(
-                                  (opt) => opt.value === formData.subsubcategory
-                                )}
-                                onChange={(option) =>
-                                  handleSelectChange("subsubcategory", option)
-                                }
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      </div>
+//                       <div className="row">
+//                         <div className="col-lg-4 col-sm-6 col-12">
+//                           <div className="mb-3 add-product">
+//                             <label className="form-label">Quantity</label>
+//                             <input
+//                               type="number"
+//                               className="form-control"
+//                               name="count"
+//                               value={formData.count}
+//                               onChange={handleInputChange}
+//                               placeholder="Enter quantity"
+//                               min="0"
+//                             />
+//                           </div>
+//                         </div>
+//                         <div className="col-lg-4 col-sm-6 col-12">
+//                           <div className="mb-3 add-product">
+//                             <label className="form-label">Status</label>
+//                             <Select
+//                               className="select"
+//                               options={statusOptions}
+//                               placeholder="Choose Status"
+//                               value={statusOptions.find(
+//                                 (opt) => opt.value === formData.status
+//                               )}
+//                               onChange={(option) => handleSelectChange("status", option)}
+//                             />
+//                           </div>
+//                         </div>
+//                       </div>
+// {/* 
+//                       <div className="addservice-info">
+//                         <div className="row">
+//                           <div className="col-lg-4 col-sm-6 col-12">
+//                             <div className="mb-3 add-product">
+//                               <div className="add-newplus">
+//                                 <label className="form-label">Category</label>
+//                                 <Link
+//                                   to="#"
+//                                   data-bs-toggle="modal"
+//                                   data-bs-target="#add-units-category"
+//                                 >
+//                                   <PlusCircle className="plus-down-add" />
+//                                   <span>Add New</span>
+//                                 </Link>
+//                               </div>
+//                               <Select
+//                                 className="select"
+//                                 options={category}
+//                                 placeholder="Choose"
+//                                 value={category.find(
+//                                   (opt) => opt.value === formData.category
+//                                 )}
+//                                 onChange={(option) =>
+//                                   handleSelectChange("category", option)
+//                                 }
+//                               />
+//                             </div>
+//                           </div>
+//                           <div className="col-lg-4 col-sm-6 col-12">
+//                             <div className="mb-3 add-product">
+//                               <label className="form-label">Sub Category</label>
+//                               <Select
+//                                 className="select"
+//                                 options={subcategory}
+//                                 placeholder="Choose"
+//                                 value={subcategory.find(
+//                                   (opt) => opt.value === formData.subcategory
+//                                 )}
+//                                 onChange={(option) =>
+//                                   handleSelectChange("subcategory", option)
+//                                 }
+//                               />
+//                             </div>
+//                           </div>
+//                           <div className="col-lg-4 col-sm-6 col-12">
+//                             <div className="mb-3 add-product">
+//                               <label className="form-label">Sub Sub Category</label>
+//                               <Select
+//                                 className="select"
+//                                 options={subsubcategories}
+//                                 placeholder="Choose"
+//                                 value={subsubcategories.find(
+//                                   (opt) => opt.value === formData.subsubcategory
+//                                 )}
+//                                 onChange={(option) =>
+//                                   handleSelectChange("subsubcategory", option)
+//                                 }
+//                               />
+//                             </div>
+//                           </div>
+//                         </div>
+//                       </div>
 
-                      <div className="add-product-new">
-                        <div className="row">
-                          <div className="col-lg-4 col-sm-6 col-12">
-                            <div className="mb-3 add-product">
-                              <div className="add-newplus">
-                                <label className="form-label">Brand</label>
-                                <Link
-                                  to="#"
-                                  data-bs-toggle="modal"
-                                  data-bs-target="#add-units-brand"
-                                >
-                                  <PlusCircle className="plus-down-add" />
-                                  <span>Add New</span>
-                                </Link>
-                              </div>
-                              <Select
-                                className="select"
-                                options={brand}
-                                placeholder="Choose"
-                                value={brand.find((opt) => opt.value === formData.brand)}
-                                onChange={(option) => handleSelectChange("brand", option)}
-                              />
-                            </div>
-                          </div>
-                          <div className="col-lg-4 col-sm-6 col-12">
-                            <div className="mb-3 add-product">
-                              <div className="add-newplus">
-                                <label className="form-label">Unit</label>
-                                <Link
-                                  to="#"
-                                  data-bs-toggle="modal"
-                                  data-bs-target="#add-unit"
-                                >
-                                  <PlusCircle className="plus-down-add" />
-                                  <span>Add New</span>
-                                </Link>
-                              </div>
-                              <Select
-                                className="select"
-                                options={unit}
-                                placeholder="Choose"
-                                value={unit.find((opt) => opt.value === formData.unit)}
-                                onChange={(option) => handleSelectChange("unit", option)}
-                              />
-                            </div>
-                          </div>
-                          <div className="col-lg-4 col-sm-6 col-12">
-                            <div className="mb-3 add-product">
-                              <label className="form-label">Selling Type</label>
-                              <Select
-                                className="select"
-                                options={sellingtype}
-                                placeholder="Choose"
-                                value={sellingtype.find(
-                                  (opt) => opt.value === formData.sellingType
-                                )}
-                                onChange={(option) =>
-                                  handleSelectChange("sellingType", option)
-                                }
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      </div> */}
+//                       <div className="add-product-new">
+//                         <div className="row">
+//                           <div className="col-lg-4 col-sm-6 col-12">
+//                             <div className="mb-3 add-product">
+//                               <div className="add-newplus">
+//                                 <label className="form-label">Brand</label>
+//                                 <Link
+//                                   to="#"
+//                                   data-bs-toggle="modal"
+//                                   data-bs-target="#add-units-brand"
+//                                 >
+//                                   <PlusCircle className="plus-down-add" />
+//                                   <span>Add New</span>
+//                                 </Link>
+//                               </div>
+//                               <Select
+//                                 className="select"
+//                                 options={brand}
+//                                 placeholder="Choose"
+//                                 value={brand.find((opt) => opt.value === formData.brand)}
+//                                 onChange={(option) => handleSelectChange("brand", option)}
+//                               />
+//                             </div>
+//                           </div>
+//                           <div className="col-lg-4 col-sm-6 col-12">
+//                             <div className="mb-3 add-product">
+//                               <div className="add-newplus">
+//                                 <label className="form-label">Unit</label>
+//                                 <Link
+//                                   to="#"
+//                                   data-bs-toggle="modal"
+//                                   data-bs-target="#add-unit"
+//                                 >
+//                                   <PlusCircle className="plus-down-add" />
+//                                   <span>Add New</span>
+//                                 </Link>
+//                               </div>
+//                               <Select
+//                                 className="select"
+//                                 options={unit}
+//                                 placeholder="Choose"
+//                                 value={unit.find((opt) => opt.value === formData.unit)}
+//                                 onChange={(option) => handleSelectChange("unit", option)}
+//                               />
+//                             </div>
+//                           </div>
+//                           <div className="col-lg-4 col-sm-6 col-12">
+//                             <div className="mb-3 add-product">
+//                               <label className="form-label">Selling Type</label>
+//                               <Select
+//                                 className="select"
+//                                 options={sellingtype}
+//                                 placeholder="Choose"
+//                                 value={sellingtype.find(
+//                                   (opt) => opt.value === formData.sellingType
+//                                 )}
+//                                 onChange={(option) =>
+//                                   handleSelectChange("sellingType", option)
+//                                 }
+//                               />
+//                             </div>
+//                           </div>
+//                         </div>
+//                       </div> */}
 
-                      <div className="col-lg-12">
-                        <div className="input-blocks summer-description-box transfer mb-3">
-                          <label>Description</label>
-                          <textarea
-                            className="form-control h-100"
-                            rows={5}
-                            name="description"
-                            value={formData.description}
-                            onChange={handleInputChange}
-                            placeholder="Enter product description"
-                          />
-                          <p className="mt-1">Maximum 500 Characters</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+//                       <div className="col-lg-12">
+//                         <div className="input-blocks summer-description-box transfer mb-3">
+//                           <label>Description</label>
+//                           <textarea
+//                             className="form-control h-100"
+//                             rows={5}
+//                             name="description"
+//                             value={formData.description}
+//                             onChange={handleInputChange}
+//                             placeholder="Enter product description"
+//                           />
+//                           <p className="mt-1">Maximum 500 Characters</p>
+//                         </div>
+//                       </div>
+//                     </div>
+//                   </div>
+//                 </div>
+//               </div>
+//             </div>
+//           </div>
 
-          <div className="col-lg-12">
-            <div className="btn-addproduct mb-4">
-              <button
-                type="button"
-                className="btn btn-cancel me-2"
-                onClick={handleCancel}
-                disabled={submitting}
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="btn btn-submit"
-                disabled={submitting}
-              >
-                {submitting ? (
-                  <>
-                    <span
-                      className="spinner-border spinner-border-sm me-2"
-                      role="status"
-                      aria-hidden="true"
-                    ></span>
-                    Updating...
-                  </>
-                ) : (
-                  "Update Product"
-                )}
-              </button>
-            </div>
-          </div>
-        </form>
-      </div>
-      <Addunits />
-      <AddCategory />
-      <AddBrand />
-    </div>
-  );
-};
+//           <div className="col-lg-12">
+//             <div className="btn-addproduct mb-4">
+//               <button
+//                 type="button"
+//                 className="btn btn-cancel me-2"
+//                 onClick={handleCancel}
+//                 disabled={submitting}
+//               >
+//                 Cancel
+//               </button>
+//               <button
+//                 type="submit"
+//                 className="btn btn-submit"
+//                 disabled={submitting}
+//               >
+//                 {submitting ? (
+//                   <>
+//                     <span
+//                       className="spinner-border spinner-border-sm me-2"
+//                       role="status"
+//                       aria-hidden="true"
+//                     ></span>
+//                     Updating...
+//                   </>
+//                 ) : (
+//                   "Update Product"
+//                 )}
+//               </button>
+//             </div>
+//           </div>
+//         </form>
+//       </div>
+//       <Addunits />
+//       <AddCategory />
+//       <AddBrand />
+//     </div>
+//   );
+// };
 
-export default EditProduct;
+// export default EditProduct;

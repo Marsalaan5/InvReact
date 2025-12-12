@@ -348,7 +348,7 @@ const Register = () => {
                 </div>
 
                 <div className="my-4 d-flex justify-content-center align-items-center copyright-text">
-                  <p>Copyright © 2023 DreamsPOS. All rights reserved</p>
+                  <p>Copyright © 2025 StockWise. All rights reserved</p>
                 </div>
               </div>
             </form>

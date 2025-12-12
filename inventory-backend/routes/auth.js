@@ -10,7 +10,7 @@ import {createUser,getUser,getCurrentUser,editUserById,deleteUserById,createRole
 import { authenticateToken } from "../middleware/authMiddleware.js";
 import {checkPermission,checkRole,checkAnyPermission,} from "../middleware/checkPermission.js";
 import {deleteMenu,getMenu,patchMenu,postMenu,postReorderMenu,putMenu,} from "../controller/menuController.js";
-import { getProduct,getProductById,createProduct,updateProductById,deleteProduct } from "../controller/productController.js";
+import { getProduct,getProductById,createProduct,updateProductById,deleteProduct, getProductByScan } from "../controller/productController.js";
 import { createWh, getWhEmail, getWhPhone, getWhTitle,getAllWarehouses,getWarehouseById,deleteWarehouse,updateWarehouse } from "../controller/warehouseController.js";
 
 import { getEmails,getEmailById,markAsRead,toggleStar,deleteEmail,bulkAction,getTemplates, sendEmails, getNotifications, createNotification, createNotificationByEmail, deleteNotification, markAllNotificationsAsRead, markNotificationAsRead} from "../controller/emailController.js";
@@ -86,9 +86,12 @@ router.delete("/deleteWarehouseById/:id",authenticateToken,checkPermission("Ware
 
 router.get("/getProduct",authenticateToken,checkPermission("Product", "view"), getProduct)
 router.get("/getProductById/:id",authenticateToken,checkPermission("Product", "view"),getProductById);
+router.get('/getProductByScan/scan/:code',authenticateToken,checkPermission("Product","view"), getProductByScan);
 router.post("/createProduct",authenticateToken,checkPermission("Product", "create"), createProduct)
 router.put("/editProductById/:id",authenticateToken,checkPermission("Product", "edit"),updateProductById);
 router.delete("/deleteProductById/:id",authenticateToken,checkPermission("Product", "delete"),deleteProduct);
+
+
 
 
 

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Settings } from "react-feather";
+// import { Settings } from "react-feather";
 import { useDispatch } from "react-redux";
 import { Link } from "react-router-dom";
 import { setLayoutChange } from "../core/redux/action";
@@ -108,7 +108,7 @@ const ThemeSettings = () => {
   }, [layoutColor, layoutTheme, layoutView]);
   return (
     <>
-      <div className="customizer-links" id="setdata">
+      {/* <div className="customizer-links" id="setdata">
         <ul className="sticky-sidebar">
           <li className="sidebar-icons" onClick={showSettings}>
             <Link
@@ -122,7 +122,7 @@ const ThemeSettings = () => {
             </Link>
           </li>
         </ul>
-      </div>
+      </div> */}
 
       <div
         className={
