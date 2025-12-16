@@ -2580,9 +2580,6 @@
 
 
 
-
-
-
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import Select from "react-select";
@@ -2590,11 +2587,11 @@ import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
 import { all_routes } from "../../Router/all_routes";
 import {
-  ChevronUp,
+  // ChevronUp,
   Edit,
   Filter,
   PlusCircle,
-  RotateCcw,
+  // RotateCcw,
   Sliders,
   Trash2,
   Info,
@@ -2602,13 +2599,16 @@ import {
   Camera,
   Search as SearchIcon,
 } from "feather-icons-react/build/IconComponents";
-import { OverlayTrigger, Tooltip, Modal } from "react-bootstrap";
+import {  Modal } from "react-bootstrap";
 import { useDispatch, useSelector } from "react-redux";
 import { setToogleHeader } from "../../core/redux/action";
 import ImageWithBasePath from "../../core/img/imagewithbasebath";
 import AuthService from "../../services/authService";
 import Table from "../../core/pagination/datatable";
-import { exportPDF,exportExcel,refreshData,toggleHeader } from "../../utils/exports";
+// import { exportPDF,exportExcel,refreshData,toggleHeader } from "../../utils/exports";
+// import {DateTime} from 'luxon'
+import TableHeaderActions from "../tableheader";
+
 
 const ProductList = () => {
   const route = all_routes;
@@ -2718,7 +2718,7 @@ const ProductList = () => {
     try {
       const [warehousesRes, articleProfilesRes] = await Promise.all([
         AuthService.getWarehouse(),
-        AuthService.getArticleProfiles(),
+        AuthService.getArticleProfile(),
       ]);
 
       setWarehouses(
@@ -3011,6 +3011,39 @@ const ProductList = () => {
     });
   };
 
+  // In ProductList.jsx
+
+
+// const handleExportPDF = () => {
+//   const currentFilters = {
+//     search: filters.search || '',
+//     status: filters.status || '',
+//     warehouse_id: filters.warehouse_id || '',
+//     article_profile_id: filters.article_profile_id || '',
+//   };
+  
+//   exportPDF(
+//     '/auth/export/products/pdf',  // Notice: just change entity name
+//     `products-${DateTime.local().toFormat('yyyy-MM-dd')}.pdf`,
+//     currentFilters
+//   );
+// };
+
+// const handleExportExcel = () => {
+//   const currentFilters = {
+//     search: filters.search || '',
+//     status: filters.status || '',
+//     warehouse_id: filters.warehouse_id || '',
+//     article_profile_id: filters.article_profile_id || '',
+//   };
+  
+//   exportExcel(
+//     '/auth/export/products/excel',  // Notice: just change entity name
+//     `products-${DateTime.local().toFormat('yyyy-MM-dd')}.xlsx`,
+//     currentFilters
+//   );
+// };
+
   // Toggle filter visibility
   const toggleFilterVisibility = () => {
     setIsFilterVisible((prev) => !prev);
@@ -3029,15 +3062,15 @@ const ProductList = () => {
   };
 
   // Tooltips
-  const renderTooltip = (text) => {
-    const TooltipComponent = (props) => (
-      <Tooltip id={`${text}-tooltip`} {...props}>
-        {text}
-      </Tooltip>
-    );
-    TooltipComponent.displayName = `Tooltip-${text}`;
-    return TooltipComponent;
-  };
+  // const renderTooltip = (text) => {
+  //   const TooltipComponent = (props) => (
+  //     <Tooltip id={`${text}-tooltip`} {...props}>
+  //       {text}
+  //     </Tooltip>
+  //   );
+  //   TooltipComponent.displayName = `Tooltip-${text}`;
+  //   return TooltipComponent;
+  // };
 
   const sortOptions = [
     { value: "created_at:DESC", label: "Newest First" },
@@ -3189,37 +3222,23 @@ const ProductList = () => {
               <h6>Manage your products</h6>
             </div>
           </div>
-          <ul className="table-top-head">
-  <li>
-    <OverlayTrigger placement="top" overlay={renderTooltip("PDF")}>
-      <Link onClick={() => exportPDF('/api/export/pdf', 'products.pdf')}>
-        <ImageWithBasePath src="assets/img/icons/pdf.svg" alt="PDF" />
-      </Link>
-    </OverlayTrigger>
-  </li>
-  <li>
-    <OverlayTrigger placement="top" overlay={renderTooltip("Excel")}>
-      <Link onClick={() => exportExcel('/api/export/excel', 'products.xlsx')}>
-        <ImageWithBasePath src="assets/img/icons/excel.svg" alt="Excel" />
-      </Link>
-    </OverlayTrigger>
-  </li>
-  <li>
-    <OverlayTrigger placement="top" overlay={renderTooltip("Refresh")}>
-      <Link onClick={() => refreshData(fetchProducts)}>
-        <RotateCcw />
-      </Link>
-    </OverlayTrigger>
-  </li>
-  <li>
-    <OverlayTrigger placement="top" overlay={renderTooltip("Collapse")}>
-      <Link className={data ? "active" : ""} onClick={() => toggleHeader(dispatch, data, setToogleHeader)}>
-        <ChevronUp />
-      </Link>
-    </OverlayTrigger>
-  </li>
-</ul>
-
+         <TableHeaderActions
+                                onRefresh={fetchProducts}
+                                pdfEndpoint="/auth/export/products/pdf"
+                                excelEndpoint="/auth/export/products/excel"
+                                filters={{
+                                    search: filters.search,
+                                    status: filters.status,
+                                    warehouse_id: filters.warehouse_id,
+                                    article_profile_id: filters.article_profile_id
+                                   
+                                }}
+                                entityName="products"
+                                dispatch={dispatch}
+                                headerState={data}
+                                headerAction={setToogleHeader}
+                                showPrint={true}
+                            />
           <div className="page-btn d-flex gap-2">
             <button onClick={handleScanClick} className="btn btn-secondary">
               <Camera className="me-2 iconsize" />
@@ -3251,11 +3270,9 @@ const ProductList = () => {
               </div>
               <div className="search-path">
                 <Link
-                  className={`btn btn-filter ${isFilterVisible ? "setclose" : ""}`}
-                  onClick={toggleFilterVisibility}
-                >
-                  <Filter className="filter-icon" />
-                  <span>
+                  className={`btn btn-filter ${isFilterVisible ? "setclose" : ""}`}>
+                  <Filter className="filter-icon" onClick={toggleFilterVisibility} />
+                  <span onClick={toggleFilterVisibility}>
                     <ImageWithBasePath src="assets/img/icons/closes.svg" alt="img" />
                   </span>
                 </Link>
@@ -3273,8 +3290,8 @@ const ProductList = () => {
             </div>
 
             {/* Filter Section */}
-            {isFilterVisible && (
-              <div className="card" id="filter_inputs">
+             <div className={`card${isFilterVisible ? ' visible' : ''}`} id="filter_inputs" style={{ display: isFilterVisible ? 'block' : 'none' }}>
+            
                 <div className="card-body pb-0">
                   <div className="row">
                     <div className="col-lg-3 col-sm-6 col-12">
@@ -3333,15 +3350,15 @@ const ProductList = () => {
                     </div>
                     <div className="col-lg-3 col-sm-6 col-12">
                       <div className="input-blocks">
-                        <button className="btn btn-filters ms-auto w-100" onClick={resetFilters}>
+                        <a className="btn btn-filters ms-auto w-100" onClick={resetFilters}>
                           Reset Filters
-                        </button>
+                        </a>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
-            )}
+          
 
             {/* Products Table with Pagination */}
             <div className="table-responsive">
@@ -3472,7 +3489,7 @@ const ProductList = () => {
                                 {editingProduct.barcode_image && (
                                   <div className="border p-2 text-center">
                                     <img
-                                      src={`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}${editingProduct.barcode_image}`}
+                                      src={`${'http://localhost:5000'}${editingProduct.barcode_image}`}
                                       alt="Barcode"
                                       style={{ maxWidth: '100%', height: 'auto' }}
                                     />

@@ -2124,10 +2124,10 @@
 
 
 import React, { useState, useEffect } from 'react';
-import { OverlayTrigger, Tooltip } from 'react-bootstrap';
+
 import { Link, useNavigate } from 'react-router-dom';
 import ImageWithBasePath from '../../core/img/imagewithbasebath';
-import { ChevronUp, RotateCcw } from 'feather-icons-react/build/IconComponents';
+
 import { setToogleHeader } from '../../core/redux/action';
 import { useDispatch, useSelector } from 'react-redux';
 import { Filter, PlusCircle, Sliders, StopCircle, User, Zap } from 'react-feather';
@@ -2138,6 +2138,9 @@ import Table from '../../core/pagination/datatable';
 import AddUsers from '../../core/modals/usermanagement/addusers';
 import EditUser from '../../core/modals/usermanagement/edituser';
 import AuthService from '../../services/authService';
+import TableHeaderActions from '../tableheader'
+
+
 
 const Users = () => {
     const dispatch = useDispatch();
@@ -2227,9 +2230,9 @@ const Users = () => {
     };
 
     // Fetch users from API
-    const fetchUsers = async () => {
+     const fetchUsers = async () => {
         if (roles.length === 0) {
-            console.log(" Roles not loaded yet, skipping user fetch");
+            console.log("Roles not loaded yet, skipping user fetch");
             return;
         }
 
@@ -2240,7 +2243,6 @@ const Users = () => {
                 ? response.data
                 : response.data.users || [];
 
-            // Process users and map role names
             const processedUsers = usersData.map((user) => {
                 let roleName = user.role_name;
                 
@@ -2286,7 +2288,6 @@ const Users = () => {
                 filteredUsers = filteredUsers.filter(user => user.role_name === filters.role);
             }
 
-            // Sorting
             if (filters.sortBy === 'newest') {
                 filteredUsers.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
             } else if (filters.sortBy === 'oldest') {
@@ -2295,7 +2296,7 @@ const Users = () => {
 
             setUsers(filteredUsers);
         } catch (error) {
-            console.error(' Error fetching users:', error);
+            console.error('Error fetching users:', error);
             Swal.fire({
                 icon: 'error',
                 title: 'Error',
@@ -2305,7 +2306,6 @@ const Users = () => {
             setLoading(false);
         }
     };
-
     // Initialize in correct order
     useEffect(() => {
         const initializeData = async () => {
@@ -2410,6 +2410,9 @@ const Users = () => {
         });
     };
 
+
+ 
+
     const handleSearch = (e) => {
         setFilters(prev => ({ ...prev, search: e.target.value }));
     };
@@ -2422,16 +2425,7 @@ const Users = () => {
         fetchUsers();
     };
 
-    const handleRefresh = () => {
-        setFilters({
-            search: '',
-            username: '',
-            status: '',
-            role: '',
-            sortBy: 'date'
-        });
-        fetchUsers();
-    };
+
 
     const handleEdit = (user) => {
         console.log("✏️ Opening edit modal for user:", user);
@@ -2463,11 +2457,6 @@ const Users = () => {
     ];
 
     // Tooltips
-    const renderTooltip = (props) => <Tooltip id="pdf-tooltip" {...props}>Pdf</Tooltip>;
-    const renderExcelTooltip = (props) => <Tooltip id="excel-tooltip" {...props}>Excel</Tooltip>;
-    const renderPrinterTooltip = (props) => <Tooltip id="printer-tooltip" {...props}>Printer</Tooltip>;
-    const renderRefreshTooltip = (props) => <Tooltip id="refresh-tooltip" {...props}>Refresh</Tooltip>;
-    const renderCollapseTooltip = (props) => <Tooltip id="collapse-tooltip" {...props}>Collapse</Tooltip>;
 
     // Table columns
     const columns = [
@@ -2566,7 +2555,7 @@ const Users = () => {
         },
     ];
 
-    if (initializing) {
+     if (initializing) {
         return (
             <div className="page-wrapper">
                 <div className="content">
@@ -2607,13 +2596,23 @@ const Users = () => {
                             <h6>Manage Your Users</h6>
                         </div>
                     </div>
-                    <ul className="table-top-head">
-                        <li><OverlayTrigger placement="top" overlay={renderTooltip}><Link><ImageWithBasePath src="assets/img/icons/pdf.svg" alt="img" /></Link></OverlayTrigger></li>
-                        <li><OverlayTrigger placement="top" overlay={renderExcelTooltip}><Link><ImageWithBasePath src="assets/img/icons/excel.svg" alt="img" /></Link></OverlayTrigger></li>
-                        <li><OverlayTrigger placement="top" overlay={renderPrinterTooltip}><Link><i data-feather="printer" className="feather-printer" /></Link></OverlayTrigger></li>
-                        <li><OverlayTrigger placement="top" overlay={renderRefreshTooltip}><Link onClick={handleRefresh}><RotateCcw /></Link></OverlayTrigger></li>
-                        <li><OverlayTrigger placement="top" overlay={renderCollapseTooltip}><Link id="collapse-header" className={data ? "active" : ""} onClick={() => dispatch(setToogleHeader(!data))}><ChevronUp /></Link></OverlayTrigger></li>
-                    </ul>
+                       <TableHeaderActions
+                        onRefresh={fetchUsers}
+                        pdfEndpoint="/auth/export/users/pdf"
+                        excelEndpoint="/auth/export/users/excel"
+                        filters={{
+                            search: filters.search,
+                            status: filters.status,
+                            role: filters.role,
+                        }}
+                        entityName="users"
+                        dispatch={dispatch}
+                        headerState={data}
+                        headerAction={setToogleHeader}
+                        showPrint={true}
+                    />
+
+                  
                     <div className="page-btn">
                         <a to="#" className="btn btn-added" data-bs-toggle="modal" data-bs-target="#add-units">
                             <PlusCircle className="me-2" /> Add New User

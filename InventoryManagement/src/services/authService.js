@@ -147,7 +147,7 @@ const AuthService = {
 
 
 
-  // getArticleProfile: () => axiosInstance.get(`/auth/articleProfile`),
+  getArticleProfile: () => axiosInstance.get(`/auth/articleProfile`),
   // getArticleProfileById: (id) => axiosInstance.get(`/auth/articleProfile/${id}`),
   // createArticleProfile: (data) => axiosInstance.post(`/auth/articleProfile/create`, data),
   // updateArticleProfile: (id,data) => axiosInstance.post(`/auth/articleProfile/${id}`, data),
@@ -184,6 +184,9 @@ const AuthService = {
   deleteEmail: (data) => axiosInstance.post(`/auth/email`, data),
   bulkAction: (data) => axiosInstance.post(`/auth/email`, data),
   getTemplates: (data) => axiosInstance.get(`/auth/email`, data),
+
+
+
 };
 
 

@@ -1646,16 +1646,25 @@
 // export default WareHouses;
 
 import React, { useState, useEffect } from "react";
+import { useDispatch,useSelector } from "react-redux";
 import { Link } from "react-router-dom";
-import { Filter, Sliders } from "react-feather";
+import { Sliders } from "react-feather";
+import { PlusCircle } from "feather-icons-react/build/IconComponents";
 import Select from "react-select";
 import Swal from "sweetalert2";
 import ImageWithBasePath from "../../img/imagewithbasebath";
-import Breadcrumbs from "../../breadcrumbs";
+// import Breadcrumbs from "../../breadcrumbs";
+// import { all_routes } from "../../../Router/all_routes";
 import AuthService from "../../../services/authService";
+import TableHeaderActions from "../../../feature-module/tableheader";
+import {setToogleHeader} from '../../redux/action'
 
 const WareHouses = () => {
-  const [isFilterVisible, setIsFilterVisible] = useState(false);
+
+    const dispatch = useDispatch();
+    const data = useSelector((state) => state.toggle_header);
+
+
   const [warehouses, setWarehouses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState([]);
@@ -1670,6 +1679,9 @@ const WareHouses = () => {
   });
   const [editingId, setEditingId] = useState(null);
   const [selectedIds, setSelectedIds] = useState([]);
+
+
+
 
   useEffect(() => {
     fetchWarehouses();
@@ -1877,6 +1889,7 @@ const WareHouses = () => {
     }
   };
 
+  
   const resetForm = () => {
     setFormData({
       wh_title: "",
@@ -1888,9 +1901,6 @@ const WareHouses = () => {
     setEditingId(null);
   };
 
-  const toggleFilterVisibility = () => {
-    setIsFilterVisible(!isFilterVisible);
-  };
 
   const handleSelectAll = (e) => {
     if (e.target.checked) {
@@ -1916,16 +1926,33 @@ const WareHouses = () => {
   const userOptions = users.map((u) => ({ label: u.name, value: u.id }));
 
   return (
-    <div className="page-wrapper">
-      <div className="content">
-        <Breadcrumbs
-          maintitle="Warehouse"
-          subtitle="Manage Your Warehouse"
-          addButton="Add New Warehouse"
-          onAddClick={() => {
-            resetForm();
-          }}
-        />
+       <div className="page-wrapper">
+          <div className="content">
+            <div className="page-header">
+              <div className="add-item d-flex">
+                <div className="page-title">
+                  <h4>Warehouse</h4>
+                  <h6>Manage your Warehouse</h6>
+                </div>
+              </div>
+             <TableHeaderActions
+                                    onRefresh={fetchWarehouses}
+                                    pdfEndpoint="/auth/export/warehouses/pdf"
+                                    excelEndpoint="/auth/export/warehouses/excel"
+                                
+                                    entityName="warehouses"
+                                    dispatch={dispatch}
+                                    headerState={data}
+                                    headerAction={setToogleHeader}
+                                    showPrint={true}
+                                />
+                <div className="page-btn">
+                                      <a to="#" className="btn btn-added" data-bs-toggle="modal" data-bs-target="#add-units">
+                                          <PlusCircle className="me-2" /> Add New Warehouse
+                                      </a>
+                                  </div>
+                              </div>
+    
 
         <div className="card table-list-card">
           <div className="card-body">
@@ -1949,23 +1976,7 @@ const WareHouses = () => {
                   </Link>
                 </div>
               </div>
-              <div className="search-path">
-                <Link
-                  className={`btn btn-filter ${
-                    isFilterVisible ? "setclose" : ""
-                  }`}
-                  id="filter_search"
-                  onClick={toggleFilterVisibility}
-                >
-                  <Filter className="filter-icon" />
-                  <span>
-                    <ImageWithBasePath
-                      src="assets/img/icons/closes.svg"
-                      alt="img"
-                    />
-                  </span>
-                </Link>
-              </div>
+           
               <div className="form-sort stylewidth">
                 <Sliders className="info-img" />
                 <Select
@@ -1981,28 +1992,7 @@ const WareHouses = () => {
               </div>
             </div>
 
-            {/* Filter */}
-            <div
-              className={`card${isFilterVisible ? " visible" : ""}`}
-              id="filter_inputs"
-              style={{ display: isFilterVisible ? "block" : "none" }}
-            >
-              <div className="card-body pb-0">
-                <div className="row">
-                  <div className="col-lg-3 col-sm-6 col-12 ms-auto">
-                    <div className="input-blocks">
-                      <Link
-                        className="btn btn-filters ms-auto"
-                        onClick={handleSearch}
-                      >
-                        <i data-feather="search" className="feather-search" />{" "}
-                        Search
-                      </Link>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+        
 
             <div className="table-responsive">
               {loading ? (

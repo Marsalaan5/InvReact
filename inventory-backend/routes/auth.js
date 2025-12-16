@@ -14,6 +14,8 @@ import { getProduct,getProductById,createProduct,updateProductById,deleteProduct
 import { createWh, getWhEmail, getWhPhone, getWhTitle,getAllWarehouses,getWarehouseById,deleteWarehouse,updateWarehouse } from "../controller/warehouseController.js";
 
 import { getEmails,getEmailById,markAsRead,toggleStar,deleteEmail,bulkAction,getTemplates, sendEmails, getNotifications, createNotification, createNotificationByEmail, deleteNotification, markAllNotificationsAsRead, markNotificationAsRead} from "../controller/emailController.js";
+import { exportToExcel, exportToPDF } from "../controller/exportController.js";
+// import { exportToExcel, exportToPDF } from "../services/exportC.js";
 
 
 
@@ -117,5 +119,15 @@ router.delete('/email/:id',authenticateToken,checkPermission("Email", "delete"),
 router.get('/templates/all',authenticateToken,checkPermission("templates", "view") ,getTemplates);
 
 
+
+// Usage: 
+// - /auth/export/products/pdf
+// - /auth/export/products/excel
+// - /auth/export/warehouses/pdf
+// - /auth/export/warehouses/excel  
+// - /auth/export/users/pdf
+// - /auth/export/users/excel
+router.get("/export/:entity/pdf",authenticateToken, exportToPDF);
+router.get("/export/:entity/excel",authenticateToken, exportToExcel);
 
 export default router;

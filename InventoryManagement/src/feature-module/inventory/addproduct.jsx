@@ -14,7 +14,7 @@ import {
   Info,
   // LifeBuoy,
   // List,
-  PlusCircle,
+  // PlusCircle,
   // Trash2,
   // X,
 } from "feather-icons-react/build/IconComponents";
@@ -28,6 +28,7 @@ const AddProduct = () => {
   const [articleProfile,setArticleProfiles] = useState([])
   const [warehouse,setWarehouse] = useState([])
   const [productName,setProductName] = useState([])
+  // const [Status,setStatus] = useState([])
 
   const route = all_routes;
   const dispatch = useDispatch();
@@ -89,36 +90,36 @@ const fetchWarehouse = async() =>{
   //   { value: "determined", label: "Determined" },
   //   { value: "sincere", label: "Sincere" },
   // ];
-  const category = [
-    { value: "choose", label: "Choose" },
-    { value: "lenovo", label: "Lenovo" },
-    { value: "electronics", label: "Electronics" },
-  ];
-  const subcategory = [
-    { value: "choose", label: "Choose" },
-    { value: "lenovo", label: "Lenovo" },
-    { value: "electronics", label: "Electronics" },
-  ];
-  const subsubcategories = [
-    { value: "Fruits", label: "Fruits" },
-    { value: "Computer", label: "Computer" },
-    { value: "Shoes", label: "Shoes" },
-  ];
-  const brand = [
-    { value: "choose", label: "Choose" },
-    { value: "nike", label: "Nike" },
-    { value: "bolt", label: "Bolt" },
-  ];
-  const unit = [
-    { value: "choose", label: "Choose" },
-    { value: "kg", label: "Kg" },
-    { value: "pc", label: "Pc" },
-  ];
-  const sellingtype = [
-    { value: "choose", label: "Choose" },
-    { value: "transactionalSelling", label: "Transactional selling" },
-    { value: "solutionSelling", label: "Solution selling" },
-  ];
+  // const category = [
+  //   { value: "choose", label: "Choose" },
+  //   { value: "lenovo", label: "Lenovo" },
+  //   { value: "electronics", label: "Electronics" },
+  // ];
+  // const subcategory = [
+  //   { value: "choose", label: "Choose" },
+  //   { value: "lenovo", label: "Lenovo" },
+  //   { value: "electronics", label: "Electronics" },
+  // ];
+  // const subsubcategories = [
+  //   { value: "Fruits", label: "Fruits" },
+  //   { value: "Computer", label: "Computer" },
+  //   { value: "Shoes", label: "Shoes" },
+  // ];
+  // const brand = [
+  //   { value: "choose", label: "Choose" },
+  //   { value: "nike", label: "Nike" },
+  //   { value: "bolt", label: "Bolt" },
+  // ];
+  // const unit = [
+  //   { value: "choose", label: "Choose" },
+  //   { value: "kg", label: "Kg" },
+  //   { value: "pc", label: "Pc" },
+  // ];
+  // const sellingtype = [
+  //   { value: "choose", label: "Choose" },
+  //   { value: "transactionalSelling", label: "Transactional selling" },
+  //   { value: "solutionSelling", label: "Solution selling" },
+  // ];
   // const barcodesymbol = [
   //   { value: "choose", label: "Choose" },
   //   { value: "code34", label: "Code34" },
@@ -232,30 +233,25 @@ const fetchWarehouse = async() =>{
 />
                           </div>
                         </div>
-                        <div className="col-lg-4 col-sm-6 col-12">
+                        {/* <div className="col-lg-4 col-sm-6 col-12">
                           <div className="mb-3 add-product">
                             <label className="form-label">Slug</label>
                             <input type="text" className="form-control" />
                           </div>
-                        </div>
-                        {/* <div className="col-lg-4 col-sm-6 col-12">
-                          <div className="input-blocks add-product list">
-                            <label>SKU</label>
-                            <input
-                              type="text"
-                              className="form-control list"
-                              placeholder="Enter SKU"
-                            />
-                            <Link
-                              to={route.addproduct}
-                              className="btn btn-primaryadd"
-                            >
-                              Generate Code
-                            </Link>
-                          </div>
                         </div> */}
+                          <div className="col-lg-4 col-sm-6 col-12">
+                          <div className="mb-3 add-product">
+                            <label className="form-label">Status</label>
+                            <Select
+                              className="select"
+                              options={status}
+                              placeholder="Choose"
+                            />
+                          </div>
+                        </div>
+                  
                       </div>
-                      <div className="addservice-info">
+                      {/* <div className="addservice-info">
                         <div className="row">
                           <div className="col-lg-4 col-sm-6 col-12">
                             <div className="mb-3 add-product">
@@ -354,7 +350,7 @@ const fetchWarehouse = async() =>{
                             </div>
                           </div>
                         </div>
-                      </div>
+                      </div> */}
                       <div className="row">
                         {/* <div className="col-lg-6 col-sm-6 col-12">
                           <div className="mb-3 add-product">
