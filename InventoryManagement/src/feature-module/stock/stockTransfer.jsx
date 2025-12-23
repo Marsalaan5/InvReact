@@ -1,101 +1,536 @@
-import React, { useState } from "react";
-import Breadcrumbs from "../../core/breadcrumbs";
-import { Filter, Sliders } from "react-feather";
-import ImageWithBasePath from "../../core/img/imagewithbasebath";
-import Select from "react-select";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Archive, Calendar, User, Trash2, Edit } from "react-feather";
-import DatePicker from "react-datepicker";
-import "react-datepicker/dist/react-datepicker.css";
-import StockTransferModal from "../../core/modals/stocks/stocktransferModal";
-import { useSelector } from "react-redux";
-import Table from "../../core/pagination/datatable";
+import Select from "react-select";
 import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
+import {
+  Edit,
+  Filter,
+  PlusCircle,
+  Sliders,
+  Trash2,
+  Search as SearchIcon,
+  TrendingUp,
+  TrendingDown,
+  Package,
+} from "feather-icons-react/build/IconComponents";
+import { Modal } from "react-bootstrap";
+import { useDispatch, useSelector } from "react-redux";
+import { setToogleHeader } from "../../core/redux/action";
+import ImageWithBasePath from "../../core/img/imagewithbasebath";
+import AuthService from "../../services/authService";
+import Table from "../../core/pagination/datatable";
+import TableHeaderActions from "../tableheader";
+import {
+  fetchStockFlows,
+  fetchStockFlowStats,
+  setFilters,
+  resetFilters,
+  createStockFlow,
+  updateStockFlow,
+  deleteStockFlow as deleteStockFlowAction,
+  clearError,
+  fetchStockFlowById,
+} from '../../core/redux/slices/stockSlice.js'
 
 const StockTransfer = () => {
-  const data = useSelector((state) => state.stocktransferdata);
+  const dispatch = useDispatch();
+  const MySwal = withReactContent(Swal);
 
+  // Redux state
+  const {
+    stockFlows,
+    stats,
+    filters,
+    status: loadingStatus,
+    error,
+  } = useSelector((state) => state.stockFlow);
+
+  const loading = loadingStatus === "loading";
+  const data = useSelector((state) => state.toggle_header);
+
+  // Local state
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingStockFlow, setEditingStockFlow] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
   const [isFilterVisible, setIsFilterVisible] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(null);
+  const [warehouses, setWarehouses] = useState([]);
 
+  // Form state
+  const [formData, setFormData] = useState({
+    from_wh: null,
+    to_wh: null,
+    from_loc: "",
+    to_loc: "",
+    quantity: "",
+    transport: null,
+    status: null,
+    description: "",
+  });
+
+  // Fetch initial data
+  useEffect(() => {
+    dispatch(fetchStockFlows(filters));
+    dispatch(fetchStockFlowStats());
+    fetchWarehouses();
+     // eslint-disable-next-line 
+  }, []);
+
+  // Show error notifications
+  useEffect(() => {
+    if (error) {
+      MySwal.fire({
+        icon: "error",
+        title: "Error",
+        text: error,
+        timer: 3000,
+      });
+      dispatch(clearError());
+    }
+  }, [error, dispatch, MySwal]);
+
+  // Fetch warehouses
+  const fetchWarehouses = async () => {
+    try {
+      const response = await AuthService.getWarehouse();
+      setWarehouses(
+        (response.data.data || response.data || []).map((item) => ({
+          value: item.id,
+          label: item.name || item.title,
+        }))
+      );
+    } catch (error) {
+      console.error("Error fetching warehouses:", error);
+    }
+  };
+
+  // Handle filter changes
+  const handleFilterChange = (name, value) => {
+    dispatch(setFilters({ [name]: value }));
+  };
+
+  // Debounced search
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(() => {
+      dispatch(fetchStockFlows(filters));
+    }, 500);
+
+    return () => clearTimeout(delayDebounceFn);
+     // eslint-disable-next-line 
+  }, [filters.search]);
+
+  // Fetch stock flows when other filters change
+  useEffect(() => {
+    dispatch(fetchStockFlows(filters));
+     // eslint-disable-next-line 
+  }, [
+    filters.status,
+    filters.transport,
+    filters.from_wh,
+    filters.to_wh,
+    filters.sortBy,
+    filters.sortOrder,
+  ]);
+
+  const handleSearch = (e) => {
+    const value = e.target.value;
+    dispatch(setFilters({ search: value }));
+  };
+
+  // Reset form
+  const resetForm = () => {
+    setFormData({
+      from_wh: null,
+      to_wh: null,
+      from_loc: "",
+      to_loc: "",
+      quantity: "",
+      transport: null,
+      status: { value: "approved", label: "Approved" },
+      description: "",
+    });
+  };
+
+  // Open Add Modal
+  const handleAddClick = () => {
+    resetForm();
+    setShowAddModal(true);
+  };
+
+  // Close Add Modal
+  const handleCloseAddModal = () => {
+    setShowAddModal(false);
+    resetForm();
+  };
+
+  // Open Edit Modal
+  const handleEditClick = async (id) => {
+    try {
+      const stockFlowData = await dispatch(fetchStockFlowById(id)).unwrap();
+
+      const selectedFromWh = warehouses.find(
+        (w) => w.value === stockFlowData.from_wh
+      );
+      const selectedToWh = warehouses.find((w) => w.value === stockFlowData.to_wh);
+      const selectedTransport = transportOptions.find(
+        (t) => t.value === stockFlowData.transport
+      );
+      const selectedStatus = statusOptionsForForm.find(
+        (s) => s.value === stockFlowData.status
+      );
+
+      setEditingStockFlow(stockFlowData);
+      setFormData({
+        from_wh: selectedFromWh || null,
+        to_wh: selectedToWh || null,
+        from_loc: stockFlowData.from_loc || "",
+        to_loc: stockFlowData.to_loc || "",
+        quantity: stockFlowData.quantity || "",
+        transport: selectedTransport || null,
+        status: selectedStatus || null,
+        description: stockFlowData.description || "",
+      });
+
+      setShowEditModal(true);
+    } catch (error) {
+      console.error("Error fetching stock flow:", error);
+      MySwal.fire({
+        icon: "error",
+        title: "Error",
+        text: "Failed to load stock flow details",
+        timer: 2000,
+      });
+    }
+  };
+
+  // Close Edit Modal
+  const handleCloseEditModal = () => {
+    setShowEditModal(false);
+    setEditingStockFlow(null);
+    resetForm();
+  };
+
+  // Handle Input Changes
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  // Handle Add Submit
+  const handleAddSubmit = async (e) => {
+    e.preventDefault();
+
+    // Validation
+    if (!formData.from_wh && !formData.to_wh) {
+      MySwal.fire({
+        icon: "warning",
+        title: "Validation Error",
+        text: "Either from warehouse or to warehouse must be selected",
+        timer: 2000,
+      });
+      return;
+    }
+
+    if (!formData.quantity || formData.quantity < 1) {
+      MySwal.fire({
+        icon: "warning",
+        title: "Validation Error",
+        text: "Quantity must be at least 1",
+        timer: 2000,
+      });
+      return;
+    }
+
+    if (!formData.transport) {
+      MySwal.fire({
+        icon: "warning",
+        title: "Validation Error",
+        text: "Transport method is required",
+        timer: 2000,
+      });
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+
+      const dataToSubmit = {
+        from_wh: formData.from_wh?.value || null,
+        to_wh: formData.to_wh?.value || null,
+        from_loc: formData.from_loc,
+        to_loc: formData.to_loc,
+        quantity: parseInt(formData.quantity),
+        transport: formData.transport.value,
+        status: formData.status?.value || "approved",
+        description: formData.description,
+      };
+
+      await dispatch(createStockFlow(dataToSubmit)).unwrap();
+
+      MySwal.fire({
+        icon: "success",
+        title: "Success!",
+        text: "Stock flow created successfully",
+        timer: 2000,
+        showConfirmButton: false,
+      });
+
+      handleCloseAddModal();
+      dispatch(fetchStockFlows(filters));
+      dispatch(fetchStockFlowStats());
+    } catch (error) {
+      console.error("Error creating stock flow:", error);
+      MySwal.fire({
+        icon: "error",
+        title: "Error",
+        text: error || "Failed to create stock flow",
+        timer: 3000,
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Handle Edit Submit
+  const handleEditSubmit = async (e) => {
+    e.preventDefault();
+
+    try {
+      setSubmitting(true);
+
+      const dataToSubmit = {
+        from_wh: formData.from_wh?.value || null,
+        to_wh: formData.to_wh?.value || null,
+        from_loc: formData.from_loc,
+        to_loc: formData.to_loc,
+        quantity: parseInt(formData.quantity),
+        transport: formData.transport.value,
+        status: formData.status.value,
+        description: formData.description,
+      };
+
+      await dispatch(
+        updateStockFlow({ id: editingStockFlow.id, data: dataToSubmit })
+      ).unwrap();
+
+      MySwal.fire({
+        icon: "success",
+        title: "Success!",
+        text: "Stock flow updated successfully",
+        timer: 2000,
+        showConfirmButton: false,
+      });
+
+      handleCloseEditModal();
+      dispatch(fetchStockFlows(filters));
+      dispatch(fetchStockFlowStats());
+    } catch (error) {
+      console.error("Error updating stock flow:", error);
+      MySwal.fire({
+        icon: "error",
+        title: "Error",
+        text: error || "Failed to update stock flow",
+        timer: 3000,
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Handle delete
+  const handleDelete = async (id) => {
+    MySwal.fire({
+      title: "Are you sure?",
+      text: "You won't be able to revert this!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      confirmButtonText: "Yes, delete it!",
+      cancelButtonColor: "#3085d6",
+      cancelButtonText: "Cancel",
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        try {
+          await dispatch(deleteStockFlowAction(id)).unwrap();
+          MySwal.fire({
+            icon: "success",
+            title: "Deleted!",
+            text: "Stock flow has been deleted.",
+            timer: 2000,
+            showConfirmButton: false,
+          });
+          dispatch(fetchStockFlows(filters));
+          dispatch(fetchStockFlowStats());
+        } catch (error) {
+          console.error("Error deleting stock flow:", error);
+          MySwal.fire({
+            icon: "error",
+            title: "Error",
+            text: error || "Failed to delete stock flow",
+            timer: 3000,
+          });
+        }
+      }
+    });
+  };
+
+  const handleSortChange = (option) => {
+    const [sortBy, sortOrder] = option.value.split(":");
+    dispatch(setFilters({ sortBy, sortOrder }));
+  };
+
+  // Toggle filter visibility
   const toggleFilterVisibility = () => {
-    setIsFilterVisible((prevVisibility) => !prevVisibility);
+    setIsFilterVisible((prev) => !prev);
   };
 
-  const handleDateChange = (date) => {
-    setSelectedDate(date);
+  // Reset filters
+  const resetFiltersHandler = () => {
+    dispatch(resetFilters());
+    dispatch(fetchStockFlows(filters));
   };
 
-  const options = [
-    { value: "sortByDate", label: "Sort by Date" },
-    { value: "140923", label: "14 09 23" },
-    { value: "110923", label: "11 09 23" },
+  const sortOptions = [
+    { value: "created_at:DESC", label: "Newest First" },
+    { value: "created_at:ASC", label: "Oldest First" },
+    { value: "quantity:DESC", label: "Quantity High to Low" },
+    { value: "quantity:ASC", label: "Quantity Low to High" },
   ];
 
-  const warehouseOptions = [
-    { value: "Lobar Handy", label: "Lobar Handy" },
-    { value: "Quaint Warehouse", label: "Quaint Warehouse" },
-    { value: "Traditional Warehouse", label: "Traditional Warehouse" },
-    { value: "Cool Warehouse", label: "Cool Warehouse" },
+  const statusOptions = [
+    { value: "", label: "All Status" },
+    { value: "approved", label: "Approved" },
+    { value: "in-transit", label: "In Transit" },
+    { value: "delivered", label: "Delivered" },
   ];
 
-  const destinationOptions = [
-    { value: "Selosy", label: "Selosy" },
-    { value: "Logerro", label: "Logerro" },
-    { value: "Vesloo", label: "Vesloo" },
-    { value: "Crompy", label: "Crompy" },
+  const statusOptionsForForm = [
+    { value: "approved", label: "Approved" },
+    { value: "in-transit", label: "In Transit" },
+    { value: "delivered", label: "Delivered" },
   ];
 
+  const transportOptions = [
+    { value: "bus", label: "Bus" },
+    { value: "courier", label: "Courier" },
+    { value: "employee", label: "Employee" },
+    { value: "transport_co", label: "Transport Company" },
+  ];
+
+  const transportFilterOptions = [
+    { value: "", label: "All Transport" },
+    ...transportOptions,
+  ];
+
+  // TABLE COLUMNS
   const columns = [
     {
+      title: "ID",
+      dataIndex: "id",
+      render: (text) => <span className="badge badge-primary">#{text}</span>,
+      sorter: (a, b) => a.id - b.id,
+    },
+    {
       title: "From Warehouse",
-      dataIndex: "fromWarehouse",
-      sorter: (a, b) => a.fromWarehouse.length - b.fromWarehouse.length,
+      dataIndex: "from_warehouse_name",
+      render: (text) => (
+        <div className="d-flex align-items-center">
+          <TrendingUp size={16} className="text-danger me-2" />
+          {text || "N/A"}
+        </div>
+      ),
+      sorter: (a, b) =>
+        (a.from_warehouse_name || "").localeCompare(b.from_warehouse_name || ""),
     },
     {
       title: "To Warehouse",
-      dataIndex: "toWarehouse",
-      sorter: (a, b) => a.toWarehouse.length - b.toWarehouse.length,
-    },
-    {
-      title: "No Of Products",
-      dataIndex: "noOfProducts",
-      sorter: (a, b) => a.noOfProducts.length - b.noOfProducts.length,
-    },
-
-    {
-      title: "Quantity Transferred",
-      dataIndex: "quantityTransferred",
+      dataIndex: "to_warehouse_name",
+      render: (text) => (
+        <div className="d-flex align-items-center">
+          <TrendingDown size={16} className="text-success me-2" />
+          {text || "N/A"}
+        </div>
+      ),
       sorter: (a, b) =>
-        a.quantityTransferred.length - b.quantityTransferred.length,
+        (a.to_warehouse_name || "").localeCompare(b.to_warehouse_name || ""),
     },
-
     {
-      title: "Ref Number",
-      dataIndex: "refNumber",
-      sorter: (a, b) => a.refNumber.length - b.refNumber.length,
+      title: "Quantity",
+      dataIndex: "quantity",
+      render: (text) => (
+        <div className="d-flex align-items-center">
+          <Package size={16} className="text-primary me-2" />
+          <span className="badge badge-info">{text}</span>
+        </div>
+      ),
+      sorter: (a, b) => (a.quantity || 0) - (b.quantity || 0),
     },
-
     {
-      title: "Date",
-      dataIndex: "date",
-      sorter: (a, b) => a.date.length - b.date.length,
+      title: "Transport",
+      dataIndex: "transport",
+      render: (text) => (
+        <span
+          className={`badge ${
+            text === "bus"
+              ? "badge-secondary"
+              : text === "courier"
+              ? "badge-info"
+              : text === "employee"
+              ? "badge-warning"
+              : "badge-primary"
+          }`}
+        >
+          {text === "transport_co"
+            ? "Transport Co."
+            : text.charAt(0).toUpperCase() + text.slice(1)}
+        </span>
+      ),
+      sorter: (a, b) => (a.transport || "").localeCompare(b.transport || ""),
     },
-
+    {
+      title: "Status",
+      dataIndex: "status",
+      render: (text) => (
+        <span
+          className={`badge ${
+            text === "approved"
+              ? "badge-linesuccess"
+              : text === "in-transit"
+              ? "badge-linewarning"
+              : "badge-lineinfo"
+          }`}
+        >
+          {text === "in-transit"
+            ? "In Transit"
+            : text.charAt(0).toUpperCase() + text.slice(1)}
+        </span>
+      ),
+      sorter: (a, b) => (a.status || "").localeCompare(b.status || ""),
+    },
+    {
+      title: "Created Date",
+      dataIndex: "created_at",
+      render: (text) => new Date(text).toLocaleDateString(),
+      sorter: (a, b) => new Date(a.created_at) - new Date(b.created_at),
+    },
     {
       title: "Action",
-      dataIndex: "action",
-      render: () => (
+      dataIndex: "actions",
+      render: (_, record) => (
         <td className="action-table-data">
           <div className="edit-delete-action">
-            <div className="input-block add-lists"></div>
-
             <Link
               className="me-2 p-2"
               to="#"
-              data-bs-toggle="modal"
-              data-bs-target="#edit-units"
+              onClick={(e) => {
+                e.preventDefault();
+                handleEditClick(record.id);
+              }}
+              title="Edit"
             >
               <Edit className="feather-edit" />
             </Link>
@@ -103,54 +538,106 @@ const StockTransfer = () => {
             <Link
               className="confirm-text p-2"
               to="#"
-              onClick={showConfirmationAlert}
+              onClick={(e) => {
+                e.preventDefault();
+                handleDelete(record.id);
+              }}
+              title="Delete"
             >
               <Trash2 className="feather-trash-2" />
             </Link>
           </div>
         </td>
       ),
-      sorter: (a, b) => a.createdby.length - b.createdby.length,
     },
   ];
 
-  const MySwal = withReactContent(Swal);
-
-  const showConfirmationAlert = () => {
-    MySwal.fire({
-      title: "Are you sure?",
-      text: "You won't be able to revert this!",
-      showCancelButton: true,
-      confirmButtonColor: "#00ff00",
-      confirmButtonText: "Yes, delete it!",
-      cancelButtonColor: "#ff0000",
-      cancelButtonText: "Cancel",
-    }).then((result) => {
-      if (result.isConfirmed) {
-        MySwal.fire({
-          title: "Deleted!",
-          text: "Your file has been deleted.",
-          className: "btn btn-success",
-          confirmButtonText: "OK",
-          customClass: {
-            confirmButton: "btn btn-success",
-          },
-        });
-      } else {
-        MySwal.close();
-      }
-    });
-  };
   return (
     <div className="page-wrapper">
       <div className="content">
-        <Breadcrumbs
-          maintitle="Stock Transfer"
-          subtitle="Manage your stock transfer"
-          addButton="Add New"
-          importbutton="Import Transfer"
-        />
-        {/* /product list */}
+        <div className="page-header">
+          <div className="add-item d-flex">
+            <div className="page-title">
+              <h4>Stock Flow Management</h4>
+              <h6>Manage your stock transfers</h6>
+            </div>
+          </div>
+
+          {/* Stats Cards */}
+          <div className="row mb-4">
+            <div className="col-lg-3 col-sm-6 col-12">
+              <div className="dash-count das1">
+                <div className="dash-counts">
+                  <h4>{stats.total || 0}</h4>
+                  <h5>Total Transfers</h5>
+                </div>
+                <div className="dash-imgs">
+                  <Package />
+                </div>
+              </div>
+            </div>
+            <div className="col-lg-3 col-sm-6 col-12">
+              <div className="dash-count das2">
+                <div className="dash-counts">
+                  <h4>{stats.approved || 0}</h4>
+                  <h5>Approved</h5>
+                </div>
+                <div className="dash-imgs">
+                  <i data-feather="check-circle" className="feather-check-circle" />
+                </div>
+              </div>
+            </div>
+            <div className="col-lg-3 col-sm-6 col-12">
+              <div className="dash-count das3">
+                <div className="dash-counts">
+                  <h4>{stats.in_transit || 0}</h4>
+                  <h5>In Transit</h5>
+                </div>
+                <div className="dash-imgs">
+                  <i data-feather="truck" className="feather-truck" />
+                </div>
+              </div>
+            </div>
+            <div className="col-lg-3 col-sm-6 col-12">
+              <div className="dash-count">
+                <div className="dash-counts">
+                  <h4>{stats.delivered || 0}</h4>
+                  <h5>Delivered</h5>
+                </div>
+                <div className="dash-imgs">
+                  <i data-feather="check-square" className="feather-check-square" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <TableHeaderActions
+            onRefresh={() => {
+              dispatch(fetchStockFlows(filters));
+              dispatch(fetchStockFlowStats());
+            }}
+            pdfEndpoint="/auth/export/stockflows/pdf"
+            excelEndpoint="/auth/export/stockflows/excel"
+            filters={{
+              search: filters.search,
+              status: filters.status,
+              transport: filters.transport,
+            }}
+            entityName="stock flows"
+            dispatch={dispatch}
+            headerState={data}
+            headerAction={setToogleHeader}
+            showPrint={true}
+          />
+
+          <div className="page-btn">
+            <button onClick={handleAddClick} className="btn btn-added">
+              <PlusCircle className="me-2 iconsize" />
+              Add Stock Flow
+            </button>
+          </div>
+        </div>
+
         <div className="card table-list-card">
           <div className="card-body">
             <div className="table-top">
@@ -158,20 +645,19 @@ const StockTransfer = () => {
                 <div className="search-input">
                   <input
                     type="text"
-                    placeholder="Search"
+                    placeholder="Search by description or location"
                     className="form-control form-control-sm formsearch"
+                    value={filters.search}
+                    onChange={handleSearch}
                   />
-                  <Link to className="btn btn-searchset">
-                    <i data-feather="search" className="feather-search" />
+                  <Link to="#" className="btn btn-searchset">
+                    <SearchIcon className="feather-search" />
                   </Link>
                 </div>
               </div>
               <div className="search-path">
                 <Link
-                  className={`btn btn-filter ${
-                    isFilterVisible ? "setclose" : ""
-                  }`}
-                  id="filter_search"
+                  className={`btn btn-filter ${isFilterVisible ? "setclose" : ""}`}
                 >
                   <Filter
                     className="filter-icon"
@@ -185,17 +671,22 @@ const StockTransfer = () => {
                   </span>
                 </Link>
               </div>
-              <div className="form-sort stylewidth">
+              <div className="form-sort">
                 <Sliders className="info-img" />
-
                 <Select
-                  className="select "
-                  options={options}
-                  placeholder="Sort by Date"
+                  className="select"
+                  options={sortOptions}
+                  placeholder="Sort By"
+                  onChange={handleSortChange}
+                  value={sortOptions.find(
+                    (opt) =>
+                      opt.value === `${filters.sortBy}:${filters.sortOrder}`
+                  )}
                 />
               </div>
             </div>
-            {/* /Filter */}
+
+            {/* Filter Section */}
             <div
               className={`card${isFilterVisible ? " visible" : ""}`}
               id="filter_inputs"
@@ -205,68 +696,505 @@ const StockTransfer = () => {
                 <div className="row">
                   <div className="col-lg-3 col-sm-6 col-12">
                     <div className="input-blocks">
-                      <Archive className="info-img" />
+                      <label>From Warehouse</label>
                       <Select
                         className="select"
-                        options={warehouseOptions}
-                        placeholder="Warehouse From"
+                        options={[
+                          { value: "", label: "All Warehouses" },
+                          ...warehouses,
+                        ]}
+                        placeholder="Choose Warehouse"
+                        onChange={(option) =>
+                          handleFilterChange("from_wh", option?.value || "")
+                        }
+                        value={
+                          warehouses.find((w) => w.value === filters.from_wh) || {
+                            value: "",
+                            label: "All Warehouses",
+                          }
+                        }
+                        isClearable
                       />
                     </div>
                   </div>
                   <div className="col-lg-3 col-sm-6 col-12">
                     <div className="input-blocks">
-                      <User className="info-img" />
+                      <label>To Warehouse</label>
                       <Select
                         className="select"
-                        options={destinationOptions}
-                        placeholder="Warehouse To"
+                        options={[
+                          { value: "", label: "All Warehouses" },
+                          ...warehouses,
+                        ]}
+                        placeholder="Choose Warehouse"
+                        onChange={(option) =>
+                          handleFilterChange("to_wh", option?.value || "")
+                        }
+                        value={
+                          warehouses.find((w) => w.value === filters.to_wh) || {
+                            value: "",
+                            label: "All Warehouses",
+                          }
+                        }
+                        isClearable
                       />
                     </div>
                   </div>
-                  <div className="col-lg-3 col-sm-6 col-12">
+                  <div className="col-lg-2 col-sm-6 col-12">
                     <div className="input-blocks">
-                      <Calendar className="info-img" />
-                      <div className="input-groupicon">
-                        <DatePicker
-                          selected={selectedDate}
-                          onChange={handleDateChange}
-                          dateFormat="dd/MM/yyyy"
-                          placeholderText="Choose Date"
-                          className="datetimepicker"
-                        />
-                      </div>
+                      <label>Transport</label>
+                      <Select
+                        className="select"
+                        options={transportFilterOptions}
+                        placeholder="Transport"
+                        onChange={(option) =>
+                          handleFilterChange("transport", option?.value || "")
+                        }
+                        value={
+                          transportFilterOptions.find(
+                            (t) => t.value === filters.transport
+                          ) || {
+                            value: "",
+                            label: "All Transport",
+                          }
+                        }
+                        isClearable
+                      />
                     </div>
                   </div>
-                  <div className="col-lg-3 col-sm-6 col-12 ms-auto">
+                  <div className="col-lg-2 col-sm-6 col-12">
                     <div className="input-blocks">
-                      <a className="btn btn-filters ms-auto">
-                        {" "}
-                        <i
-                          data-feather="search"
-                          className="feather-search"
-                        />{" "}
-                        Search{" "}
+                      <label>Status</label>
+                      <Select
+                        className="select"
+                        options={statusOptions}
+                        placeholder="Status"
+                        onChange={(option) =>
+                          handleFilterChange("status", option?.value || "")
+                        }
+                        value={
+                          statusOptions.find((s) => s.value === filters.status) || {
+                            value: "",
+                            label: "All Status",
+                          }
+                        }
+                        isClearable
+                      />
+                    </div>
+                  </div>
+                  <div className="col-lg-2 col-sm-6 col-12">
+                    <div className="input-blocks">
+                      <a
+                        className="btn btn-filters ms-auto w-100"
+                        onClick={resetFiltersHandler}
+                      >
+                        Reset Filters
                       </a>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
-            {/* /Filter */}
-            <div className="table-responsive">
-              <Table
-                className="table datanew"
-                columns={columns}
-                dataSource={data}
 
-                // pagination={true}
-              />
+            {/* Stock Flows Table */}
+            <div className="table-responsive">
+              {loading ? (
+                <div className="text-center p-5">
+                  <div className="spinner-border" role="status">
+                    <span className="visually-hidden">Loading...</span>
+                  </div>
+                </div>
+              ) : stockFlows.length === 0 ? (
+                <div className="text-center p-5">
+                  <p>No stock flows found</p>
+                </div>
+              ) : (
+                <Table columns={columns} dataSource={stockFlows} />
+              )}
             </div>
           </div>
         </div>
-        {/* /product list */}
       </div>
-      <StockTransferModal />
+
+      {/* Add/Edit Modal Form - Common Fields */}
+<div className="row">
+  <div className="col-12">
+    <div className="mb-3">
+      <label className="form-label">Description</label>
+      <textarea
+        className="form-control"
+        name="description"
+        value={formData.description}
+        onChange={handleInputChange}
+        rows="3"
+        placeholder="Enter description"
+      />
+    </div>
+  </div>
+</div>
+
+<div className="modal-footer-btn">
+  <button
+    type="button"
+    className="btn btn-cancel me-2"
+    onClick={showAddModal ? handleCloseAddModal : handleCloseEditModal}
+    disabled={submitting}
+  >
+    Cancel
+  </button>
+  <button type="submit" className="btn btn-submit" disabled={submitting}>
+    {submitting ? (
+      <>
+        <span className="spinner-border spinner-border-sm me-2" />
+        {showAddModal ? 'Creating...' : 'Updating...'}
+      </>
+    ) : (
+      showAddModal ? 'Create Stock Flow' : 'Update Stock Flow'
+    )}
+  </button>
+</div>
+
+      {/* Add Modal */}
+      <Modal show={showAddModal} onHide={handleCloseAddModal} size="lg" centered>
+        <Modal.Header>
+          <Modal.Title>Add Stock Flow</Modal.Title>
+          <button
+            type="button"
+            className="btn-close"
+            onClick={handleCloseAddModal}
+            disabled={submitting}
+          />
+        </Modal.Header>
+        <Modal.Body>
+          <form onSubmit={handleAddSubmit}>
+            <div className="row">
+              <div className="col-lg-6">
+                <div className="mb-3">
+                  <label className="form-label">From Warehouse</label>
+                  <Select
+                    options={warehouses}
+                    value={formData.from_wh}
+                    onChange={(option) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        from_wh: option,
+                      }))
+                    }
+                    placeholder="Select From Warehouse"
+                    isClearable
+                  />
+                </div>
+              </div>
+              <div className="col-lg-6">
+                <div className="mb-3">
+                  <label className="form-label">To Warehouse</label>
+                  <Select
+                    options={warehouses}
+                    value={formData.to_wh}
+                    onChange={(option) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        to_wh: option,
+                      }))
+                    }
+                    placeholder="Select To Warehouse"
+                    isClearable
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="row">
+              <div className="col-lg-6">
+                <div className="mb-3">
+                  <label className="form-label">From Location</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    name="from_loc"
+                    value={formData.from_loc}
+                    onChange={handleInputChange}
+                    placeholder="Enter from location"
+                  />
+                </div>
+              </div>
+              <div className="col-lg-6">
+                <div className="mb-3">
+                  <label className="form-label">To Location</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    name="to_loc"
+                    value={formData.to_loc}
+                    onChange={handleInputChange}
+                    placeholder="Enter to location"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="row">
+              <div className="col-lg-4">
+                <div className="mb-3">
+                  <label className="form-label">
+                    Quantity <span className="text-danger">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    className="form-control"
+                    name="quantity"
+                    value={formData.quantity}
+                    onChange={handleInputChange}
+                    placeholder="Enter quantity"
+                    min="1"
+                    required
+                  />
+                </div>
+              </div>
+              <div className="col-lg-4">
+                <div className="mb-3">
+                  <label className="form-label">
+                    Transport <span className="text-danger">*</span>
+                  </label>
+                  <Select
+                    options={transportOptions}
+                    value={formData.transport}
+                    onChange={(option) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        transport: option,
+                      }))
+                    }
+                    placeholder="Select Transport"
+                  />
+                </div>
+              </div>
+              <div className="col-lg-4">
+                <div className="mb-3">
+                  <label className="form-label">Status</label>
+                  <Select
+                    options={statusOptionsForForm}
+                    value={formData.status}
+                    onChange={(option) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        status: option,
+                      }))
+                    }
+                    placeholder="Select Status"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="row">
+              <div className="col-lg-12">
+                <div className="mb-3">
+                  <label className="form-label">Description</label>
+                  <textarea
+                    className="form-control"
+                    name="description"
+                    value={formData.description}
+                    onChange={handleInputChange}
+                    rows="3"
+                    placeholder="Enter description"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="modal-footer">
+              <button
+                type="button"
+                className="btn btn-cancel me-2"
+                onClick={handleCloseAddModal}
+                disabled={submitting}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="btn btn-submit"
+                disabled={submitting}
+              >
+                {submitting ? "Creating..." : "Create"}
+              </button>
+            </div>
+          </form>
+        </Modal.Body>
+      </Modal>
+
+      {/* Edit Modal */}
+      <Modal show={showEditModal} onHide={handleCloseEditModal} size="lg" centered>
+        <Modal.Header>
+          <Modal.Title>Edit Stock Flow</Modal.Title>
+          <button
+            type="button"
+            className="btn-close"
+            onClick={handleCloseEditModal}
+            disabled={submitting}
+          />
+        </Modal.Header>
+        <Modal.Body>
+          <form onSubmit={handleEditSubmit}>
+            <div className="row">
+              <div className="col-lg-6">
+                <div className="mb-3">
+                  <label className="form-label">From Warehouse</label>
+                  <Select
+                    options={warehouses}
+                    value={formData.from_wh}
+                    onChange={(option) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        from_wh: option,
+                      }))
+                    }
+                    placeholder="Select From Warehouse"
+                    isClearable
+                  />
+                </div>
+              </div>
+              <div className="col-lg-6">
+                <div className="mb-3">
+                  <label className="form-label">To Warehouse</label>
+                  <Select
+                    options={warehouses}
+                    value={formData.to_wh}
+                    onChange={(option) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        to_wh: option,
+                      }))
+                    }
+                    placeholder="Select To Warehouse"
+                    isClearable
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="row">
+              <div className="col-lg-6">
+                <div className="mb-3">
+                  <label className="form-label">From Location</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    name="from_loc"
+                    value={formData.from_loc}
+                    onChange={handleInputChange}
+                    placeholder="Enter from location"
+                  />
+                </div>
+              </div>
+              <div className="col-lg-6">
+                <div className="mb-3">
+                  <label className="form-label">To Location</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    name="to_loc"
+                    value={formData.to_loc}
+                    onChange={handleInputChange}
+                    placeholder="Enter to location"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="row">
+              <div className="col-lg-4">
+                <div className="mb-3">
+                  <label className="form-label">
+                    Quantity <span className="text-danger">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    className="form-control"
+                    name="quantity"
+                    value={formData.quantity}
+                    onChange={handleInputChange}
+                    placeholder="Enter quantity"
+                    min="1"
+                    required
+                  />
+                </div>
+              </div>
+              <div className="col-lg-4">
+                <div className="mb-3">
+                  <label className="form-label">
+                    Transport <span className="text-danger">*</span>
+                  </label>
+                  <Select
+                    options={transportOptions}
+                    value={formData.transport}
+                    onChange={(option) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        transport: option,
+                      }))
+                    }
+                    placeholder="Select Transport"
+                  />
+                </div>
+              </div>
+              <div className="col-lg-4">
+                <div className="mb-3">
+                  <label className="form-label">
+                    Status <span className="text-danger">*</span>
+                  </label>
+                  <Select
+                    options={statusOptionsForForm}
+                    value={formData.status}
+                    onChange={(option) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        status: option,
+                      }))
+                    }
+                    placeholder="Select Status"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="row">
+              <div className="col-lg-12">
+                <div className="mb-3">
+                  <label className="form-label">Description</label>
+                  <textarea
+                    className="form-control"
+                    name="description"
+                    value={formData.description}
+                    onChange={handleInputChange}
+                    rows="3"
+                    placeholder="Enter description"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="modal-footer">
+              <button
+                type="button"
+                className="btn btn-cancel me-2"
+                onClick={handleCloseEditModal}
+                disabled={submitting}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="btn btn-submit"
+                disabled={submitting}
+              >
+                {submitting ? "Saving..." : "Save Changes"}
+              </button>
+            </div>
+          </form>
+        </Modal.Body>
+      </Modal>
     </div>
   );
 };

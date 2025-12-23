@@ -42,7 +42,7 @@
 
 // userSlice.js
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import axiosInstance from '../../../services/axiosInstance'; // ✅ Use your axios instance
+import axiosInstance from '../../../services/axiosInstance'; 
 
 const initialState = {
   userlist_data: [],
@@ -52,7 +52,7 @@ const initialState = {
   error: null,
 };
 
-// ✅ Async thunk to fetch user list
+
 export const fetchUserList = createAsyncThunk(
   'user/fetchUserList',
   async (_, { rejectWithValue }) => {
@@ -65,7 +65,7 @@ export const fetchUserList = createAsyncThunk(
   }
 );
 
-// ✅ Async thunk to fetch roles and permissions
+
 export const fetchRolesAndPermission = createAsyncThunk(
   'user/fetchRolesAndPermission',
   async (_, { rejectWithValue }) => {
@@ -78,7 +78,7 @@ export const fetchRolesAndPermission = createAsyncThunk(
   }
 );
 
-// ✅ Async thunk to fetch delete account data
+
 export const fetchDeleteAccountData = createAsyncThunk(
   'user/fetchDeleteAccountData',
   async (_, { rejectWithValue }) => {

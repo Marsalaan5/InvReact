@@ -86,22 +86,25 @@ import uiReducer from './slices/uiSlice'
 import userReducer from './slices/userSlice'
 import authReducer from './slices/authSlice'
 import menuReducer from './slices/menuSlice'
-
+import warehouseReducer from './slices/warehouseSlice'
+import stockFlowReducer from './slices/stockSlice'
 
 
 const rootReducer = combineReducers({
-  products: productReducer,
-  brand:brandReducer,
-  customer: customerReducer,
+  auth:authReducer,
+  user:userReducer,
   dashboard:dashboardReducer,
+  products: productReducer,
+  warehouse:warehouseReducer,
+  stockFlow:stockFlowReducer,
+  customer: customerReducer,
   hr:hrReducer,
   inventory:inventoryReducer,
   report:reportReducer,
   sales:salesReducer,
   supplier: supplierReducer,
   ui:uiReducer,
-  user:userReducer,
-  auth:authReducer,
+  brand:brandReducer,
   menu:menuReducer
 });
 

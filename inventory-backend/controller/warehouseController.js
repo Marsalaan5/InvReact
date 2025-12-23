@@ -13,6 +13,215 @@ function parseDateSafe(dateStr) {
 }
 
 
+//Dashboard
+
+// export const getDashboard = async (req, res) => {
+//   try {
+//     const { warehouseFilter, user } = req;
+
+//     // Get users count (only for Super Admin)
+//     let usersCount = { total: 0, active: 0, inactive: 0 };
+//     let rolesCount = 0;
+
+//     if (user.isSuperAdmin) {
+//       const users = await do_ma_query("SELECT status FROM users");
+//       usersCount.total = users.length;
+//       usersCount.active = users.filter(u => u.status === 'Active').length;
+//       usersCount.inactive = users.filter(u => u.status === 'Inactive').length;
+
+//       const roles = await do_ma_query("SELECT COUNT(*) as count FROM roles");
+//       rolesCount = roles[0].count;
+//     }
+
+//     let warehousesQuery = `
+//       SELECT w.id, w.title as name, 
+//              COALESCE(COUNT(DISTINCT p.id), 0) AS total_products,
+//              COALESCE(SUM(p.count), 0) AS total_stock
+//       FROM warehouse w
+//       LEFT JOIN product p ON p.warehouse_id = w.id
+//     `;
+    
+//     let warehouseParams = [];
+//     if (warehouseFilter) {
+//       warehousesQuery += " WHERE w.id = ?";
+//       warehouseParams.push(warehouseFilter);
+//     }
+    
+//     warehousesQuery += " GROUP BY w.id, w.title";
+//     const warehouses = await do_ma_query(warehousesQuery, warehouseParams);
+
+//     // Get products (filtered)
+//     let productsQuery = "SELECT * FROM product";
+//     let productParams = [];
+    
+//     if (warehouseFilter) {
+//       productsQuery += " WHERE warehouse_id = ?";
+//       productParams.push(warehouseFilter);
+//     }
+    
+//     const products = await do_ma_query(productsQuery, productParams);
+
+//     // Calculate stats
+//     const totalStock = products.reduce((sum, p) => sum + (p.count || 0), 0);
+//     const lowStockCount = products.filter(p => (p.count || 0) < 10).length;
+
+//     const warehouseDetails = warehouses.map(wh => {
+//       const whProducts = products.filter(p => p.warehouse_id === wh.id);
+//       return {
+//         id: wh.id,
+//         name: wh.name,
+//         products: whProducts.length,
+//         stock: wh.total_stock || 0,
+//         lowStock: whProducts.filter(p => (p.count || 0) < 10).length,
+//       };
+//     });
+
+//     res.status(200).json({
+//       success: true,
+//       data: {
+//         users: usersCount,
+//         roles: rolesCount,
+//         warehouses: {
+//           total: warehouses.length,
+//           details: warehouseDetails,
+//         },
+//         products: {
+//           total: products.length,
+//         },
+//         stocks: {
+//           total: totalStock,
+//           low: lowStockCount,
+//         },
+//         isSuperAdmin: user.isSuperAdmin,
+//         userWarehouseId: user.warehouse_id,
+//       },
+//       timestamp: DateTime.local().toFormat("yyyy-MM-dd HH:mm:ss"),
+//     });
+//   } catch (err) {
+//     console.error("Dashboard error:", err);
+//     res.status(500).json({
+//       success: false,
+//       message: "Internal server error.",
+//     });
+//   }
+// };
+
+
+export const getDashboard = async (req, res) => {
+  try {
+    const { warehouseFilter, user } = req;
+
+    // FIXED: Get users count with warehouse filtering
+    let usersCount = { total: 0, active: 0, inactive: 0 };
+    let rolesCount = 0;
+
+    if (user.isSuperAdmin) {
+      // Super Admin sees ALL users
+      const users = await do_ma_query("SELECT status FROM users");
+      usersCount.total = users.length;
+      usersCount.active = users.filter(u => u.status === 'Active').length;
+      usersCount.inactive = users.filter(u => u.status === 'Inactive').length;
+
+      const roles = await do_ma_query("SELECT COUNT(*) as count FROM roles");
+      rolesCount = roles[0].count;
+    } else if (user.isAdmin && user.warehouse_id) {
+      // FIXED: Admin sees only THEIR WAREHOUSE users
+      const users = await do_ma_query(
+        "SELECT status FROM users WHERE warehouse_id = ?",
+        [user.warehouse_id]
+      );
+      usersCount.total = users.length;
+      usersCount.active = users.filter(u => u.status === 'Active').length;
+      usersCount.inactive = users.filter(u => u.status === 'Inactive').length;
+
+      // FIXED: Count roles that have users in this warehouse
+      const roleCountQuery = await do_ma_query(
+        `SELECT COUNT(DISTINCT role_id) as count 
+         FROM users 
+         WHERE warehouse_id = ? AND role_id IS NOT NULL`,
+        [user.warehouse_id]
+      );
+      rolesCount = roleCountQuery[0].count;
+    }
+
+    // Warehouse query (already filtered correctly)
+    let warehousesQuery = `
+      SELECT w.id, w.title as name, 
+             COALESCE(COUNT(DISTINCT p.id), 0) AS total_products,
+             COALESCE(SUM(p.count), 0) AS total_stock
+      FROM warehouse w
+      LEFT JOIN product p ON p.warehouse_id = w.id
+    `;
+    
+    let warehouseParams = [];
+    if (warehouseFilter) {
+      warehousesQuery += " WHERE w.id = ?";
+      warehouseParams.push(warehouseFilter);
+    }
+    
+    warehousesQuery += " GROUP BY w.id, w.title";
+    const warehouses = await do_ma_query(warehousesQuery, warehouseParams);
+
+    // Get products (filtered)
+    let productsQuery = "SELECT * FROM product";
+    let productParams = [];
+    
+    if (warehouseFilter) {
+      productsQuery += " WHERE warehouse_id = ?";
+      productParams.push(warehouseFilter);
+    }
+    
+    const products = await do_ma_query(productsQuery, productParams);
+
+    // Calculate stats
+    const totalStock = products.reduce((sum, p) => sum + (p.count || 0), 0);
+    const lowStockCount = products.filter(p => (p.count || 0) < 10).length;
+
+    const warehouseDetails = warehouses.map(wh => {
+      const whProducts = products.filter(p => p.warehouse_id === wh.id);
+      return {
+        id: wh.id,
+        name: wh.name,
+        products: whProducts.length,
+        stock: wh.total_stock || 0,
+        lowStock: whProducts.filter(p => (p.count || 0) < 10).length,
+      };
+    });
+
+    console.log(`📊 Dashboard stats - Users: ${usersCount.total}, Roles: ${rolesCount}, Warehouses: ${warehouses.length}`);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        users: usersCount,
+        roles: rolesCount,
+        warehouses: {
+          total: warehouses.length,
+          details: warehouseDetails,
+        },
+        products: {
+          total: products.length,
+        },
+        stocks: {
+          total: totalStock,
+          low: lowStockCount,
+        },
+        isSuperAdmin: user.isSuperAdmin,
+        isAdmin: user.isAdmin,
+        userWarehouseId: user.warehouse_id,
+      },
+      timestamp: DateTime.local().toFormat("yyyy-MM-dd HH:mm:ss"),
+    });
+  } catch (err) {
+    console.error("Dashboard error:", err);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error.",
+    });
+  }
+};
+
+
   
   export const getWhTitle = async (req, res) => {
 	try {
@@ -182,6 +391,7 @@ function parseDateSafe(dateStr) {
 // Get all warehouses with filters
 export const getAllWarehouses = async (req, res) => {
   try {
+	const {warehouseFilter,user} = req
     const { searchTerm, sortBy } = req.query;
 
 
@@ -204,6 +414,12 @@ export const getAllWarehouses = async (req, res) => {
 
 let whereConditions = [];
 let queryParams = [];
+
+if(warehouseFilter){
+	whereConditions.push("w.id = ?");
+	queryParams.push(warehouseFilter)
+}
+
 
 if (searchTerm) {
   whereConditions.push(
@@ -267,6 +483,16 @@ if (sortBy === "date_asc") {
 export const getWarehouseById = async (req, res) => {
 	try {
 		const { id } = req.params;
+		const {warehouseFilter,user} = req;
+
+		if(warehouseFilter && parseInt(id) !==warehouseFilter ){
+			return res.status(403).json({
+				success:false,
+				data:null,
+				timestamp:DateTime.local().toFormat("yyyy-MM-dd HH:mm:ss"),
+				message:"Access denied, You can only view your assigned warehouse"
+			})
+		}
 
 		const id_schema = Joi.object({
 			id: Joi.number().integer().min(1).required().label("warehouse ID"),

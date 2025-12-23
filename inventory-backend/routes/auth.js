@@ -7,14 +7,15 @@ import {signup,signin,forgotPassword,resetPassword,} from "../controller/authCon
 
 import {createUser,getUser,getCurrentUser,editUserById,deleteUserById,createRole,getRoles,getRoleById,updateRoleById,deleteRoleById,getProfile,getProfileById,editProfileById,getAllPermissions,getPermissionsByRole,updatePermissions,getModules,} from "../controller/userController.js";
 
-import { authenticateToken } from "../middleware/authMiddleware.js";
+import { applyWarehouseFilter, authenticateToken, enforceWarehouseAccess } from "../middleware/authMiddleware.js";
 import {checkPermission,checkRole,checkAnyPermission,} from "../middleware/checkPermission.js";
 import {deleteMenu,getMenu,patchMenu,postMenu,postReorderMenu,putMenu,} from "../controller/menuController.js";
 import { getProduct,getProductById,createProduct,updateProductById,deleteProduct, getProductByScan } from "../controller/productController.js";
-import { createWh, getWhEmail, getWhPhone, getWhTitle,getAllWarehouses,getWarehouseById,deleteWarehouse,updateWarehouse } from "../controller/warehouseController.js";
+import { createWh, getWhEmail, getWhPhone, getWhTitle,getAllWarehouses,getWarehouseById,deleteWarehouse,updateWarehouse, getDashboard } from "../controller/warehouseController.js";
 
 import { getEmails,getEmailById,markAsRead,toggleStar,deleteEmail,bulkAction,getTemplates, sendEmails, getNotifications, createNotification, createNotificationByEmail, deleteNotification, markAllNotificationsAsRead, markNotificationAsRead} from "../controller/emailController.js";
 import { exportToExcel, exportToPDF } from "../controller/exportController.js";
+import { createStockFlow, deleteStockFlow, getStockFlowById, getStockFlows, getStockFlowStats, updateStockFlowById } from "../controller/stockController.js";
 // import { exportToExcel, exportToPDF } from "../services/exportC.js";
 
 
@@ -37,10 +38,11 @@ router.post("/reset-password", resetPassword);
 
 router.use(authenticateToken);
 
+router.get('/getDashboard',enforceWarehouseAccess,applyWarehouseFilter,getDashboard)
 // Users
 // router.get('/users/profile', getProfile);
 // router.get('/users/profile/:id', getProfileById);
-router.get("/getUser", checkPermission("User", "view"), getUser);
+router.get("/getUser", applyWarehouseFilter ,checkPermission("User", "view"), getUser);
 // router.get("/getUserById/:id", checkPermission("User", "view"), getUserById);
 router.get("/getCurrentUser", checkPermission("User", "view"), getCurrentUser );
 router.post("/createUser", checkPermission("User", "create"), createUser);
@@ -52,7 +54,7 @@ router.get("/getProfileById/:id", authenticateToken, getProfileById);
 router.put("/editProfileById/:id", authenticateToken, editProfileById);
 
 // Roles
-router.get("/roles",authenticateToken,checkPermission("Role", "view"),getRoles);
+router.get("/roles",authenticateToken,applyWarehouseFilter ,checkPermission("Role", "view"),getRoles);
 router.get("/roles/:id",authenticateToken,checkPermission("Role", "view"),getRoleById);
 router.post("/roles",authenticateToken,checkPermission("Role", "create"),createRole);
 router.put("/roles/:id",authenticateToken,checkPermission("Role", "edit"),updateRoleById);
@@ -73,12 +75,16 @@ router.post("/menu/reorder",authenticateToken,checkPermission("Menu Management",
 
 //warehouse
 
-router.get("/getWarehouse",authenticateToken,checkPermission("Warehouse", "view"),getAllWarehouses);
-router.get("/getWarehouseById/:id",authenticateToken,checkPermission("Warehouse", "view"),getWarehouseById);
-router.get("/getWarehouseEmail/unique/email/:idx",authenticateToken,checkPermission("Warehouse", "view"),getWhEmail);
-router.get("/getWarehouseTitle/unique/title/:idx",authenticateToken,checkPermission("Warehouse", "view"),getWhTitle);
+router.get("/getWarehouse",authenticateToken,enforceWarehouseAccess,applyWarehouseFilter,checkPermission("Warehouse", "view"),getAllWarehouses);
+router.get("/getWarehouseById/:id",authenticateToken, enforceWarehouseAccess,
+  applyWarehouseFilter,checkPermission("Warehouse", "view"),getWarehouseById);
+router.get("/getWarehouseEmail/unique/email/:idx",authenticateToken, enforceWarehouseAccess,
+  applyWarehouseFilter,checkPermission("Warehouse", "view"),getWhEmail);
+router.get("/getWarehouseTitle/unique/title/:idx",authenticateToken, enforceWarehouseAccess,
+  applyWarehouseFilter,checkPermission("Warehouse", "view"),getWhTitle);
 
-router.get("/getWarehousePhone/unique/phone/:idx",authenticateToken,checkPermission("Warehouse", "view"),getWhPhone);
+router.get("/getWarehousePhone/unique/phone/:idx",authenticateToken, enforceWarehouseAccess,
+  applyWarehouseFilter,checkPermission("Warehouse", "view"),getWhPhone);
 
 router.post("/createWarehouse/create",authenticateToken,checkPermission("Warehouse", "create"),createWh);
 
@@ -86,12 +92,29 @@ router.put("/editWarehouseById/:id",authenticateToken,checkPermission("Warehouse
 router.delete("/deleteWarehouseById/:id",authenticateToken,checkPermission("Warehouse", "delete"),deleteWarehouse);
 
 
-router.get("/getProduct",authenticateToken,checkPermission("Product", "view"), getProduct)
-router.get("/getProductById/:id",authenticateToken,checkPermission("Product", "view"),getProductById);
-router.get('/getProductByScan/scan/:code',authenticateToken,checkPermission("Product","view"), getProductByScan);
+router.get("/getProduct",authenticateToken, enforceWarehouseAccess,
+  applyWarehouseFilter,checkPermission("Product", "view"), getProduct)
+router.get("/getProductById/:id",authenticateToken, enforceWarehouseAccess,
+  applyWarehouseFilter,checkPermission("Product", "view"),getProductById);
+router.get('/getProductByScan/scan/:code',authenticateToken, enforceWarehouseAccess,
+  applyWarehouseFilter,checkPermission("Product","view"), getProductByScan);
 router.post("/createProduct",authenticateToken,checkPermission("Product", "create"), createProduct)
 router.put("/editProductById/:id",authenticateToken,checkPermission("Product", "edit"),updateProductById);
 router.delete("/deleteProductById/:id",authenticateToken,checkPermission("Product", "delete"),deleteProduct);
+
+
+
+router.get('/getStockFlows',authenticateToken,applyWarehouseFilter,checkPermission('StockFlow', 'view'),getStockFlows);
+router.get('/getStockFlowStats/stats',authenticateToken,applyWarehouseFilter,getStockFlowStats);
+router.get('/getStockFlowByID/:id',authenticateToken,applyWarehouseFilter,checkPermission('StockFlow', 'view'),getStockFlowById);
+router.post('/createStockFlow',authenticateToken,applyWarehouseFilter,checkPermission('StockFlow', 'create'),createStockFlow);
+router.put('/updateStockFLowByID/:id',authenticateToken,applyWarehouseFilter,checkPermission('StockFlow', 'edit'),updateStockFlowById);
+router.delete('/deleteStockFlow/:id',authenticateToken,applyWarehouseFilter,
+  checkPermission('StockFlow', 'delete'),deleteStockFlow);
+
+
+
+
 
 
 

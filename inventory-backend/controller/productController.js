@@ -576,6 +576,7 @@ export function generateBarcodeImage(barcodeNumber) {
 // GET all products with filters, pagination, and sorting
 export const getProduct = async (req, res) => {
   try {
+    const {warehouseFilter} = req;
     const {
       page = 1,
       limit = 10,
@@ -592,6 +593,14 @@ export const getProduct = async (req, res) => {
   
     let whereConditions = [];
     let queryParams = [];
+
+    	if (warehouseFilter) {
+			whereConditions.push("p.warehouse_id = ?");
+			queryParams.push(warehouseFilter);
+		} else if (warehouse_id) {
+			whereConditions.push("p.warehouse_id = ?");
+			queryParams.push(warehouse_id);
+		}
 
     if (search) {
       whereConditions.push("(p.title LIKE ? OR p.sku LIKE ? OR p.barcode LIKE ?)");
@@ -790,150 +799,26 @@ export const getProductByScan = async (req, res) => {
   }
 };
 
-// POST create new product
-// export const createProduct = async (req, res) => {
-//   try {
-//     const product_schema = Joi.object({
-//       title: Joi.string().min(3).max(127).required().label("product title"),
-//       article_profile_id: Joi.number().integer().min(1).required().label("article profile ID"),
-//       warehouse_id: Joi.number().integer().min(1).required().label("warehouse ID"),
-//       location: Joi.string().max(255).allow("", null).label("location"),
-//       status: Joi.string()
-//         .valid("new", "used", "repaired", "broken", "installed")
-//         .default("new")
-//         .label("status"),
-//       count: Joi.number().integer().min(0).required().label("count"),
-//       description: Joi.string().max(255).allow("", null).label("description"),
-//       last_updated_by: Joi.number().integer().min(1).required().label("user ID"),
-//     });
-
-//     const { error, value } = product_schema.validate(req.body, { abortEarly: false });
-
-//     if (error) {
-//       return res.status(400).json({
-//         success: false,
-//         timestamp: DateTime.local().toFormat("yyyy-MM-dd HH:mm:ss"),
-//         message: error.details[0].message,
-//       });
-//     }
-
-//     // Verify article profile exists
-//     const article_check = await do_ma_query("SELECT COUNT(*) AS count FROM article_profile WHERE id = ?", [
-//       value.article_profile_id,
-//     ]);
-
-//     if (article_check[0].count === 0) {
-//       return res.status(404).json({
-//         success: false,
-//         timestamp: DateTime.local().toFormat("yyyy-MM-dd HH:mm:ss"),
-//         message: "Article profile not found",
-//       });
-//     }
-
-//     // Verify warehouse exists
-//     const warehouse_check = await do_ma_query("SELECT COUNT(*) AS count FROM warehouse WHERE id = ?", [
-//       value.warehouse_id,
-//     ]);
-
-//     if (warehouse_check[0].count === 0) {
-//       return res.status(404).json({
-//         success: false,
-//         timestamp: DateTime.local().toFormat("yyyy-MM-dd HH:mm:ss"),
-//         message: "Warehouse not found",
-//       });
-//     }
-
-//     // Verify user exists
-//     const user_check = await do_ma_query("SELECT COUNT(*) AS count FROM users WHERE id = ?", [
-//       value.last_updated_by,
-//     ]);
-
-//     if (user_check[0].count === 0) {
-//       return res.status(404).json({
-//         success: false,
-//         timestamp: DateTime.local().toFormat("yyyy-MM-dd HH:mm:ss"),
-//         message: "User not found",
-//       });
-//     }
-
-//     // Generate SKU and Barcode
-//     const sku = generateUniqueSKU(value.title);
-//     let barcodeFilePath;
-
-//     try {
-//       barcodeFilePath = await generateBarcode(sku);
-//     } catch (barcodeError) {
-//       console.error("Error generating barcode:", barcodeError);
-//       return res.status(500).json({
-//         success: false,
-//         timestamp: DateTime.local().toFormat("yyyy-MM-dd HH:mm:ss"),
-//         message: "Error generating barcode",
-//       });
-//     }
-
-//     // Insert product
-//     const product_insert_res = await do_ma_query(
-//       `INSERT INTO product
-//         (title, article_profile_id, warehouse_id, location, status, count, sku, barcode,
-//          description, created_at, updated_at, last_updated_by)
-//        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW(), ?)`,
-//       [
-//         value.title,
-//         value.article_profile_id,
-//         value.warehouse_id,
-//         value.location || null,
-//         value.status,
-//         value.count,
-//         sku,
-//         barcodeFilePath,
-//         value.description || null,
-//         value.last_updated_by,
-//       ]
-//     );
-
-//     if (product_insert_res.affectedRows === 1) {
-//       res.status(201).json({
-//         success: true,
-//         timestamp: DateTime.local().toFormat("yyyy-MM-dd HH:mm:ss"),
-//         message: "Product created successfully",
-//         data: {
-//           id: product_insert_res.insertId,
-//           sku,
-//           barcode: barcodeFilePath,
-//         },
-//       });
-//     } else {
-//       res.status(500).json({
-//         success: false,
-//         timestamp: DateTime.local().toFormat("yyyy-MM-dd HH:mm:ss"),
-//         message: "Product creation failed",
-//       });
-//     }
-//   } catch (err) {
-//     console.error("Error creating product:", err);
-//     res.status(500).json({
-//       success: false,
-//       timestamp: DateTime.local().toFormat("yyyy-MM-dd HH:mm:ss"),
-//       message: "Internal server error",
-//     });
-//   }
-// };
-
 
 export const createProduct = async (req, res) => {
   try {
     const product_schema = Joi.object({
-      title: Joi.string().min(3).max(127).required().label("product title"),
-      article_profile_id: Joi.number().integer().min(1).required().label("article profile ID"),
-      warehouse_id: Joi.number().integer().min(1).required().label("warehouse ID"),
-      location: Joi.string().max(255).allow("", null).label("location"),
-      status: Joi.string()
-        .valid("new", "used", "repaired", "broken", "installed")
-        .default("new")
-        .label("status"),
-      count: Joi.number().integer().min(0).required().label("count"),
-      description: Joi.string().max(255).allow("", null).label("description"),
-      last_updated_by: Joi.number().integer().min(1).required().label("user ID"),
+      title: 
+      Joi.string().min(3).max(127).required().label("product title"),
+      article_profile_id: 
+      Joi.number().integer().min(1).required().label("article profile ID"),
+      warehouse_id: 
+      Joi.number().integer().min(1).required().label("warehouse ID"),
+      location: 
+      Joi.string().max(255).allow("", null).label("location"),
+      status: 
+      Joi.string().valid("new", "used", "repaired", "broken", "installed").default("new").label("status"),
+      count: 
+      Joi.number().integer().min(0).required().label("count"),
+      description: 
+      Joi.string().max(255).allow("", null).label("description"),
+      last_updated_by: 
+      Joi.number().integer().min(1).required().label("user ID"),
     });
 
     const { error, value } = product_schema.validate(req.body, { abortEarly: false });
@@ -1050,114 +935,6 @@ export const createProduct = async (req, res) => {
     });
   }
 };
-
-// PUT update product
-// export const updateProductById = async (req, res) => {
-//   try {
-//     const { id } = req.params;
-
-//     const product_schema = Joi.object({
-//       title: Joi.string().min(3).max(127).required().label("product title"),
-//       article_profile_id: Joi.number().integer().min(1).required().label("article profile ID"),
-//       warehouse_id: Joi.number().integer().min(1).required().label("warehouse ID"),
-//       location: Joi.string().max(255).allow("", null).label("location"),
-//       status: Joi.string()
-//         .valid("new", "used", "repaired", "broken", "installed")
-//         .required()
-//         .label("status"),
-//       count: Joi.number().integer().min(0).required().label("count"),
-//       description: Joi.string().max(255).allow("", null).label("description"),
-//       last_updated_by: Joi.number().integer().min(1).required().label("user ID"),
-//     });
-
-//     const { error, value } = product_schema.validate(req.body, { abortEarly: false });
-
-//     if (error) {
-//       return res.status(400).json({
-//         success: false,
-//         timestamp: DateTime.local().toFormat("yyyy-MM-dd HH:mm:ss"),
-//         message: error.details[0].message,
-//       });
-//     }
-
-//     // Check if product exists
-//     const product_check = await do_ma_query("SELECT * FROM product WHERE id = ?", [id]);
-
-//     if (product_check.length === 0) {
-//       return res.status(404).json({
-//         success: false,
-//         timestamp: DateTime.local().toFormat("yyyy-MM-dd HH:mm:ss"),
-//         message: "Product not found",
-//       });
-//     }
-
-//     // Verify article profile exists
-//     const article_check = await do_ma_query("SELECT COUNT(*) AS count FROM article_profile WHERE id = ?", [
-//       value.article_profile_id,
-//     ]);
-
-//     if (article_check[0].count === 0) {
-//       return res.status(404).json({
-//         success: false,
-//         timestamp: DateTime.local().toFormat("yyyy-MM-dd HH:mm:ss"),
-//         message: "Article profile not found",
-//       });
-//     }
-
-//     // Verify warehouse exists
-//     const warehouse_check = await do_ma_query("SELECT COUNT(*) AS count FROM warehouse WHERE id = ?", [
-//       value.warehouse_id,
-//     ]);
-
-//     if (warehouse_check[0].count === 0) {
-//       return res.status(404).json({
-//         success: false,
-//         timestamp: DateTime.local().toFormat("yyyy-MM-dd HH:mm:ss"),
-//         message: "Warehouse not found",
-//       });
-//     }
-
-//     // Update product
-//     const product_update_res = await do_ma_query(
-//       `UPDATE product SET
-//         title = ?, article_profile_id = ?, warehouse_id = ?, location = ?, 
-//         status = ?, count = ?, description = ?, updated_at = NOW(), last_updated_by = ?
-//       WHERE id = ?`,
-//       [
-//         value.title,
-//         value.article_profile_id,
-//         value.warehouse_id,
-//         value.location || null,
-//         value.status,
-//         value.count,
-//         value.description || null,
-//         value.last_updated_by,
-//         id,
-//       ]
-//     );
-
-//     if (product_update_res.affectedRows === 1) {
-//       res.status(200).json({
-//         success: true,
-//         timestamp: DateTime.local().toFormat("yyyy-MM-dd HH:mm:ss"),
-//         message: "Product updated successfully",
-//       });
-//     } else {
-//       res.status(304).json({
-//         success: false,
-//         timestamp: DateTime.local().toFormat("yyyy-MM-dd HH:mm:ss"),
-//         message: "No changes made to product",
-//       });
-//     }
-//   } catch (err) {
-//     console.error("Error updating product:", err);
-//     res.status(500).json({
-//       success: false,
-//       timestamp: DateTime.local().toFormat("yyyy-MM-dd HH:mm:ss"),
-//       message: "Internal server error",
-//     });
-//   }
-// };
 
 
 
