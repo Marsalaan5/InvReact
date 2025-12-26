@@ -121,7 +121,7 @@ export const signin = async (req, res) => {
                 role_id: user[0].role_id,
                 role: user[0].role_name,
                 status: user[0].status,
-                warehouse_id: user[0].warehouse_id  // ✅ Added
+                warehouse_id: user[0].warehouse_id 
             }, 
             process.env.JWT_SECRET, 
             { expiresIn: "1d" }
@@ -138,8 +138,8 @@ export const signin = async (req, res) => {
                 role: user[0].role_name,
                 roleName: user[0].role_name,
                 status: user[0].status,
-                warehouse_id: user[0].warehouse_id,      // ✅ Added
-                warehouse_name: user[0].warehouse_name,  // ✅ Added
+                warehouse_id: user[0].warehouse_id,  
+                warehouse_name: user[0].warehouse_name,
                 permissions: permissions
             }
         });

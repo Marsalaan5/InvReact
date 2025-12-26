@@ -95,9 +95,10 @@ getDashboard:() => axiosInstance.get(`/auth/getDashboard`),
 
 
   // Stock Flow APIs
+getStockFlowOptions:() => axiosInstance.get(`/auth/getStockFlowOptions`),
 getStockFlows:()=>axiosInstance.get(`/auth/getStockFlows`),
 getStockFlowById:(id) => axiosInstance.get(`/auth/getStockFlowByID/${id}`),
-createStockFlow: (data) => axiosInstance.create(`/auth/createStockFlow`,data),
+createStockFlow: (data) => axiosInstance.post(`/auth/createStockFlow`,data),
 updateStockFlowById:(id,data) => axiosInstance.put(`/auth/updateStockFLowByID/${id}`,data),
 deleteStockFlow:(id) => axiosInstance.delete(`/auth/deleteStockFlow/${id}`),
 getStockFlowStats:() => axiosInstance.get(`/auth/getStockFlowStats/stats`),
@@ -115,7 +116,9 @@ getStockFlowStats:() => axiosInstance.get(`/auth/getStockFlowStats/stats`),
   bulkAction: (data) => axiosInstance.post(`/auth/email`, data),
   getTemplates: (data) => axiosInstance.get(`/auth/email`, data),
   
-
+downloadStockFlowInvoice: (id) => axiosInstance.get(`/auth/stockflow/${id}/invoice`, {
+    responseType: 'blob'
+  }),
 
 
 };

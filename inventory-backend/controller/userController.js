@@ -103,8 +103,8 @@ export const createUser = (req, res) => {
       const targetRoleName = roleRow[0].name;
       const creatorRoleName = req.user.role;
 
-      console.log('👤 Creator role:', creatorRoleName);
-      console.log('🎯 Target role:', targetRoleName);
+      console.log('Creator role:', creatorRoleName);
+      console.log('Target role:', targetRoleName);
 
       // Use utility function to check if creator can assign this role
       if (!canManageRole(creatorRoleName, targetRoleName)) {
@@ -444,7 +444,7 @@ export const getUser = async (req, res) => {
     const [totalUsers] = await pool.execute(countQuery, queryParams);
     const totalCount = totalUsers[0].count;
 
-    console.log(`📊 User query results: ${users.length} users (filtered: ${warehouseFilter ? 'Yes' : 'No'})`);
+    console.log(` User query results: ${users.length} users (filtered: ${warehouseFilter ? 'Yes' : 'No'})`);
 
     res.json({
       users,
@@ -524,7 +524,7 @@ export const editUserById = (req, res) => {
         return res.status(400).json({ message: "Invalid user ID" });
       }
 
-      // ✅ Fetch existing user WITH role name using JOIN
+      // Fetch existing user WITH role name using JOIN
       const [existingUser] = await pool.execute(
         `SELECT u.*, r.name as role_name 
          FROM users u 
@@ -540,17 +540,17 @@ export const editUserById = (req, res) => {
       const currentUserRoleName = existingUser[0].role_name;
       const editorRoleName = req.user.role;
 
-      console.log('👤 Editor role:', editorRoleName);
-      console.log('🎯 Target user current role:', currentUserRoleName);
+      console.log(' Editor role:', editorRoleName);
+      console.log(' Target user current role:', currentUserRoleName);
 
-      // ✅ Check if editor can modify this user's current role
+      // Check if editor can modify this user's current role
       if (!canManageRole(editorRoleName, currentUserRoleName)) {
         return res.status(403).json({
           message: `Access denied. You cannot edit users with role "${currentUserRoleName}" or higher.`,
         });
       }
 
-      // ✅ If role is being changed, validate the new role
+      // If role is being changed, validate the new role
       if (role_id && role_id !== existingUser[0].role_id) {
         // Fetch new role name
         const [newRoleRow] = await pool.execute(
@@ -564,7 +564,7 @@ export const editUserById = (req, res) => {
 
         const newRoleName = newRoleRow[0].name;
 
-        console.log('🔄 Changing role to:', newRoleName);
+        console.log('Changing role to:', newRoleName);
 
         // Check if editor can assign the new role
         if (!canManageRole(editorRoleName, newRoleName)) {
@@ -644,7 +644,7 @@ export const editUserById = (req, res) => {
       const query = `UPDATE users SET ${updates.join(", ")} WHERE id = ?`;
       await pool.execute(query, values);
 
-      // ✅ Fetch updated user WITH role name
+      //  Fetch updated user WITH role name
       const [updatedUser] = await pool.execute(
         `SELECT u.id, u.name, u.email, u.phone, u.username, u.avatar, u.role_id, u.status, r.name as role_name
          FROM users u
@@ -672,7 +672,7 @@ export const deleteUserById = async (req, res) => {
   const userId = req.params.id;
 
   try {
-    // ✅ Fetch user WITH role name using JOIN
+    //  Fetch user WITH role name using JOIN
     const [user] = await pool.execute(
       `SELECT u.*, r.name as role_name 
        FROM users u 
@@ -688,10 +688,10 @@ export const deleteUserById = async (req, res) => {
     const targetUserRoleName = user[0].role_name;
     const deleterRoleName = req.user.role;
 
-    console.log('👤 Deleter role:', deleterRoleName);
-    console.log('🎯 Target user role:', targetUserRoleName);
+    console.log(' Deleter role:', deleterRoleName);
+    console.log(' Target user role:', targetUserRoleName);
 
-    // ✅ Check if deleter can delete this user
+    //  Check if deleter can delete this user
     if (!canManageRole(deleterRoleName, targetUserRoleName)) {
       return res.status(403).json({
         message: `Access denied. You cannot delete users with role "${targetUserRoleName}" or higher.`,
@@ -851,9 +851,9 @@ export default {
 
 const autoAssignMenuToRole = async (roleId, permissions) => {
   try {
-    console.log(`\n🔄 ===== AUTO-ASSIGNING MENUS =====`);
-    console.log(`🆔 Role ID: ${roleId}`);
-    console.log(`📋 Permissions:`, JSON.stringify(permissions, null, 2));
+    console.log(`\n ===== AUTO-ASSIGNING MENUS =====`);
+    console.log(` Role ID: ${roleId}`);
+    console.log(` Permissions:`, JSON.stringify(permissions, null, 2));
     
     // Get all active menu items with their modules
     const [allMenus] = await pool.execute(
@@ -862,22 +862,22 @@ const autoAssignMenuToRole = async (roleId, permissions) => {
        WHERE status = 'active'`
     );
 
-    console.log(`📊 Found ${allMenus.length} active menu items`);
+    console.log(` Found ${allMenus.length} active menu items`);
 
     const menuIdsToAssign = new Set();
 
     // Loop through each permission module
     for (const [permissionModule, perms] of Object.entries(permissions)) {
-      console.log(`\n🔍 Checking permission: "${permissionModule}"`);
+      console.log(`\n Checking permission: "${permissionModule}"`);
       console.log(`   can_view: ${perms.can_view}`);
 
       // Only assign if can_view is true
       if (perms.can_view !== true) {
-        console.log(`   ❌ Skipped (can_view is false)`);
+        console.log(`    Skipped (can_view is false)`);
         continue;
       }
 
-      console.log(`   ✅ Processing (can_view is true)`);
+      console.log(` Processing (can_view is true)`);
 
       // Find matching menus by module
       let matchCount = 0;
@@ -893,13 +893,13 @@ const autoAssignMenuToRole = async (roleId, permissions) => {
       });
 
       if (matchCount === 0) {
-        console.log(`      ⚠️  No menus found with module="${permissionModule}"`);
+        console.log(`No menus found with module="${permissionModule}"`);
       } else {
-        console.log(`      📦 Found ${matchCount} matching menus`);
+        console.log(`Found ${matchCount} matching menus`);
       }
     }
 
-    console.log(`\n📊 Total menus matched: ${menuIdsToAssign.size}`);
+    console.log(`\nTotal menus matched: ${menuIdsToAssign.size}`);
 
     // Add parent menus recursively
     const menuIdsArray = Array.from(menuIdsToAssign);
@@ -907,31 +907,31 @@ const autoAssignMenuToRole = async (roleId, permissions) => {
       await addParentMenus(menuId, menuIdsToAssign, allMenus);
     }
 
-    console.log(`📊 After adding parents: ${menuIdsToAssign.size} menus`);
+    console.log(`After adding parents: ${menuIdsToAssign.size} menus`);
 
     // Insert into menu_item_roles
     if (menuIdsToAssign.size > 0) {
       const values = Array.from(menuIdsToAssign).map(menuId => [menuId, roleId]);
       
-      console.log(`💾 Inserting ${values.length} rows into menu_item_roles...`);
+      console.log(`Inserting ${values.length} rows into menu_item_roles...`);
       
       const [insertResult] = await pool.query(
         `INSERT IGNORE INTO menu_item_roles (menu_item_id, role_id) VALUES ?`,
         [values]
       );
 
-      console.log(`✅ Insert result: ${insertResult.affectedRows} rows inserted`);
+      console.log(`Insert result: ${insertResult.affectedRows} rows inserted`);
       console.log(`===== AUTO-ASSIGNMENT COMPLETE =====\n`);
       
       return { success: true, count: menuIdsToAssign.size, inserted: insertResult.affectedRows };
     }
 
-    console.log(`⚠️  No menus to assign`);
+    console.log(`No menus to assign`);
     console.log(`===== AUTO-ASSIGNMENT COMPLETE =====\n`);
     return { success: true, count: 0, inserted: 0 };
     
   } catch (error) {
-    console.error('❌ ERROR in autoAssignMenuToRole:', error);
+    console.error('ERROR in autoAssignMenuToRole:', error);
     console.error('Stack trace:', error.stack);
     return { success: false, error: error.message };
   }
@@ -944,7 +944,7 @@ const addParentMenus = async (menuId, menuIdsSet, allMenus) => {
   if (menu && menu.parent_id) {
     if (!menuIdsSet.has(menu.parent_id)) {
       menuIdsSet.add(menu.parent_id);
-      console.log(`   ↳ Added parent menu ID: ${menu.parent_id}`);
+      console.log(`Added parent menu ID: ${menu.parent_id}`);
       // Recursively add grandparents
       await addParentMenus(menu.parent_id, menuIdsSet, allMenus);
     }
@@ -963,9 +963,9 @@ export const createRole = async (req, res) => {
 
   try {
     console.log('\n========================================');
-    console.log('🆕 CREATING NEW ROLE');
+    console.log('CREATING NEW ROLE');
     console.log('========================================');
-    console.log('📝 Role Name:', normalizedName);
+    console.log('Role Name:', normalizedName);
 
     // Check if role exists
     const [existingRole] = await pool.execute(
@@ -974,7 +974,7 @@ export const createRole = async (req, res) => {
     );
 
     if (existingRole.length) {
-      console.log('❌ Role already exists');
+      console.log(' Role already exists');
       return res.status(400).json({ message: "Role already exists" });
     }
 
@@ -987,19 +987,19 @@ export const createRole = async (req, res) => {
     );
 
     const newRoleId = result.insertId;
-    console.log(`✅ Role created successfully with ID: ${newRoleId}`);
+    console.log(` Role created successfully with ID: ${newRoleId}`);
 
-    // ✅ AUTO-ASSIGN MENUS
+    // AUTO-ASSIGN MENUS
     if (permissions && Object.keys(permissions).length > 0) {
-      console.log(`\n🔄 Starting auto-menu assignment...`);
+      console.log(`\n Starting auto-menu assignment...`);
       const menuResult = await autoAssignMenuToRole(newRoleId, permissions);
-      console.log(`📋 Auto-assignment result:`, menuResult);
+      console.log(` Auto-assignment result:`, menuResult);
       
       if (!menuResult.success) {
-        console.error(`❌ Menu assignment failed:`, menuResult.error);
+        console.error(` Menu assignment failed:`, menuResult.error);
       }
     } else {
-      console.log('⚠️  No permissions provided, skipping menu assignment');
+      console.log('  No permissions provided, skipping menu assignment');
     }
 
     console.log('========================================\n');
@@ -1014,7 +1014,7 @@ export const createRole = async (req, res) => {
     });
 
   } catch (err) {
-    console.error("❌ Error creating role:", err);
+    console.error("Error creating role:", err);
     res.status(500).json({ message: "Internal Server Error", error: err.message });
   }
 };
@@ -1026,9 +1026,9 @@ export const updateRoleById = async (req, res) => {
 
   try {
     console.log('\n========================================');
-    console.log('🔄 UPDATING ROLE');
+    console.log('UPDATING ROLE');
     console.log('========================================');
-    console.log('🆔 Role ID:', id);
+    console.log('Role ID:', id);
 
     // Check if role exists
     const [existingRole] = await pool.execute(
@@ -1049,21 +1049,21 @@ export const updateRoleById = async (req, res) => {
       [normalizedName, permissionsJson, id]
     );
 
-    console.log(`✅ Role updated: ${normalizedName}`);
+    console.log(`Role updated: ${normalizedName}`);
 
-    // ✅ RE-ASSIGN MENUS
+    // RE-ASSIGN MENUS
     if (permissions && Object.keys(permissions).length > 0) {
       // Clear existing assignments
-      console.log(`🗑️  Clearing existing menu assignments...`);
+      console.log(` Clearing existing menu assignments...`);
       await pool.execute(
         "DELETE FROM menu_item_roles WHERE role_id = ?",
         [id]
       );
 
       // Re-assign based on new permissions
-      console.log(`\n🔄 Re-assigning menus...`);
+      console.log(`\n Re-assigning menus...`);
       const menuResult = await autoAssignMenuToRole(id, permissions);
-      console.log(`📋 Re-assignment result:`, menuResult);
+      console.log(` Re-assignment result:`, menuResult);
     }
 
     console.log('========================================\n');
@@ -1078,7 +1078,7 @@ export const updateRoleById = async (req, res) => {
     });
 
   } catch (err) {
-    console.error("❌ Error updating role:", err);
+    console.error(" Error updating role:", err);
     res.status(500).json({ message: "Internal Server Error", error: err.message });
   }
 };
@@ -1175,7 +1175,7 @@ export const getModules = async (req, res) => {
 
     const moduleList = modules.map(m => m.module);
     
-    console.log("📋 Modules from database:", moduleList);
+    console.log("Modules from database:", moduleList);
     
     res.json({ data: moduleList });
   } catch (err) {
@@ -1226,7 +1226,7 @@ export const getRoles = async (req, res) => {
     
     const queryParams = [];
 
-    // FIXED: Admin users see only roles that exist in their warehouse
+
     if (warehouseFilter && user.isAdmin) {
       query += `
         WHERE r.id IN (
@@ -1242,7 +1242,7 @@ export const getRoles = async (req, res) => {
 
     const [roles] = await pool.execute(query, queryParams);
 
-    console.log(`📊 Roles query results: ${roles.length} roles (filtered: ${warehouseFilter ? 'Yes' : 'No'})`);
+    console.log(`Roles query results: ${roles.length} roles (filtered: ${warehouseFilter ? 'Yes' : 'No'})`);
 
     // Parse JSON permissions
     const parsedRoles = roles.map((role) => ({

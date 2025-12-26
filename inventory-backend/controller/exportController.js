@@ -308,9 +308,117 @@ mapDataToRow: (item) => ({
   created_at: item.created_at ? DateTime.fromJSDate(new Date(item.created_at)).toFormat('yyyy-MM-dd HH:mm:ss') : 'N/A',
 
 })
+},
 
 
-  }
+stockflows: {
+  filename: 'stock-flows',
+  title: 'Stock Flows Report',
+  pageSize: 'A4',
+  layout: 'landscape',
+  sheetName: 'Stock Flows',
+  
+  baseQuery: `
+    SELECT 
+      sf.*,
+      w1.title as from_warehouse_name,
+      w2.title as to_warehouse_name,
+      ap.title as article_profile_name,
+      p.title as product_name,
+      p.sku as product_sku
+    FROM stock_flow sf
+    LEFT JOIN warehouse w1 ON sf.from_wh = w1.id
+    LEFT JOIN warehouse w2 ON sf.to_wh = w2.id
+    LEFT JOIN article_profile ap ON sf.article_profile_id = ap.id
+    LEFT JOIN product p ON sf.product_id = p.id
+  `,
+  
+  buildQuery: (filters) => {
+    let whereConditions = [];
+    let queryParams = [];
+
+    if (filters.search) {
+      whereConditions.push("(sf.description LIKE ? OR sf.from_loc LIKE ? OR sf.to_loc LIKE ?)");
+      queryParams.push(`%${filters.search}%`, `%${filters.search}%`, `%${filters.search}%`);
+    }
+    if (filters.status) {
+      whereConditions.push("sf.status = ?");
+      queryParams.push(filters.status);
+    }
+    if (filters.transport) {
+      whereConditions.push("sf.transport = ?");
+      queryParams.push(filters.transport);
+    }
+    if (filters.from_wh) {
+      whereConditions.push("sf.from_wh = ?");
+      queryParams.push(filters.from_wh);
+    }
+    if (filters.to_wh) {
+      whereConditions.push("sf.to_wh = ?");
+      queryParams.push(filters.to_wh);
+    }
+
+    const whereClause = whereConditions.length > 0 
+      ? "WHERE " + whereConditions.join(" AND ") 
+      : "";
+
+    return { whereClause, queryParams };
+  },
+
+  orderBy: 'ORDER BY sf.created_at DESC',
+
+  pdfTable: {
+    headers: ['ID', 'From WH', 'To WH', 'Article', 'Product', 'Qty', 'Transport', 'Status'],
+    colWidths: [40, 100, 100, 100, 100, 50, 80, 80],
+    getRowData: (item) => [
+      `#${item.id}`,
+      item.from_warehouse_name || 'N/A',
+      item.to_warehouse_name || 'N/A',
+      item.article_profile_name || 'N/A',
+      item.product_name || 'N/A',
+      (item.quantity || 0).toString(),
+      item.transport === 'transport_co' ? 'Transport Co.' : 
+        item.transport.charAt(0).toUpperCase() + item.transport.slice(1),
+      item.status === 'in-transit' ? 'In Transit' :
+        item.status.charAt(0).toUpperCase() + item.status.slice(1)
+    ]
+  },
+
+  excelColumns: [
+    { header: 'ID', key: 'id', width: 10 },
+    { header: 'From Warehouse', key: 'from_warehouse_name', width: 25 },
+    { header: 'To Warehouse', key: 'to_warehouse_name', width: 25 },
+    { header: 'From Location', key: 'from_loc', width: 20 },
+    { header: 'To Location', key: 'to_loc', width: 20 },
+    { header: 'Article Profile', key: 'article_profile_name', width: 25 },
+    { header: 'Product', key: 'product_name', width: 25 },
+    { header: 'Product SKU', key: 'product_sku', width: 20 },
+    { header: 'Quantity', key: 'quantity', width: 12 },
+    { header: 'Transport', key: 'transport', width: 15 },
+    { header: 'Status', key: 'status', width: 15 },
+    { header: 'Description', key: 'description', width: 35 },
+    { header: 'Created At', key: 'created_at', width: 20 },
+  ],
+
+  mapDataToRow: (item) => ({
+    id: item.id,
+    from_warehouse_name: item.from_warehouse_name || 'N/A',
+    to_warehouse_name: item.to_warehouse_name || 'N/A',
+    from_loc: item.from_loc || 'N/A',
+    to_loc: item.to_loc || 'N/A',
+    article_profile_name: item.article_profile_name || 'N/A',
+    product_name: item.product_name || 'N/A',
+    product_sku: item.product_sku || 'N/A',
+    quantity: item.quantity || 0,
+    transport: item.transport === 'transport_co' ? 'Transport Company' :
+      item.transport.charAt(0).toUpperCase() + item.transport.slice(1),
+    status: item.status === 'in-transit' ? 'In Transit' :
+      item.status.charAt(0).toUpperCase() + item.status.slice(1),
+    description: item.description || '',
+    created_at: item.created_at ? DateTime.fromJSDate(new Date(item.created_at)).toFormat('yyyy-MM-dd HH:mm:ss') : 'N/A',
+  })
+}
+
 };
 
 // ============================================

@@ -1,4 +1,503 @@
-// stockFlowSlice.js
+// // stockFlowSlice.js
+// import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+// import AuthService from '../../../services/authService';
+
+// // Async thunk to fetch stock flows
+// export const fetchStockFlows = createAsyncThunk(
+//   'stockFlow/fetchStockFlows',
+//   async (filters = {}, { rejectWithValue }) => {
+//     try {
+//       const response = await AuthService.getStockFlows(filters);
+//       return response.data;
+//     } catch (error) {
+//       return rejectWithValue(error.response?.data?.message || error.message);
+//     }
+//   }
+// );
+
+// // Async thunk to fetch stock flow by ID
+// export const fetchStockFlowById = createAsyncThunk(
+//   'stockFlow/fetchStockFlowById',
+//   async (id, { rejectWithValue }) => {
+//     try {
+//       const response = await AuthService.getStockFlowById(id);
+//       return response.data.data;
+//     } catch (error) {
+//       return rejectWithValue(error.response?.data?.message || error.message);
+//     }
+//   }
+// );
+
+// // Async thunk to create stock flow
+// export const createStockFlow = createAsyncThunk(
+//   'stockFlow/createStockFlow',
+//   async (stockFlowData, { rejectWithValue }) => {
+//     try {
+//       const response = await AuthService.createStockFlow(stockFlowData);
+//       return response.data;
+//     } catch (error) {
+//       return rejectWithValue(error.response?.data?.message || error.message);
+//     }
+//   }
+// );
+
+// // Async thunk to update stock flow
+// export const updateStockFlow = createAsyncThunk(
+//   'stockFlow/updateStockFlow',
+//   async ({ id, data }, { rejectWithValue }) => {
+//     try {
+//       const response = await AuthService.updateStockFlowById(id, data);
+//       return { id, data: response.data.data };
+//     } catch (error) {
+//       return rejectWithValue(error.response?.data?.message || error.message);
+//     }
+//   }
+// );
+
+// // Async thunk to delete stock flow
+// export const deleteStockFlow = createAsyncThunk(
+//   'stockFlow/deleteStockFlow',
+//   async (id, { rejectWithValue }) => {
+//     try {
+//       await AuthService.deleteStockFlow(id);
+//       return id;
+//     } catch (error) {
+//       return rejectWithValue(error.response?.data?.message || error.message);
+//     }
+//   }
+// );
+
+// // Async thunk to fetch statistics
+// export const fetchStockFlowStats = createAsyncThunk(
+//   'stockFlow/fetchStockFlowStats',
+//   async (_, { rejectWithValue }) => {
+//     try {
+//       const response = await AuthService.getStockFlowStats();
+//       return response.data.data;
+//     } catch (error) {
+//       return rejectWithValue(error.response?.data?.message || error.message);
+//     }
+//   }
+// );
+
+// const initialState = {
+//   stockFlows: [],
+//   currentStockFlow: null,
+//   stats: {
+//     total: 0,
+//     approved: 0,
+//     in_transit: 0,
+//     delivered: 0,
+//     total_quantity: 0,
+//   },
+//   filters: {
+//     search: '',
+//     status: '',
+//     transport: '',
+//     from_wh: '',
+//     to_wh: '',
+//     sortBy: 'created_at',
+//     sortOrder: 'DESC',
+//   },
+//   pagination: {
+//     total: 0,
+//     page: 1,
+//     limit: 10,
+//     totalPages: 0,
+//   },
+//   status: 'idle', // 'idle' | 'loading' | 'succeeded' | 'failed'
+//   error: null,
+//   createStatus: 'idle',
+//   updateStatus: 'idle',
+//   deleteStatus: 'idle',
+//   statsStatus: 'idle',
+// };
+
+// const stockFlowSlice = createSlice({
+//   name: 'stockFlow',
+//   initialState,
+//   reducers: {
+//     setStockFlows: (state, action) => {
+//       state.stockFlows = action.payload;
+//     },
+//     setFilters: (state, action) => {
+//       state.filters = { ...state.filters, ...action.payload };
+//     },
+//     resetFilters: (state) => {
+//       state.filters = initialState.filters;
+//     },
+//     setCurrentStockFlow: (state, action) => {
+//       state.currentStockFlow = action.payload;
+//     },
+//     clearCurrentStockFlow: (state) => {
+//       state.currentStockFlow = null;
+//     },
+//     resetStockFlowState: () => {
+//       return initialState;
+//     },
+//     clearError: (state) => {
+//       state.error = null;
+//     },
+//   },
+//   extraReducers: (builder) => {
+//     builder
+//       // Fetch Stock Flows
+//       .addCase(fetchStockFlows.pending, (state) => {
+//         state.status = 'loading';
+//         state.error = null;
+//       })
+//       .addCase(fetchStockFlows.fulfilled, (state, action) => {
+//         state.status = 'succeeded';
+//         state.stockFlows = action.payload.data || [];
+//         state.pagination = action.payload.pagination || state.pagination;
+//         state.error = null;
+//       })
+//       .addCase(fetchStockFlows.rejected, (state, action) => {
+//         state.status = 'failed';
+//         state.error = action.payload || action.error.message;
+//       })
+
+//       // Fetch Stock Flow By ID
+//       .addCase(fetchStockFlowById.pending, (state) => {
+//         state.status = 'loading';
+//       })
+//       .addCase(fetchStockFlowById.fulfilled, (state, action) => {
+//         state.status = 'succeeded';
+//         state.currentStockFlow = action.payload;
+//       })
+//       .addCase(fetchStockFlowById.rejected, (state, action) => {
+//         state.status = 'failed';
+//         state.error = action.payload;
+//       })
+
+//       // Create Stock Flow
+//       .addCase(createStockFlow.pending, (state) => {
+//         state.createStatus = 'loading';
+//       })
+//       .addCase(createStockFlow.fulfilled, (state) => {
+//         state.createStatus = 'succeeded';
+//       })
+//       .addCase(createStockFlow.rejected, (state, action) => {
+//         state.createStatus = 'failed';
+//         state.error = action.payload;
+//       })
+
+//       // Update Stock Flow
+//       .addCase(updateStockFlow.pending, (state) => {
+//         state.updateStatus = 'loading';
+//       })
+//       .addCase(updateStockFlow.fulfilled, (state, action) => {
+//   state.updateStatus = 'succeeded';
+//   const index = state.stockFlows.findIndex(sf => sf.id === action.payload.id);
+//   if (index !== -1) {
+//     // merge updated data
+//     state.stockFlows[index] = { ...state.stockFlows[index], ...action.payload.data };
+//   } else {
+//     // optionally add if filtered out
+//     state.stockFlows.push(action.payload.data);
+//   }
+// })
+
+
+
+
+//       .addCase(updateStockFlow.rejected, (state, action) => {
+//         state.updateStatus = 'failed';
+//         state.error = action.payload;
+//       })
+
+//       // Delete Stock Flow
+//       .addCase(deleteStockFlow.pending, (state) => {
+//         state.deleteStatus = 'loading';
+//       })
+//       .addCase(deleteStockFlow.fulfilled, (state, action) => {
+//         state.deleteStatus = 'succeeded';
+//         state.stockFlows = state.stockFlows.filter(sf => sf.id !== action.payload);
+//       })
+//       .addCase(deleteStockFlow.rejected, (state, action) => {
+//         state.deleteStatus = 'failed';
+//         state.error = action.payload;
+//       })
+
+//       // Fetch Stats
+//       .addCase(fetchStockFlowStats.pending, (state) => {
+//         state.statsStatus = 'loading';
+//       })
+//       .addCase(fetchStockFlowStats.fulfilled, (state, action) => {
+//         state.statsStatus = 'succeeded';
+//         state.stats = action.payload;
+//       })
+//       .addCase(fetchStockFlowStats.rejected, (state, action) => {
+//         state.statsStatus = 'failed';
+//         state.error = action.payload;
+//       });
+//   },
+// });
+
+// export const {
+//   setStockFlows,
+//   setFilters,
+//   resetFilters,
+//   setCurrentStockFlow,
+//   clearCurrentStockFlow,
+//   resetStockFlowState,
+//   clearError,
+// } = stockFlowSlice.actions;
+
+// export default stockFlowSlice.reducer;
+
+
+
+
+// // stockFlowSlice.js
+// import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+// import AuthService from '../../../services/authService';
+
+// // Async thunk to fetch stock flows
+// export const fetchStockFlows = createAsyncThunk(
+//   'stockFlow/fetchStockFlows',
+//   async (filters = {}, { rejectWithValue }) => {
+//     try {
+//       const response = await AuthService.getStockFlows(filters);
+//       return response.data;
+//     } catch (error) {
+//       return rejectWithValue(error.response?.data?.message || error.message);
+//     }
+//   }
+// );
+
+// // Async thunk to fetch stock flow by ID
+// export const fetchStockFlowById = createAsyncThunk(
+//   'stockFlow/fetchStockFlowById',
+//   async (id, { rejectWithValue }) => {
+//     try {
+//       const response = await AuthService.getStockFlowById(id);
+//       return response.data.data;
+//     } catch (error) {
+//       return rejectWithValue(error.response?.data?.message || error.message);
+//     }
+//   }
+// );
+
+// // Async thunk to create stock flow
+// export const createStockFlow = createAsyncThunk(
+//   'stockFlow/createStockFlow',
+//   async (stockFlowData, { rejectWithValue }) => {
+//     try {
+//       const response = await AuthService.createStockFlow(stockFlowData);
+//       return response.data;
+//     } catch (error) {
+//       return rejectWithValue(error.response?.data?.message || error.message);
+//     }
+//   }
+// );
+
+// // Async thunk to update stock flow
+// export const updateStockFlow = createAsyncThunk(
+//   'stockFlow/updateStockFlow',
+//   async ({ id, data }, { rejectWithValue }) => {
+//     try {
+//       const response = await AuthService.updateStockFlowById(id, data);
+//       // Return the full updated object from the backend
+//       return response.data.data;
+//     } catch (error) {
+//       return rejectWithValue(error.response?.data?.message || error.message);
+//     }
+//   }
+// );
+
+// // Async thunk to delete stock flow
+// export const deleteStockFlow = createAsyncThunk(
+//   'stockFlow/deleteStockFlow',
+//   async (id, { rejectWithValue }) => {
+//     try {
+//       await AuthService.deleteStockFlow(id);
+//       return id;
+//     } catch (error) {
+//       return rejectWithValue(error.response?.data?.message || error.message);
+//     }
+//   }
+// );
+
+// // Async thunk to fetch statistics
+// export const fetchStockFlowStats = createAsyncThunk(
+//   'stockFlow/fetchStockFlowStats',
+//   async (_, { rejectWithValue }) => {
+//     try {
+//       const response = await AuthService.getStockFlowStats();
+//       return response.data.data;
+//     } catch (error) {
+//       return rejectWithValue(error.response?.data?.message || error.message);
+//     }
+//   }
+// );
+
+// const initialState = {
+//   stockFlows: [],
+//   currentStockFlow: null,
+//   stats: {
+//     total: 0,
+//     approved: 0,
+//     in_transit: 0,
+//     delivered: 0,
+//     total_quantity: 0,
+//   },
+//   filters: {
+//     search: '',
+//     status: '',
+//     transport: '',
+//     from_wh: '',
+//     to_wh: '',
+//     sortBy: 'created_at',
+//     sortOrder: 'DESC',
+//   },
+//   pagination: {
+//     total: 0,
+//     page: 1,
+//     limit: 10,
+//     totalPages: 0,
+//   },
+//   status: 'idle',
+//   error: null,
+//   createStatus: 'idle',
+//   updateStatus: 'idle',
+//   deleteStatus: 'idle',
+//   statsStatus: 'idle',
+// };
+
+// const stockFlowSlice = createSlice({
+//   name: 'stockFlow',
+//   initialState,
+//   reducers: {
+//     setStockFlows: (state, action) => {
+//       state.stockFlows = action.payload;
+//     },
+//     setFilters: (state, action) => {
+//       state.filters = { ...state.filters, ...action.payload };
+//     },
+//     resetFilters: (state) => {
+//       state.filters = initialState.filters;
+//     },
+//     setCurrentStockFlow: (state, action) => {
+//       state.currentStockFlow = action.payload;
+//     },
+//     clearCurrentStockFlow: (state) => {
+//       state.currentStockFlow = null;
+//     },
+//     resetStockFlowState: () => {
+//       return initialState;
+//     },
+//     clearError: (state) => {
+//       state.error = null;
+//     },
+//   },
+//   extraReducers: (builder) => {
+//     builder
+//       // Fetch Stock Flows
+//       .addCase(fetchStockFlows.pending, (state) => {
+//         state.status = 'loading';
+//         state.error = null;
+//       })
+//       .addCase(fetchStockFlows.fulfilled, (state, action) => {
+//         state.status = 'succeeded';
+//         state.stockFlows = action.payload.data || [];
+//         state.pagination = action.payload.pagination || state.pagination;
+//         state.error = null;
+//       })
+//       .addCase(fetchStockFlows.rejected, (state, action) => {
+//         state.status = 'failed';
+//         state.error = action.payload || action.error.message;
+//       })
+
+//       // Fetch Stock Flow By ID
+//       .addCase(fetchStockFlowById.pending, (state) => {
+//         state.status = 'loading';
+//       })
+//       .addCase(fetchStockFlowById.fulfilled, (state, action) => {
+//         state.status = 'succeeded';
+//         state.currentStockFlow = action.payload;
+//       })
+//       .addCase(fetchStockFlowById.rejected, (state, action) => {
+//         state.status = 'failed';
+//         state.error = action.payload;
+//       })
+
+//       // Create Stock Flow
+//       .addCase(createStockFlow.pending, (state) => {
+//         state.createStatus = 'loading';
+//       })
+//       .addCase(createStockFlow.fulfilled, (state) => {
+//         state.createStatus = 'succeeded';
+//       })
+//       .addCase(createStockFlow.rejected, (state, action) => {
+//         state.createStatus = 'failed';
+//         state.error = action.payload;
+//       })
+
+//       // Update Stock Flow - FIXED
+//       .addCase(updateStockFlow.pending, (state) => {
+//         state.updateStatus = 'loading';
+//       })
+//       .addCase(updateStockFlow.fulfilled, (state, action) => {
+//         state.updateStatus = 'succeeded';
+//         // Find and update the stock flow in the array
+//         const index = state.stockFlows.findIndex(sf => sf.id === action.payload.id);
+//         if (index !== -1) {
+//           // Replace the entire object with the updated one from backend
+//           state.stockFlows[index] = action.payload;
+//         }
+//         // Also update currentStockFlow if it's the same one
+//         if (state.currentStockFlow && state.currentStockFlow.id === action.payload.id) {
+//           state.currentStockFlow = action.payload;
+//         }
+//       })
+//       .addCase(updateStockFlow.rejected, (state, action) => {
+//         state.updateStatus = 'failed';
+//         state.error = action.payload;
+//       })
+
+//       // Delete Stock Flow
+//       .addCase(deleteStockFlow.pending, (state) => {
+//         state.deleteStatus = 'loading';
+//       })
+//       .addCase(deleteStockFlow.fulfilled, (state, action) => {
+//         state.deleteStatus = 'succeeded';
+//         state.stockFlows = state.stockFlows.filter(sf => sf.id !== action.payload);
+//       })
+//       .addCase(deleteStockFlow.rejected, (state, action) => {
+//         state.deleteStatus = 'failed';
+//         state.error = action.payload;
+//       })
+
+//       // Fetch Stats
+//       .addCase(fetchStockFlowStats.pending, (state) => {
+//         state.statsStatus = 'loading';
+//       })
+//       .addCase(fetchStockFlowStats.fulfilled, (state, action) => {
+//         state.statsStatus = 'succeeded';
+//         state.stats = action.payload;
+//       })
+//       .addCase(fetchStockFlowStats.rejected, (state, action) => {
+//         state.statsStatus = 'failed';
+//         state.error = action.payload;
+//       });
+//   },
+// });
+
+// export const {
+//   setStockFlows,
+//   setFilters,
+//   resetFilters,
+//   setCurrentStockFlow,
+//   clearCurrentStockFlow,
+//   resetStockFlowState,
+//   clearError,
+// } = stockFlowSlice.actions;
+
+// export default stockFlowSlice.reducer;
+
+
+// stockFlowSlice.js - FIXED VERSION
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import AuthService from '../../../services/authService';
 
@@ -47,7 +546,8 @@ export const updateStockFlow = createAsyncThunk(
   async ({ id, data }, { rejectWithValue }) => {
     try {
       const response = await AuthService.updateStockFlowById(id, data);
-      return { id, data: response.data };
+      console.log('Update response:', response.data);
+      return response.data.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || error.message);
     }
@@ -80,6 +580,19 @@ export const fetchStockFlowStats = createAsyncThunk(
   }
 );
 
+// NEW: Fetch dynamic options from backend
+export const fetchStockFlowOptions = createAsyncThunk(
+  'stockFlow/fetchStockFlowOptions',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await AuthService.getStockFlowOptions();
+      return response.data.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || error.message);
+    }
+  }
+);
+
 const initialState = {
   stockFlows: [],
   currentStockFlow: null,
@@ -105,7 +618,15 @@ const initialState = {
     limit: 10,
     totalPages: 0,
   },
-  status: 'idle', // 'idle' | 'loading' | 'succeeded' | 'failed'
+  // FIXED: Separate options state with loading flag
+  options: {
+    transport: [],
+    status: [],
+    sort: [], // Will be populated from backend
+    loading: false,
+    error: null,
+  },
+  status: 'idle',
   error: null,
   createStatus: 'idle',
   updateStatus: 'idle',
@@ -137,6 +658,7 @@ const stockFlowSlice = createSlice({
     },
     clearError: (state) => {
       state.error = null;
+      state.options.error = null;
     },
   },
   extraReducers: (builder) => {
@@ -185,17 +707,46 @@ const stockFlowSlice = createSlice({
       // Update Stock Flow
       .addCase(updateStockFlow.pending, (state) => {
         state.updateStatus = 'loading';
+        state.error = null;
       })
       .addCase(updateStockFlow.fulfilled, (state, action) => {
+        console.log('Update fulfilled with payload:', action.payload);
+        
         state.updateStatus = 'succeeded';
+        
         const index = state.stockFlows.findIndex(sf => sf.id === action.payload.id);
+        
         if (index !== -1) {
-          state.stockFlows[index] = { ...state.stockFlows[index], ...action.payload.data };
+          state.stockFlows[index] = {
+            ...action.payload,
+            id: action.payload.id,
+            from_wh: action.payload.from_wh,
+            to_wh: action.payload.to_wh,
+            from_loc: action.payload.from_loc,
+            to_loc: action.payload.to_loc,
+            quantity: action.payload.quantity,
+            transport: action.payload.transport,
+            status: action.payload.status,
+            description: action.payload.description,
+            from_warehouse_name: action.payload.from_warehouse_name,
+            to_warehouse_name: action.payload.to_warehouse_name,
+            created_at: action.payload.created_at,
+            updated_at: action.payload.updated_at,
+          };
+          
+          console.log('Updated stockFlows[' + index + ']:', state.stockFlows[index]);
         }
+        
+        if (state.currentStockFlow && state.currentStockFlow.id === action.payload.id) {
+          state.currentStockFlow = { ...action.payload };
+        }
+        
+        state.error = null;
       })
       .addCase(updateStockFlow.rejected, (state, action) => {
         state.updateStatus = 'failed';
         state.error = action.payload;
+        console.error('Update rejected:', action.payload);
       })
 
       // Delete Stock Flow
@@ -222,6 +773,23 @@ const stockFlowSlice = createSlice({
       .addCase(fetchStockFlowStats.rejected, (state, action) => {
         state.statsStatus = 'failed';
         state.error = action.payload;
+      })
+
+      // FIXED: Fetch Stock Flow Options
+      .addCase(fetchStockFlowOptions.pending, (state) => {
+        state.options.loading = true;
+        state.options.error = null;
+      })
+      .addCase(fetchStockFlowOptions.fulfilled, (state, action) => {
+        state.options.loading = false;
+        state.options.transport = action.payload.transport || [];
+        state.options.status = action.payload.status || [];
+        state.options.sort = action.payload.sort || [];
+        state.options.error = null;
+      })
+      .addCase(fetchStockFlowOptions.rejected, (state, action) => {
+        state.options.loading = false;
+        state.options.error = action.payload;
       });
   },
 });

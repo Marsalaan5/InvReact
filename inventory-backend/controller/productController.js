@@ -539,7 +539,7 @@ export function generateBarcodeNumber(productName) {
       .join('') +
     parseInt(timestamp36, 36).toString().slice(-6) +
     Math.floor(Math.random() * 90 + 10)
-  ).slice(-12); // ensure 12 digits
+  ).slice(-12);
 
   const checkDigit = luhnChecksum(numericStr);
 
@@ -573,7 +573,7 @@ export function generateBarcodeImage(barcodeNumber) {
 }
 
 
-// GET all products with filters, pagination, and sorting
+// GET
 export const getProduct = async (req, res) => {
   try {
     const {warehouseFilter} = req;
@@ -748,7 +748,7 @@ WHERE p.id = ?
 
 export const getProductByScan = async (req, res) => {
   try {
-    const { code } = req.params; // This will be either SKU or Barcode
+    const { code } = req.params; 
 
     if (!code) {
       return res.status(400).json({
@@ -886,7 +886,7 @@ export const createProduct = async (req, res) => {
       });
     }
 
-    // Insert product
+  
     const product_insert_res = await do_ma_query(
       `INSERT INTO product
         (title, article_profile_id, warehouse_id, location, status, count, sku, barcode, barcode_image,

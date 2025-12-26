@@ -1,38 +1,9 @@
-//for static
 
-// // redux/slices/productSlice.js
-// import { createSlice } from '@reduxjs/toolkit';
-// import { productlistdata } from '../../json/productlistdata';
-// // import { brandlistdata } from '../../json/brandlistdata';
-
-// const initialState = {
-//   product_list: productlistdata,
-// //   brand_list: brandlistdata,
-// };
-
-// const productSlice = createSlice({
-//   name: 'products',
-//   initialState,
-//   reducers: {
-//     setProductList: (state, action) => {
-//       state.product_list = action.payload;
-//     },
-    
-//   },
-// });
-
-// export const { setProductList, setBrandList } = productSlice.actions;
-// export default productSlice.reducer;
-
-
-
-
-//for dynamic from Api later : TO DO
 
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import AuthService from '../../../services/authService';
 
-// Async thunk to fetch products from API
+
 export const fetchProducts = createAsyncThunk(
   'products/fetchProducts',
   async (filters = {}, { rejectWithValue }) => {
@@ -45,7 +16,7 @@ export const fetchProducts = createAsyncThunk(
   }
 );
 
-// Async thunk to fetch product by ID
+
 export const fetchProductById = createAsyncThunk(
   'products/fetchProductById',
   async (id, { rejectWithValue }) => {
@@ -58,7 +29,7 @@ export const fetchProductById = createAsyncThunk(
   }
 );
 
-// Async thunk to create product
+
 export const createProduct = createAsyncThunk(
   'products/createProduct',
   async (productData, { rejectWithValue }) => {
@@ -71,7 +42,7 @@ export const createProduct = createAsyncThunk(
   }
 );
 
-// Async thunk to update product
+
 export const updateProduct = createAsyncThunk(
   'products/updateProduct',
   async ({ id, data }, { rejectWithValue }) => {
@@ -84,7 +55,7 @@ export const updateProduct = createAsyncThunk(
   }
 );
 
-// Async thunk to delete product
+
 export const deleteProduct = createAsyncThunk(
   'products/deleteProduct',
   async (id, { rejectWithValue }) => {
@@ -97,7 +68,7 @@ export const deleteProduct = createAsyncThunk(
   }
 );
 
-// Async thunk to scan product
+
 export const scanProduct = createAsyncThunk(
   'products/scanProduct',
   async (code, { rejectWithValue }) => {
@@ -120,6 +91,7 @@ const initialState = {
     warehouse_id: '',
     article_profile_id: '',
     sortBy: 'created_at',
+    
     sortOrder: 'DESC',
   },
   pagination: {
@@ -128,7 +100,7 @@ const initialState = {
     limit: 10,
     totalPages: 0,
   },
-  status: 'idle', // 'idle' | 'loading' | 'succeeded' | 'failed'
+  status: 'idle',
   error: null,
   createStatus: 'idle',
   updateStatus: 'idle',
@@ -165,7 +137,7 @@ const productSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      // Fetch Products
+  
       .addCase(fetchProducts.pending, (state) => {
         state.status = 'loading';
         state.error = null;
@@ -181,7 +153,7 @@ const productSlice = createSlice({
         state.error = action.payload || action.error.message;
       })
 
-      // Fetch Product By ID
+  
       .addCase(fetchProductById.pending, (state) => {
         state.status = 'loading';
       })
@@ -194,13 +166,13 @@ const productSlice = createSlice({
         state.error = action.payload;
       })
 
-      // Create Product
+      
       .addCase(createProduct.pending, (state) => {
         state.createStatus = 'loading';
       })
       .addCase(createProduct.fulfilled, (state, action) => {
         state.createStatus = 'succeeded';
-        // Optionally add to product list
+      
         if (action.payload.data) {
           state.product_list.unshift(action.payload.data);
         }
@@ -210,7 +182,7 @@ const productSlice = createSlice({
         state.error = action.payload;
       })
 
-      // Update Product
+    
       .addCase(updateProduct.pending, (state) => {
         state.updateStatus = 'loading';
       })
@@ -226,7 +198,7 @@ const productSlice = createSlice({
         state.error = action.payload;
       })
 
-      // Delete Product
+  
       .addCase(deleteProduct.pending, (state) => {
         state.deleteStatus = 'loading';
       })
@@ -239,7 +211,7 @@ const productSlice = createSlice({
         state.error = action.payload;
       })
 
-      // Scan Product
+    
       .addCase(scanProduct.pending, (state) => {
         state.scanStatus = 'loading';
       })

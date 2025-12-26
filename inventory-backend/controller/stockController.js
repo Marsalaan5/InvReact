@@ -4,6 +4,86 @@ import Joi from "joi";
 import { DateTime } from "luxon";
 import { do_ma_query } from '../db.js';
 
+function formatLabel(value) {
+  // Special cases
+  const labelMap = {
+    'transport_co': 'Transport Company',
+    'in-transit': 'In Transit',
+    'approved': 'Approved',
+    'delivered': 'Delivered',
+    'bus': 'Bus',
+    'courier': 'Courier',
+    'employee': 'Employee',
+  };
+
+  return labelMap[value] || value.charAt(0).toUpperCase() + value.slice(1);
+}
+
+export const getStockFlowOptions = async (req, res) => {
+  try {
+    // Query to get ENUM values for transport and status columns
+    const query = `
+      SELECT 
+        COLUMN_NAME,
+        COLUMN_TYPE
+      FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_NAME = 'stock_flow'
+        AND TABLE_SCHEMA = DATABASE()
+        AND COLUMN_NAME IN ('transport', 'status')
+    `;
+
+    const columns = await do_ma_query(query);
+
+    const options = {
+      transport: [],
+      status: [],
+      sort: [
+        { value: "created_at:DESC", label: "Newest First" },
+        { value: "created_at:ASC", label: "Oldest First" },
+        { value: "quantity:DESC", label: "Quantity High to Low" },
+        { value: "quantity:ASC", label: "Quantity Low to High" },
+      ],
+    };
+
+    // Parse ENUM values
+    columns.forEach(column => {
+      const columnName = column.COLUMN_NAME;
+      const columnType = column.COLUMN_TYPE;
+
+      // Extract ENUM values - format: enum('value1','value2','value3')
+      const enumMatch = columnType.match(/enum\((.*?)\)/i);
+      if (enumMatch) {
+        const enumValues = enumMatch[1]
+          .split(',')
+          .map(val => val.replace(/'/g, '').trim());
+
+        // Convert to options format with proper labels
+        options[columnName] = enumValues.map(value => ({
+          value: value,
+          label: formatLabel(value),
+        }));
+      }
+    });
+
+    res.status(200).json({
+      success: true,
+      data: options,
+      timestamp: DateTime.local().toFormat('yyyy-MM-dd HH:mm:ss'),
+    });
+  } catch (error) {
+    console.error('Error fetching stock flow options:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching options',
+      error: error.message,
+      timestamp: DateTime.local().toFormat('yyyy-MM-dd HH:mm:ss'),
+    });
+  }
+};
+
+
+
+
 // GET all stock flows with filters, pagination, and sorting
 export const getStockFlows = async (req, res) => {
   try {
@@ -294,6 +374,124 @@ export const createStockFlow = async (req, res) => {
 };
 
 // UPDATE stock flow
+// export const updateStockFlowById = async (req, res) => {
+//   try {
+//     const { id } = req.params;
+//     const { warehouseFilter } = req;
+
+//     const stockflow_schema = Joi.object({
+//       from_wh: Joi.number().integer().min(1).allow(null).label("from warehouse"),
+//       to_wh: Joi.number().integer().min(1).allow(null).label("to warehouse"),
+//       from_loc: Joi.string().max(255).allow("", null).label("from location"),
+//       to_loc: Joi.string().max(255).allow("", null).label("to location"),
+//       quantity: Joi.number().integer().min(1).required().label("quantity"),
+//       transport: Joi.string().valid('bus', 'courier', 'employee', 'transport_co').required().label("transport"),
+//       status: Joi.string().valid('approved', 'delivered', 'in-transit').required().label("status"),
+//       description: Joi.string().max(255).allow("", null).label("description"),
+//     });
+
+//     const { error, value } = stockflow_schema.validate(req.body, { abortEarly: false });
+
+//     if (error) {
+//       return res.status(400).json({
+//         success: false,
+//         timestamp: DateTime.local().toFormat("yyyy-MM-dd HH:mm:ss"),
+//         message: error.details[0].message,
+//       });
+//     }
+
+//     // Check if stock flow exists
+//     let checkQuery = "SELECT * FROM stock_flow WHERE id = ?";
+//     const checkParams = [id];
+
+//     if (warehouseFilter) {
+//       checkQuery += " AND (from_wh = ? OR to_wh = ?)";
+//       checkParams.push(warehouseFilter, warehouseFilter);
+//     }
+
+//     const stockflow_check = await do_ma_query(checkQuery, checkParams);
+
+//     if (stockflow_check.length === 0) {
+//       return res.status(404).json({
+//         success: false,
+//         timestamp: DateTime.local().toFormat("yyyy-MM-dd HH:mm:ss"),
+//         message: warehouseFilter ? "Stock flow not found or access denied" : "Stock flow not found",
+//       });
+//     }
+
+//     // Update stock flow
+//     const stockflow_update_res = await do_ma_query(
+//       `UPDATE stock_flow SET
+//         from_wh = ?, to_wh = ?, from_loc = ?, to_loc = ?, 
+//         quantity = ?, transport = ?, status = ?, description = ?
+//       WHERE id = ?`,
+//       [
+//         value.from_wh || null,
+//         value.to_wh || null,
+//         value.from_loc || null,
+//         value.to_loc || null,
+//         value.quantity,
+//         value.transport,
+//         value.status,
+//         value.description || null,
+//         id,
+//       ]
+//     );
+
+//     if (stockflow_update_res.affectedRows === 1) {
+//       // Fetch updated stock flow
+//       // const [updatedStockFlow] = await do_ma_query(
+//       //   "SELECT sf.*, fw.title AS from_warehouse_name, tw.title AS to_warehouse_name FROM stock_flow sf " +
+//       //   "LEFT JOIN warehouse fw ON sf.from_wh = fw.id " +
+//       //   "LEFT JOIN warehouse tw ON sf.to_wh = tw.id " +
+//       //   "WHERE sf.id = ?",
+//       //   [id]
+//       // );
+
+//       // res.status(200).json({
+//       //   success: true,
+//       //   timestamp: DateTime.local().toFormat("yyyy-MM-dd HH:mm:ss"),
+//       //   message: "Stock flow updated successfully",
+//       //   data: updatedStockFlow, // <-- return full updated object
+//       // });
+
+
+//       // After UPDATE query
+// const [updatedStockFlow] = await do_ma_query(
+//   `SELECT sf.*, fw.title AS from_warehouse_name, tw.title AS to_warehouse_name
+//    FROM stock_flow sf
+//    LEFT JOIN warehouse fw ON sf.from_wh = fw.id
+//    LEFT JOIN warehouse tw ON sf.to_wh = tw.id
+//    WHERE sf.id = ?`,
+//   [id]
+// );
+
+// res.status(200).json({
+//   success: true,
+//   timestamp: DateTime.local().toFormat("yyyy-MM-dd HH:mm:ss"),
+//   message: "Stock flow updated successfully",
+//   data: updatedStockFlow,
+// });
+
+
+//     } else {
+//       res.status(304).json({
+//         success: false,
+//         timestamp: DateTime.local().toFormat("yyyy-MM-dd HH:mm:ss"),
+//         message: "No changes made to stock flow",
+//       });
+//     }
+//   } catch (err) {
+//     console.error("Error updating stock flow:", err);
+//     res.status(500).json({
+//       success: false,
+//       timestamp: DateTime.local().toFormat("yyyy-MM-dd HH:mm:ss"),
+//       message: "Internal server error",
+//     });
+//   }
+// };
+
+
 export const updateStockFlowById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -359,10 +557,24 @@ export const updateStockFlowById = async (req, res) => {
     );
 
     if (stockflow_update_res.affectedRows === 1) {
+      // Fetch updated stock flow with all details
+      const [updatedStockFlow] = await do_ma_query(
+        `SELECT 
+          sf.*,
+          w1.title AS from_warehouse_name,
+          w2.title AS to_warehouse_name
+        FROM stock_flow sf
+        LEFT JOIN warehouse w1 ON sf.from_wh = w1.id
+        LEFT JOIN warehouse w2 ON sf.to_wh = w2.id
+        WHERE sf.id = ?`,
+        [id]
+      );
+
       res.status(200).json({
         success: true,
         timestamp: DateTime.local().toFormat("yyyy-MM-dd HH:mm:ss"),
         message: "Stock flow updated successfully",
+        data: updatedStockFlow,
       });
     } else {
       res.status(304).json({

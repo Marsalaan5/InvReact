@@ -15,7 +15,8 @@ import { createWh, getWhEmail, getWhPhone, getWhTitle,getAllWarehouses,getWareho
 
 import { getEmails,getEmailById,markAsRead,toggleStar,deleteEmail,bulkAction,getTemplates, sendEmails, getNotifications, createNotification, createNotificationByEmail, deleteNotification, markAllNotificationsAsRead, markNotificationAsRead} from "../controller/emailController.js";
 import { exportToExcel, exportToPDF } from "../controller/exportController.js";
-import { createStockFlow, deleteStockFlow, getStockFlowById, getStockFlows, getStockFlowStats, updateStockFlowById } from "../controller/stockController.js";
+import { createStockFlow, deleteStockFlow, getStockFlowById, getStockFlowOptions, getStockFlows, getStockFlowStats, updateStockFlowById } from "../controller/stockController.js";
+import { generateStockFlowInvoice } from "../controller/invoiceController.js";
 // import { exportToExcel, exportToPDF } from "../services/exportC.js";
 
 
@@ -103,9 +104,9 @@ router.put("/editProductById/:id",authenticateToken,checkPermission("Product", "
 router.delete("/deleteProductById/:id",authenticateToken,checkPermission("Product", "delete"),deleteProduct);
 
 
-
+router.get('/getStockFlowOptions',authenticateToken,checkPermission('StockFlow', 'view'), getStockFlowOptions);
 router.get('/getStockFlows',authenticateToken,applyWarehouseFilter,checkPermission('StockFlow', 'view'),getStockFlows);
-router.get('/getStockFlowStats/stats',authenticateToken,applyWarehouseFilter,getStockFlowStats);
+router.get('/getStockFlowStats/stats',authenticateToken,applyWarehouseFilter,checkPermission('StockFlow', 'view'),getStockFlowStats);
 router.get('/getStockFlowByID/:id',authenticateToken,applyWarehouseFilter,checkPermission('StockFlow', 'view'),getStockFlowById);
 router.post('/createStockFlow',authenticateToken,applyWarehouseFilter,checkPermission('StockFlow', 'create'),createStockFlow);
 router.put('/updateStockFLowByID/:id',authenticateToken,applyWarehouseFilter,checkPermission('StockFlow', 'edit'),updateStockFlowById);
@@ -142,6 +143,8 @@ router.delete('/email/:id',authenticateToken,checkPermission("Email", "delete"),
 router.get('/templates/all',authenticateToken,checkPermission("templates", "view") ,getTemplates);
 
 
+
+router.get('/stockflow/:id/invoice',authenticateToken, generateStockFlowInvoice);
 
 // Usage: 
 // - /auth/export/products/pdf

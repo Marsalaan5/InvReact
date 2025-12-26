@@ -376,6 +376,25 @@
    
        
 }
+
+.badge-linewarning {
+  color: $warning;
+  @include margin-padding(null, 5px 10px);
+  @include rounded(8px);
+  border: 1px solid $warning;
+  font-size: $font-size-base;
+  background: transparent;
+}
+
+.badge-lineinfo {
+  color: $info;
+  @include margin-padding(null, 5px 10px);
+  @include rounded(8px);
+  border: 1px solid $info;
+  font-size: $font-size-base;
+  background: transparent;
+}
+
 span {
     &.badge {
         &.badges-warning {
