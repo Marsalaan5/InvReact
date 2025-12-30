@@ -1528,11 +1528,14 @@ import {
   scanProduct,
   clearScannedProduct
 } from "../../core/redux/slices/productSlice";
+import { usePermissions } from "../../hooks/usePermission";
 
 const ProductList = () => {
   const route = all_routes;
   const dispatch = useDispatch();
   const MySwal = withReactContent(Swal);
+
+  const {hasPermission} = usePermissions();
 
   // Redux state
   const { 
@@ -1675,7 +1678,7 @@ const ProductList = () => {
       MySwal.fire({
         icon: "warning",
         title: "Empty Input",
-        text: "Please enter a barcode or SKU",
+        text: "Please enter a barcode",
         timer: 2000,
       });
       return;
@@ -1689,7 +1692,7 @@ const ProductList = () => {
         title: `<strong>${product.title}</strong>`,
         html: `
           <div style="text-align: left;">
-            <p><strong>SKU:</strong> ${product.sku}</p>
+           
             <p><strong>Barcode:</strong> ${product.barcode}</p>
             <p><strong>Article Profile:</strong> ${product.article_profile_name || 'N/A'}</p>
             <p><strong>Warehouse:</strong> ${product.warehouse_name || 'N/A'}</p>
@@ -1715,7 +1718,7 @@ const ProductList = () => {
       MySwal.fire({
         icon: "error",
         title: "Product Not Found",
-        text: "No product found with this barcode or SKU",
+        text: "No product found with this barcode",
         timer: 3000,
       });
     }
@@ -1953,12 +1956,12 @@ const ProductList = () => {
       ),
       sorter: (a, b) => (a.title || "").localeCompare(b.title || ""),
     },
-    {
-      title: "SKU",
-      dataIndex: "sku",
-      render: (text) => <span className="badge badge-info">{text}</span>,
-      sorter: (a, b) => (a.sku || "").localeCompare(b.sku || ""),
-    },
+    // {
+    //   title: "SKU",
+    //   dataIndex: "sku",
+    //   render: (text) => <span className="badge badge-info">{text}</span>,
+    //   sorter: (a, b) => (a.sku || "").localeCompare(b.sku || ""),
+    // },
     {
       title: "Barcode",
       dataIndex: "barcode",
@@ -2029,7 +2032,7 @@ const ProductList = () => {
               <Edit className="feather-edit" />
             </Link>
 
-            <Link
+            {hasPermission('Product','edit') && <Link
               className="confirm-text p-2"
               to="#"
               onClick={(e) => {
@@ -2039,7 +2042,7 @@ const ProductList = () => {
               title="Delete"
             >
               <Trash2 className="feather-trash-2" />
-            </Link>
+            </Link>}
           </div>
         </td>
       ),
@@ -2091,7 +2094,7 @@ const ProductList = () => {
                 <div className="search-input">
                   <input
                     type="text"
-                    placeholder="Search by name, SKU, or barcode"
+                    placeholder="Search by name, or barcode"
                     className="form-control form-control-sm formsearch"
                     value={filters.search}
                     onChange={handleSearch}
@@ -2222,13 +2225,13 @@ const ProductList = () => {
         <Modal.Body>
           <form onSubmit={handleScanSubmit}>
             <div className="mb-3">
-              <label className="form-label">Enter Barcode or SKU</label>
+              <label className="form-label">Enter Barcode</label>
               <input
                 type="text"
                 className="form-control"
                 value={scanInput}
                 onChange={(e) => setScanInput(e.target.value)}
-                placeholder="Scan or type barcode/SKU"
+                placeholder="Scan or type barcode"
                 autoFocus
                 disabled={scanning}
               />
@@ -2290,9 +2293,9 @@ const ProductList = () => {
                         {/* Display Read-only SKU and Barcode */}
                         {editingProduct && (
                           <div className="row mb-3">
-                            <div className="col-lg-4">
+                            {/* <div className="col-lg-4">
                               <div className="mb-3">
-                                <label className="form-label">SKU (Read-only)</label>
+                                <label className="form-label"> (Read-only)</label>
                                 <input
                                   type="text"
                                   className="form-control"
@@ -2301,7 +2304,7 @@ const ProductList = () => {
                                   readOnly
                                 />
                               </div>
-                            </div>
+                            </div> */}
                             <div className="col-lg-4">
                               <div className="mb-3">
                                 <label className="form-label">Barcode (Read-only)</label>

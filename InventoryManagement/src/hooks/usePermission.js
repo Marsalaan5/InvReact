@@ -25,9 +25,9 @@ export const usePermissions = () => {
           console.log('📦 Found user in storage:', storedUser);
           
           if (storedUser.role && storedUser.permissions) {
-            console.log('✅ Using cached user data');
-            console.log('🎭 Role:', storedUser.role);
-            console.log('📋 Permissions:', Object.keys(storedUser.permissions).length, 'modules');
+            console.log(' Using cached user data');
+            console.log(' Role:', storedUser.role);
+            console.log(' Permissions:', Object.keys(storedUser.permissions).length, 'modules');
             
             setUserRole(storedUser.role);
             setPermissions(storedUser.permissions);
@@ -49,14 +49,14 @@ export const usePermissions = () => {
         try {
           const storedUser = JSON.parse(userJson);
           userId = storedUser.id;
-          console.log('🆔 Got user ID from user object:', userId);
+          console.log(' Got user ID from user object:', userId);
         } catch (e) {
-          console.error('❌ Error getting ID from user object:', e);
+          console.error(' Error getting ID from user object:', e);
         }
       }
 
       if (!userId || userId === 'null' || userId === 'undefined') {
-        console.error('❌ No user_id found - redirect to login');
+        console.error(' No user_id found - redirect to login');
         setPermissions({});
         setUserRole(null);
         setLoading(false);
@@ -73,11 +73,11 @@ export const usePermissions = () => {
         return;
       }
 
-      console.log('🆔 Fetching data for user ID:', userId);
+      console.log(' Fetching data for user ID:', userId);
 
       // Get current user from API
       const userResponse = await AuthService.getCurrentUser();
-      console.log('📥 User response:', userResponse);
+      console.log(' User response:', userResponse);
 
       const users = userResponse.data?.users || [userResponse.data];
       const user = Array.isArray(users) 
@@ -85,7 +85,7 @@ export const usePermissions = () => {
         : (users.id === userId ? users : null);
 
       if (!user) {
-        console.error('❌ User not found');
+        console.error(' User not found');
         setPermissions({});
         setUserRole(null);
         setLoading(false);
@@ -152,16 +152,42 @@ export const usePermissions = () => {
     fetchUserPermissions();
   }, [fetchUserPermissions]);
 
+    const hasRole = useCallback((roles) => {
+    if (!userRole) return false;
+    
+    const roleArray = Array.isArray(roles) ? roles : [roles];
+    const normalizedUserRole = userRole.toLowerCase().trim();
+    
+    return roleArray.some(role => {
+      const normalizedRole = role.toLowerCase().trim();
+      return normalizedRole === normalizedUserRole;
+    });
+  }, [userRole]);
+
   /**
    * Check if user has permission for a specific module and action
    */
-  const hasPermission = useCallback((module, action) => {
-    if (!permissions) return false;
-    if (!permissions[module]) return false;
+  // const hasPermission = useCallback((module, action) => {
+  //   if (!permissions) return false;
+  //   if (!permissions[module]) return false;
     
-    const permissionKey = `can_${action}`;
-    return Boolean(permissions[module][permissionKey]);
-  }, [permissions]);
+  //   const permissionKey = `can_${action}`;
+  //   return Boolean(permissions[module][permissionKey]);
+  // }, [permissions]);
+
+  const hasPermission = useCallback((module, action) => {
+  // Super Admin bypass
+  if (hasRole(['Super Admin','super admin'])) {
+    return true;
+  }
+
+  if (!permissions) return false;
+  if (!permissions[module]) return false;
+
+  const permissionKey = `can_${action}`;
+  return Boolean(permissions[module][permissionKey]);
+}, [permissions, hasRole]);
+
 
   /**
    * Check if user has ANY of the specified permissions
@@ -184,17 +210,7 @@ export const usePermissions = () => {
   /**
    * Check if user has a specific role
    */
-  const hasRole = useCallback((roles) => {
-    if (!userRole) return false;
-    
-    const roleArray = Array.isArray(roles) ? roles : [roles];
-    const normalizedUserRole = userRole.toLowerCase().trim();
-    
-    return roleArray.some(role => {
-      const normalizedRole = role.toLowerCase().trim();
-      return normalizedRole === normalizedUserRole;
-    });
-  }, [userRole]);
+
 
   /**
    * Get all permissions for a specific module
@@ -204,12 +220,8 @@ export const usePermissions = () => {
     return permissions[module];
   }, [permissions]);
 
-  /**
-   * Check if user is admin
-   */
-  const isAdmin = useCallback(() => {
-    return hasRole(['Admin', 'Super Admin', 'admin', 'super admin']);
-  }, [hasRole]);
+
+
 
   return {
     permissions,
@@ -220,7 +232,7 @@ export const usePermissions = () => {
     hasAllPermissions,
     hasRole,
     getModulePermissions,
-    isAdmin,
+
     refetch: fetchUserPermissions
   };
 };

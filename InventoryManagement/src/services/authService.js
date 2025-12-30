@@ -107,14 +107,19 @@ getStockFlowStats:() => axiosInstance.get(`/auth/getStockFlowStats/stats`),
 
 
 //Email Service
-  getEmails:() => axiosInstance.get(`/auth/email`),
-  getEmailById: (id) => axiosInstance.get(`/auth/email/${id}`),
-  sendEmails:(data) => axiosInstance.post(`/auth/email`,data),
-  markAsRead: (id,data) => axiosInstance.put(`/auth/email/${id}`, data),
-  toggleStar: (id,data) => axiosInstance.put(`/auth/email/${id}`, data),
-  deleteEmail: (data) => axiosInstance.post(`/auth/email`, data),
-  bulkAction: (data) => axiosInstance.post(`/auth/email`, data),
-  getTemplates: (data) => axiosInstance.get(`/auth/email`, data),
+  // getEmails:() => axiosInstance.get(`/auth/getEmail`),
+  getEmails: (category = 'inbox', page = 1, limit = 10, search = '') => 
+    axiosInstance.get(`/auth/getEmail/${category}`, {
+      params: { page, limit, search }
+    }),
+  getEmailById: (id) => axiosInstance.get(`/auth/getEmailById/${id}`),
+  sendEmails:(data) => axiosInstance.post(`/auth/createEmail`,data),
+  markAsRead: (id,data) => axiosInstance.put(`/auth/editEmailMark/${id}/read`, data),
+  toggleStar: (id,data) => axiosInstance.put(`/auth/editEmailTogglemail/${id}/star`, data),
+  deleteEmail: (id) => axiosInstance.post(`/auth/deleteEmail/${id}`),
+  createBulkAction: (action,data) => axiosInstance.post(`/auth/createBulkEmail/bulk/${action}`, data),
+
+  getTemplates: (data) => axiosInstance.get(`/auth/getTemplates/All`, data),
   
 downloadStockFlowInvoice: (id) => axiosInstance.get(`/auth/stockflow/${id}/invoice`, {
     responseType: 'blob'

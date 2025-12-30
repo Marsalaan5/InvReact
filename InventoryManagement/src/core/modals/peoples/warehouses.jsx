@@ -706,9 +706,19 @@ import {
   clearCurrentWarehouse,
   clearError,
 } from '../../redux/slices/warehouseSlice';
+import { usePermissions } from "../../../hooks/usePermission";
 
 const WareHouses = () => {
   const dispatch = useDispatch();
+
+  const { 
+  
+    hasPermission,      // Check single permission
+    // hasRole,            // Check user role
+    // userRole,           // Get current role name
+            // Permission loading state
+    // permissions         // All permissions object
+  } = usePermissions();
   
   // Redux state
   const {
@@ -718,6 +728,7 @@ const WareHouses = () => {
     error,
   } = useSelector((state) => state.warehouse);
   
+
   const headerState = useSelector((state) => state.toggle_header);
 
   // Local state
@@ -947,11 +958,11 @@ const WareHouses = () => {
             headerAction={setToogleHeader}
             showPrint={true}
           />
-          <div className="page-btn">
-            <a to="#" className="btn btn-added" data-bs-toggle="modal" data-bs-target="#add-units">
+         {hasPermission("Warehouse", "create") &&  <div className="page-btn">
+            <a href="#" className="btn btn-added" data-bs-toggle="modal" data-bs-target="#add-units">
               <PlusCircle className="me-2" /> Add New Warehouse
             </a>
-          </div>
+          </div>}
         </div>
 
         <div className="card table-list-card">
@@ -1015,7 +1026,7 @@ const WareHouses = () => {
                       <th>Quantity</th>
                       <th>Created On</th>
                       <th>Status</th>
-                      <th className="no-sort">Action</th>
+                   {hasPermission('Warehouse','view') && <th className="no-sort">Action</th>}
                     </tr>
                   </thead>
                   <tbody>
@@ -1072,7 +1083,7 @@ const WareHouses = () => {
                               {warehouse.status === "active" ? "Active" : "Inactive"}
                             </span>
                           </td>
-                          <td className="action-table-data">
+                         {hasPermission('Warehouse','view') && <td className="action-table-data">
                             <div className="edit-delete-action">
                               <Link
                                 className="me-2 edit-icon p-2"
@@ -1100,7 +1111,7 @@ const WareHouses = () => {
                                 <i data-feather="trash-2" className="feather-trash-2" />
                               </Link>
                             </div>
-                          </td>
+                          </td>}
                         </tr>
                       ))
                     )}

@@ -1030,8 +1030,387 @@
 //WITH REDUX
 
 
+// import React, { useState, useEffect } from "react";
+// import { Link, useNavigate } from "react-router-dom";
+// import Select from "react-select";
+// import Swal from "sweetalert2";
+// import withReactContent from "sweetalert2-react-content";
+// import { all_routes } from "../../Router/all_routes";
+// import {
+//   ArrowLeft,
+//   ChevronDown,
+//   ChevronUp,
+//   Info,
+// } from "feather-icons-react/build/IconComponents";
+// import { useDispatch, useSelector } from "react-redux";
+// import { setToogleHeader } from "../../core/redux/action";
+// import { createProduct } from "../../core/redux/slices/productSlice";
+// import { OverlayTrigger, Tooltip } from "react-bootstrap";
+// import AuthService from "../../services/authService";
+
+// const AddProduct = () => {
+//   const route = all_routes;
+//   const dispatch = useDispatch();
+//   const navigate = useNavigate();
+//   const MySwal = withReactContent(Swal);
+
+//   const data = useSelector((state) => state.toggle_header);
+//   const { user } = useSelector((state) => state.auth);
+//   const { createStatus, error } = useSelector((state) => state.products);
+
+//   const [articleProfiles, setArticleProfiles] = useState([]);
+//   const [warehouses, setWarehouses] = useState([]);
+//   const [submitting, setSubmitting] = useState(false);
+
+//   const [formData, setFormData] = useState({
+//     title: "",
+//     article_profile_id: null,
+//     warehouse_id: null,
+//     location: "",
+//     status: { value: "new", label: "New" },
+//     count: 0,
+//     description: "",
+//   });
+
+//   useEffect(() => {
+//     fetchArticleProfile();
+//     fetchWarehouse();
+//   }, []);
+
+//   useEffect(() => {
+//     if (createStatus === 'succeeded') {
+//       MySwal.fire({
+//         icon: "success",
+//         title: "Success!",
+//         text: "Product created successfully",
+//         timer: 2000,
+//         showConfirmButton: false,
+//       }).then(() => {
+//         navigate(route.productlist);
+//       });
+//     } else if (createStatus === 'failed') {
+//       MySwal.fire({
+//         icon: "error",
+//         title: "Error",
+//         text: error || "Failed to create product",
+//         timer: 3000,
+//       });
+//     }
+//   }, [createStatus, error, navigate, route.productlist, MySwal]);
+
+//   const renderCollapseTooltip = (props) => (
+//     <Tooltip id="refresh-tooltip" {...props}>
+//       Collapse
+//     </Tooltip>
+//   );
+
+//   const fetchArticleProfile = async () => {
+//     try {
+//       const res = await AuthService.getArticleProfile();
+//       const formatted = res.data.data.map((item) => ({
+//         value: item.id,
+//         label: item.name || item.title,
+//       }));
+//       setArticleProfiles(formatted);
+//     } catch (error) {
+//       console.error("Failed to load Article Profile", error);
+//     }
+//   };
+
+//   const fetchWarehouse = async () => {
+//     try {
+//       const res = await AuthService.getWarehouse();
+//       const formatted = res.data.data.map((item) => ({
+//         value: item.id,
+//         label: item.name || item.title,
+//       }));
+//       setWarehouses(formatted);
+//     } catch (error) {
+//       console.error("Failed to load Warehouses", error);
+//     }
+//   };
+
+//   const handleInputChange = (e) => {
+//     const { name, value } = e.target;
+//     setFormData((prev) => ({
+//       ...prev,
+//       [name]: value,
+//     }));
+//   };
+
+//   const handleSelectChange = (name, option) => {
+//     setFormData((prev) => ({
+//       ...prev,
+//       [name]: option,
+//     }));
+//   };
+
+//   const handleSubmit = async (e) => {
+//     e.preventDefault();
+
+//     // Validation
+//     if (!formData.title.trim()) {
+//       MySwal.fire({
+//         icon: "warning",
+//         title: "Validation Error",
+//         text: "Product name is required",
+//         timer: 2000,
+//       });
+//       return;
+//     }
+
+//     if (!formData.article_profile_id) {
+//       MySwal.fire({
+//         icon: "warning",
+//         title: "Validation Error",
+//         text: "Article Profile is required",
+//         timer: 2000,
+//       });
+//       return;
+//     }
+
+//     if (!formData.warehouse_id) {
+//       MySwal.fire({
+//         icon: "warning",
+//         title: "Validation Error",
+//         text: "Warehouse is required",
+//         timer: 2000,
+//       });
+//       return;
+//     }
+
+//     try {
+//       setSubmitting(true);
+
+//       const dataToSubmit = {
+//         title: formData.title,
+//         article_profile_id: formData.article_profile_id.value,
+//         warehouse_id: formData.warehouse_id.value,
+//         location: formData.location,
+//         count: parseInt(formData.count) || 0,
+//         status: formData.status?.value || "new",
+//         description: formData.description,
+//         last_updated_by: user?.id || 1, // Use logged-in user ID
+//       };
+
+//       await dispatch(createProduct(dataToSubmit)).unwrap();
+//     } catch (error) {
+//       console.error("Error creating product:", error);
+//     } finally {
+//       setSubmitting(false);
+//     }
+//   };
+
+//   const statusOptions = [
+//     { value: "new", label: "New" },
+//     { value: "used", label: "Used" },
+//     { value: "repaired", label: "Repaired" },
+//     { value: "broken", label: "Broken" },
+//     { value: "installed", label: "Installed" },
+//   ];
+
+//   return (
+//     <div className="page-wrapper">
+//       <div className="content">
+//         <div className="page-header">
+//           <div className="add-item d-flex">
+//             <div className="page-title">
+//               <h4>New Product</h4>
+//               <h6>Create new product</h6>
+//             </div>
+//           </div>
+//           <ul className="table-top-head">
+//             <li>
+//               <div className="page-btn">
+//                 <Link to={route.productlist} className="btn btn-secondary">
+//                   <ArrowLeft className="me-2" />
+//                   Back to Product
+//                 </Link>
+//               </div>
+//             </li>
+//             <li>
+//               <OverlayTrigger placement="top" overlay={renderCollapseTooltip}>
+//                 <Link
+//                   data-bs-toggle="tooltip"
+//                   data-bs-placement="top"
+//                   title="Collapse"
+//                   id="collapse-header"
+//                   className={data ? "active" : ""}
+//                   onClick={() => {
+//                     dispatch(setToogleHeader(!data));
+//                   }}
+//                 >
+//                   <ChevronUp className="feather-chevron-up" />
+//                 </Link>
+//               </OverlayTrigger>
+//             </li>
+//           </ul>
+//         </div>
+
+//         <form onSubmit={handleSubmit}>
+//           <div className="card">
+//             <div className="card-body add-product pb-0">
+//               <div className="accordion-card-one accordion" id="accordionExample">
+//                 <div className="accordion-item">
+//                   <div className="accordion-header" id="headingOne">
+//                     <div
+//                       className="accordion-button"
+//                       data-bs-toggle="collapse"
+//                       data-bs-target="#collapseOne"
+//                       aria-controls="collapseOne"
+//                     >
+//                       <div className="addproduct-icon">
+//                         <h5>
+//                           <Info className="add-info" />
+//                           <span>Product Information</span>
+//                         </h5>
+//                         <Link to="#">
+//                           <ChevronDown className="chevron-down-add" />
+//                         </Link>
+//                       </div>
+//                     </div>
+//                   </div>
+//                   <div
+//                     id="collapseOne"
+//                     className="accordion-collapse collapse show"
+//                     aria-labelledby="headingOne"
+//                     data-bs-parent="#accordionExample"
+//                   >
+//                     <div className="accordion-body">
+//                       <div className="row">
+//                         <div className="col-lg-4 col-sm-6 col-12">
+//                           <div className="mb-3 add-product">
+//                             <label className="form-label">
+//                               Article Profile <span className="text-danger">*</span>
+//                             </label>
+//                             <Select
+//                               className="select"
+//                               options={articleProfiles}
+//                               placeholder="Choose Article Profile"
+//                               value={formData.article_profile_id}
+//                               onChange={(option) => handleSelectChange("article_profile_id", option)}
+//                             />
+//                           </div>
+//                         </div>
+//                         <div className="col-lg-4 col-sm-6 col-12">
+//                           <div className="mb-3 add-product">
+//                             <label className="form-label">
+//                               Warehouse <span className="text-danger">*</span>
+//                             </label>
+//                             <Select
+//                               className="select"
+//                               options={warehouses}
+//                               placeholder="Choose Warehouse"
+//                               value={formData.warehouse_id}
+//                               onChange={(option) => handleSelectChange("warehouse_id", option)}
+//                             />
+//                           </div>
+//                         </div>
+//                         <div className="col-lg-4 col-sm-6 col-12">
+//                           <div className="mb-3 add-product">
+//                             <label className="form-label">Location</label>
+//                             <input
+//                               type="text"
+//                               className="form-control"
+//                               name="location"
+//                               value={formData.location}
+//                               onChange={handleInputChange}
+//                               placeholder="Enter location"
+//                             />
+//                           </div>
+//                         </div>
+//                       </div>
+//                       <div className="row">
+//                         <div className="col-lg-6 col-sm-6 col-12">
+//                           <div className="mb-3 add-product">
+//                             <label className="form-label">
+//                               Product Name <span className="text-danger">*</span>
+//                             </label>
+//                             <input
+//                               type="text"
+//                               className="form-control"
+//                               name="title"
+//                               value={formData.title}
+//                               onChange={handleInputChange}
+//                               placeholder="Enter product name"
+//                             />
+//                           </div>
+//                         </div>
+//                         <div className="col-lg-3 col-sm-6 col-12">
+//                           <div className="mb-3 add-product">
+//                             <label className="form-label">Quantity</label>
+//                             <input
+//                               type="number"
+//                               className="form-control"
+//                               name="count"
+//                               value={formData.count}
+//                               onChange={handleInputChange}
+//                               placeholder="Enter quantity"
+//                               min="0"
+//                             />
+//                           </div>
+//                         </div>
+//                         <div className="col-lg-3 col-sm-6 col-12">
+//                           <div className="mb-3 add-product">
+//                             <label className="form-label">Status</label>
+//                             <Select
+//                               className="select"
+//                               options={statusOptions}
+//                               placeholder="Choose Status"
+//                               value={formData.status}
+//                               onChange={(option) => handleSelectChange("status", option)}
+//                             />
+//                           </div>
+//                         </div>
+//                       </div>
+//                       <div className="col-lg-12">
+//                         <div className="input-blocks summer-description-box transfer mb-3">
+//                           <label>Description</label>
+//                           <textarea
+//                             className="form-control h-100"
+//                             rows={5}
+//                             name="description"
+//                             value={formData.description}
+//                             onChange={handleInputChange}
+//                             placeholder="Enter product description"
+//                           />
+//                           <p className="mt-1">Maximum 500 Characters</p>
+//                         </div>
+//                       </div>
+//                     </div>
+//                   </div>
+//                 </div>
+//               </div>
+//             </div>
+//           </div>
+//           <div className="col-lg-12">
+//             <div className="btn-addproduct mb-4">
+//               <Link to={route.productlist} className="btn btn-cancel me-2" type="button">
+//                 Cancel
+//               </Link>
+//               <button type="submit" className="btn btn-submit" disabled={submitting}>
+//                 {submitting ? (
+//                   <>
+//                     <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+//                     Creating...
+//                   </>
+//                 ) : (
+//                   "Save Product"
+//                 )}
+//               </button>
+//             </div>
+//           </div>
+//         </form>
+//       </div>
+//     </div>
+//   );
+// };
+
+// export default AddProduct;
+
+
 import React, { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import Select from "react-select";
 import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
@@ -1041,10 +1420,13 @@ import {
   ChevronDown,
   ChevronUp,
   Info,
+  Camera,
+  CheckCircle,
+  AlertCircle,
 } from "feather-icons-react/build/IconComponents";
 import { useDispatch, useSelector } from "react-redux";
 import { setToogleHeader } from "../../core/redux/action";
-import { createProduct } from "../../core/redux/slices/productSlice";
+import { createProduct, scanProduct, clearScannedProduct } from "../../core/redux/slices/productSlice";
 import { OverlayTrigger, Tooltip } from "react-bootstrap";
 import AuthService from "../../services/authService";
 
@@ -1052,6 +1434,7 @@ const AddProduct = () => {
   const route = all_routes;
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const location = useLocation();
   const MySwal = withReactContent(Swal);
 
   const data = useSelector((state) => state.toggle_header);
@@ -1061,6 +1444,13 @@ const AddProduct = () => {
   const [articleProfiles, setArticleProfiles] = useState([]);
   const [warehouses, setWarehouses] = useState([]);
   const [submitting, setSubmitting] = useState(false);
+
+
+  const [barcodeInput, setBarcodeInput] = useState("");
+  const [isScanning, setIsScanning] = useState(false);
+  const [barcodeVerified, setBarcodeVerified] = useState(false);
+  const [scanBuffer, setScanBuffer] = useState("");
+  const [lastKeystroke, setLastKeystroke] = useState(0);
 
   const [formData, setFormData] = useState({
     title: "",
@@ -1076,6 +1466,130 @@ const AddProduct = () => {
     fetchArticleProfile();
     fetchWarehouse();
   }, []);
+
+ 
+  useEffect(() => {
+    if (location.state?.barcode) {
+      setBarcodeInput(location.state.barcode);
+      handleVerifyBarcode(location.state.barcode);
+    }
+    //eslint-disable-next-line
+  }, [location.state]);
+
+  // GLOBAL BARCODE SCANNER 
+  useEffect(() => {
+    const handleKeyPress = (e) => {
+      const currentTime = Date.now();
+      const timeSinceLastKey = currentTime - lastKeystroke;
+
+
+      if (timeSinceLastKey > 100 && scanBuffer.length > 0) {
+        setScanBuffer("");
+      }
+
+      setLastKeystroke(currentTime);
+
+    
+      const isInput = e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA';
+      const isBarcodeInput = e.target.name === 'barcodeInput';
+      
+      if (isInput && !isBarcodeInput) return;
+
+    
+      if (e.key === 'Enter' && scanBuffer.length >= 8) {
+        e.preventDefault();
+        const scannedCode = scanBuffer.trim();
+        setBarcodeInput(scannedCode);
+        handleVerifyBarcode(scannedCode);
+        setScanBuffer(""); 
+        return;
+      }
+      
+
+      // Build scan buffer
+      if (e.key.length === 1) {
+        setScanBuffer(prev => prev + e.key);
+        
+        // Auto-clear buffer after 200ms of inactivity
+        setTimeout(() => {
+          setScanBuffer("");
+        }, 200);
+      }
+    };
+
+    window.addEventListener('keypress', handleKeyPress);
+    return () => window.removeEventListener('keypress', handleKeyPress);
+    //eslint-disable-next-line
+  }, [scanBuffer, lastKeystroke]);
+
+  //  Verify barcode
+  const handleVerifyBarcode = async (barcode) => {
+    if (!barcode.trim()) return;
+
+    setIsScanning(true);
+    setBarcodeVerified(false);
+
+    try {
+      // Try to find existing product with this barcode
+      const product = await dispatch(scanProduct(barcode.trim())).unwrap();
+      
+      // Product EXISTS - show warning
+      MySwal.fire({
+        icon: "warning",
+        title: " Product Already Exists",
+        html: `
+          <div style="text-align: left; padding: 20px;">
+            <p><strong>Name:</strong> ${product.title}</p>
+            <p><strong>Barcode:</strong> ${product.barcode}</p>
+            <p><strong>Warehouse:</strong> ${product.warehouse_name || 'N/A'}</p>
+            <p><strong>Quantity:</strong> ${product.count || 0}</p>
+            <hr>
+            <p class="text-muted">This product is already in the system. Do you want to view/edit it instead?</p>
+          </div>
+        `,
+        showCancelButton: true,
+        showDenyButton: true,
+        confirmButtonText: "View/Edit Product",
+        denyButtonText: "Add Anyway",
+        cancelButtonText: "Cancel",
+        confirmButtonColor: "#28a745",
+        denyButtonColor: "#ffc107",
+        cancelButtonColor: "#6c757d",
+      }).then((result) => {
+        if (result.isConfirmed) {
+          // Redirect to product list
+          navigate(route.productlist);
+        } else if (result.isDenied) {
+          // User wants to add anyway
+          setBarcodeVerified(true);
+        } else {
+          // Cancel - clear barcode
+          setBarcodeInput("");
+        }
+      });
+
+      dispatch(clearScannedProduct());
+    } catch (error) {
+      // Product DOESN'T EXIST - good to add!
+      setBarcodeVerified(true);
+      MySwal.fire({
+        icon: "success",
+        title: "Ready to Add",
+        text: `New product with barcode: ${barcode}`,
+        timer: 2000,
+        showConfirmButton: false,
+      });
+    } finally {
+      setIsScanning(false);
+    }
+  };
+
+  // Manual barcode input change
+  const handleBarcodeInputChange = (e) => {
+    const value = e.target.value;
+    setBarcodeInput(value);
+    setBarcodeVerified(false); 
+  };
 
   useEffect(() => {
     if (createStatus === 'succeeded') {
@@ -1190,7 +1704,7 @@ const AddProduct = () => {
         count: parseInt(formData.count) || 0,
         status: formData.status?.value || "new",
         description: formData.description,
-        last_updated_by: user?.id || 1, // Use logged-in user ID
+        last_updated_by: user?.id || 1,
       };
 
       await dispatch(createProduct(dataToSubmit)).unwrap();
@@ -1216,7 +1730,7 @@ const AddProduct = () => {
           <div className="add-item d-flex">
             <div className="page-title">
               <h4>New Product</h4>
-              <h6>Create new product</h6>
+              <h6>Create new product - Scan barcode anywhere</h6>
             </div>
           </div>
           <ul className="table-top-head">
@@ -1247,7 +1761,94 @@ const AddProduct = () => {
           </ul>
         </div>
 
+        {/* Scanner Active Alert */}
+        <div className="alert alert-info d-flex align-items-center mb-3" role="alert">
+          <Camera className="me-2" size={20} />
+          <div>
+            <strong>Barcode Scanner Active!</strong> Scan any barcode to automatically check for duplicates. 
+            The system will alert you if the product already exists.
+          </div>
+        </div>
+
         <form onSubmit={handleSubmit}>
+          {/* BARCODE SCANNER SECTION */}
+          <div className="card mb-3">
+            <div className="card-body">
+              <div className="d-flex align-items-center mb-3">
+                <Camera size={24} className="text-primary me-2" />
+                <h5 className="mb-0">Barcode Verification</h5>
+              </div>
+              
+              <div className="row align-items-end">
+                <div className="col-lg-8">
+                  <label className="form-label">
+                    Scan or Enter Barcode
+                    {barcodeVerified && (
+                      <CheckCircle size={16} className="text-success ms-2" />
+                    )}
+                    {isScanning && (
+                      <span className="spinner-border spinner-border-sm ms-2" role="status" />
+                    )}
+                  </label>
+                  <input
+                    type="text"
+                    className={`form-control ${barcodeVerified ? 'is-valid' : ''} ${barcodeInput && !barcodeVerified ? 'is-warning' : ''}`}
+                    name="barcodeInput"
+                    value={barcodeInput}
+                    onChange={handleBarcodeInputChange}
+                    placeholder="Use scanner or type barcode"
+                    disabled={isScanning}
+                  />
+                  {barcodeVerified && (
+                    <div className="form-text text-success">
+                      <CheckCircle size={14} className="me-1" />
+                      Barcode verified - No duplicate found
+                    </div>
+                  )}
+                  {barcodeInput && !barcodeVerified && !isScanning && (
+                    <div className="form-text text-warning">
+                      <AlertCircle size={14} className="me-1" />
+                      Click "Check Barcode" to verify
+                    </div>
+                  )}
+                </div>
+                <div className="col-lg-4">
+                  <button
+                    type="button"
+                    className="btn btn-primary w-100"
+                    onClick={() => handleVerifyBarcode(barcodeInput)}
+                    disabled={!barcodeInput.trim() || isScanning}
+                  >
+                    {isScanning ? (
+                      <>
+                        <span className="spinner-border spinner-border-sm me-2" />
+                        Checking...
+                      </>
+                    ) : (
+                      <>
+                        <Camera size={16} className="me-2" />
+                        Check Barcode
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+              
+              <div className="alert alert-light mt-3 mb-0 border">
+                <small className="text-muted">
+                  <strong>💡 How it works:</strong>
+                  <ul className="mb-0 mt-2">
+                    <li>Scan with your barcode scanner - it will automatically populate</li>
+                    <li>System checks if product already exists</li>
+                    <li>If exists: You'll see product details and can choose to view or add anyway</li>
+                    <li>If new: You'll get a green checkmark to proceed</li>
+                  </ul>
+                </small>
+              </div>
+            </div>
+          </div>
+
+          {/* EXISTING FORM */}
           <div className="card">
             <div className="card-body add-product pb-0">
               <div className="accordion-card-one accordion" id="accordionExample">
@@ -1407,7 +2008,6 @@ const AddProduct = () => {
 };
 
 export default AddProduct;
-
 
 
 

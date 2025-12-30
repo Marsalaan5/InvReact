@@ -3,9 +3,9 @@ import PropTypes from 'prop-types';
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { OverlayTrigger, Tooltip } from 'react-bootstrap';
-import { ChevronUp, RotateCcw } from 'feather-icons-react/build/IconComponents';
+import { RotateCcw } from 'feather-icons-react/build/IconComponents';
 import ImageWithBasePath from '../core/img/imagewithbasebath';
-import { exportPDF, exportExcel, refreshData, toggleHeader } from '../utils/exports';
+import { exportPDF, exportExcel, refreshData } from '../utils/exports';
 import { DateTime } from 'luxon';
 
 /**
@@ -30,12 +30,12 @@ const TableHeaderActions = ({
   excelEndpoint,
   filters = {},
   entityName = 'data',
-  dispatch,
-  headerState,
-  headerAction,
+  // dispatch,
+  // headerState,
+  // headerAction,
   showPdf = true,
   showExcel = true,
-  showPrint = false,
+  // showPrint = false,
 }) => {
   const renderTooltip = (text) => {
     const TooltipComponent = (props) => (
@@ -61,9 +61,9 @@ const TableHeaderActions = ({
     refreshData(onRefresh);
   };
 
-  const handleToggleHeader = () => {
-    toggleHeader(dispatch, headerState, headerAction);
-  };
+  // const handleToggleHeader = () => {
+  //   toggleHeader(dispatch, headerState, headerAction);
+  // };
 
   return (
     <ul className="table-top-head">
@@ -87,7 +87,7 @@ const TableHeaderActions = ({
         </li>
       )}
       
-      {showPrint && (
+      {/* {showPrint && (
         <li>
           <OverlayTrigger placement="top" overlay={renderTooltip('Print')}>
             <Link onClick={() => window.print()}>
@@ -95,7 +95,7 @@ const TableHeaderActions = ({
             </Link>
           </OverlayTrigger>
         </li>
-      )}
+      )} */}
       
       <li>
         <OverlayTrigger placement="top" overlay={renderTooltip('Refresh')}>
@@ -105,7 +105,7 @@ const TableHeaderActions = ({
         </OverlayTrigger>
       </li>
       
-      <li>
+      {/* <li>
         <OverlayTrigger placement="top" overlay={renderTooltip('Collapse')}>
           <Link 
             className={headerState ? 'active' : ''} 
@@ -114,7 +114,7 @@ const TableHeaderActions = ({
             <ChevronUp />
           </Link>
         </OverlayTrigger>
-      </li>
+      </li> */}
     </ul>
   );
 };

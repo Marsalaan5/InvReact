@@ -556,8 +556,9 @@ export const createNotificationByEmail = async (req, res) => {
 export const markNotificationAsRead = async (req, res) => {
   try {
     const { id } = req.params;
+    const userId = req.user.id;
 
-    await markAsReadService(id);
+    await markAsReadService(id, userId);
 
     res.status(200).json({
       success: true,
@@ -569,11 +570,10 @@ export const markNotificationAsRead = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Error updating notification",
-      error: error.message,
-      timestamp: DateTime.local().toISO(),
     });
   }
 };
+
 
 // PUT mark all notifications as read
 export const markAllNotificationsAsRead = async (req, res) => {

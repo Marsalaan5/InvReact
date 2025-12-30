@@ -348,9 +348,11 @@ import AuthService from "../../services/authService.js";
 import { all_routes } from "../../Router/all_routes";
 // import { usePermissions } from "../../hooks/usePermission.js";
 import { RoleGuard } from "../../guard/RoleGuard.jsx";
-
+import { usePermissions } from "../../hooks/usePermission.js";
 
 const RolesPermissions = () => {
+
+  const {hasPermission} = usePermissions();
   const route = all_routes;
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -473,7 +475,7 @@ const RolesPermissions = () => {
     }
   };
 
-  // Initial fetch - removed isAdmin check since RoleGuard handles it
+
   useEffect(() => {
     fetchRoles();
     // eslint-disable-next-line
@@ -612,7 +614,7 @@ const RolesPermissions = () => {
       dataIndex: "createdon",
       sorter: (a, b) => new Date(a.created_at || a.createdAt) - new Date(b.created_at || b.createdAt),
     },
-    {
+     ...(hasPermission('User','view') ? [{
       title: "Actions",
       dataIndex: "actions",
       key: "actions",
@@ -653,8 +655,8 @@ const RolesPermissions = () => {
           </div>
         </td>
       ),
-    },
-  ];
+  }] : [])
+    ]
 
   // Wrap component in RoleGuard
   return (
@@ -721,7 +723,7 @@ const RolesPermissions = () => {
                   </OverlayTrigger>
                 </li>
               </ul>
-              <div className="page-btn">
+              {hasPermission('Role','create') && <div className="page-btn">
                 <a
                   to="#"
                   className="btn btn-added"
@@ -731,7 +733,7 @@ const RolesPermissions = () => {
                   <PlusCircle className="me-2" />
                   Add New Role
                 </a>
-              </div>
+              </div>}
             </div>
 
             {/* Roles Table Card */}

@@ -374,13 +374,14 @@ import AddUsers from '../../core/modals/usermanagement/addusers';
 import EditUser from '../../core/modals/usermanagement/edituser';
 import AuthService from '../../services/authService';
 import TableHeaderActions from '../tableheader'
-
+import { usePermissions } from '../../hooks/usePermission';
 
 
 const Users = () => {
     const dispatch = useDispatch();
     const navigate = useNavigate();
     const data = useSelector((state) => state.toggle_header);
+    const {hasPermission} = usePermissions();
 
     // State management
     const [currentUser, setCurrentUser] = useState(null);
@@ -846,7 +847,7 @@ const Users = () => {
             ),
             sorter: (a, b) => (a.status || '').localeCompare(b.status || ''),
         },
-        {
+    ...(hasPermission('User','view') ? [{
             title: 'Actions',
             dataIndex: 'actions',
             key: 'actions',
@@ -878,9 +879,10 @@ const Users = () => {
                         </Link>
                     </div>
                 </td>
-            )
-        },
-    ];
+              )
+}] : [])
+    ]
+
 
      if (initializing) {
         return (
@@ -940,11 +942,11 @@ const Users = () => {
                     />
 
                   
-                    <div className="page-btn">
+                   {hasPermission('User','view') && <div className="page-btn">
                         <a to="#" className="btn btn-added" data-bs-toggle="modal" data-bs-target="#add-units">
                             <PlusCircle className="me-2" /> Add New User
                         </a>
-                    </div>
+                    </div>}
                 </div>
 
                 <div className="card table-list-card">

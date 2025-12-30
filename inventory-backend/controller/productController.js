@@ -502,12 +502,12 @@ if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir);
 
 
 // Utility Functions
-export function generateUniqueSKU(productName) {
-  const prefix = productName.substring(0, 3).toUpperCase();
-  const timestamp = Date.now().toString(36).toUpperCase();
-  const randomStr = Math.random().toString(36).substring(2, 4).toUpperCase();
-  return `${prefix}-${timestamp}-${randomStr}`;
-}
+// export function generateUniqueSKU(productName) {
+//   const prefix = productName.substring(0, 3).toUpperCase();
+//   const timestamp = Date.now().toString(36).toUpperCase();
+//   const randomStr = Math.random().toString(36).substring(2, 4).toUpperCase();
+//   return `${prefix}-${timestamp}-${randomStr}`;
+// }
 
 
 function luhnChecksum(numStr) {
@@ -603,7 +603,7 @@ export const getProduct = async (req, res) => {
 		}
 
     if (search) {
-      whereConditions.push("(p.title LIKE ? OR p.sku LIKE ? OR p.barcode LIKE ?)");
+      whereConditions.push("(p.title LIKE ? OR p.barcode LIKE ?)");
       queryParams.push(`%${search}%`, `%${search}%`, `%${search}%`);
     }
 
@@ -625,7 +625,7 @@ export const getProduct = async (req, res) => {
     const whereClause = whereConditions.length > 0 ? "WHERE " + whereConditions.join(" AND ") : "";
 
     // Validate sortBy to prevent SQL injection
-    const allowedSortFields = ["created_at", "updated_at", "title", "sku", "count", "status"];
+    const allowedSortFields = ["created_at", "updated_at", "title", "count", "status"];
     const validSortBy = allowedSortFields.includes(sortBy) ? sortBy : "created_at";
     const validSortOrder = sortOrder.toUpperCase() === "ASC" ? "ASC" : "DESC";
 
@@ -769,7 +769,7 @@ export const getProductByScan = async (req, res) => {
       LEFT JOIN article_profile ap ON p.article_profile_id = ap.id
       LEFT JOIN warehouse w ON p.warehouse_id = w.id
       LEFT JOIN users creator ON p.last_updated_by = creator.id
-      WHERE p.sku = ? OR p.barcode = ?
+      WHERE p.barcode = ?
       LIMIT 1
     `;
 
@@ -778,7 +778,7 @@ export const getProductByScan = async (req, res) => {
     if (products.length === 0) {
       return res.status(404).json({
         success: false,
-        message: "Product not found with this SKU/Barcode",
+        message: "Product not found with this Barcode",
         timestamp: DateTime.local().toFormat("yyyy-MM-dd HH:mm:ss"),
       });
     }
@@ -871,7 +871,7 @@ export const createProduct = async (req, res) => {
     }
 
     // Generate SKU and Barcode
-    const sku = generateUniqueSKU(value.title);
+    // const sku = generateUniqueSKU(value.title);
     const barcodeNumber = generateBarcodeNumber(value.title);
     let barcodeImagePath;
 
@@ -889,9 +889,9 @@ export const createProduct = async (req, res) => {
   
     const product_insert_res = await do_ma_query(
       `INSERT INTO product
-        (title, article_profile_id, warehouse_id, location, status, count, sku, barcode, barcode_image,
+        (title, article_profile_id, warehouse_id, location, status, count,  barcode, barcode_image,
          description, created_at, updated_at, last_updated_by)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW(), ?)`,
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW(), ?)`,
       [
         value.title,
         value.article_profile_id,
@@ -899,7 +899,7 @@ export const createProduct = async (req, res) => {
         value.location || null,
         value.status,
         value.count,
-        sku,
+        
         barcodeNumber,
         barcodeImagePath,
         value.description || null,
@@ -914,7 +914,7 @@ export const createProduct = async (req, res) => {
         message: "Product created successfully",
         data: {
           id: product_insert_res.insertId,
-          sku,
+        
           barcode: barcodeNumber,
           barcode_image: barcodeImagePath,
         },
@@ -1154,6 +1154,289 @@ export const getWarehousesForDropdown = async (req, res) => {
       message: "Error fetching warehouses",
       error: error.message,
       timestamp: DateTime.local().toFormat("yyyy-MM-dd HH:mm:ss"),
+    });
+  }
+};
+
+
+
+
+//LOW STOCKS and OUT OF STOCKS
+
+
+export const getLowStockProducts = async (req, res) => {
+  try {
+    const { warehouseFilter } = req;
+    const {
+      page = 1,
+      limit = 10,
+      search = "",
+      warehouse_id = "",
+      article_profile_id = "",
+      sortBy = "count",
+      sortOrder = "ASC",
+      threshold = 10, // Default low stock threshold
+    } = req.query;
+
+    const offset = (page - 1) * limit;
+
+    let whereConditions = ["p.count <= ?"];
+    let queryParams = [threshold];
+
+    // Apply warehouse filter for Admin users
+    if (warehouseFilter) {
+      whereConditions.push("p.warehouse_id = ?");
+      queryParams.push(warehouseFilter);
+    } else if (warehouse_id) {
+      whereConditions.push("p.warehouse_id = ?");
+      queryParams.push(warehouse_id);
+    }
+
+    if (search) {
+      whereConditions.push("(p.title LIKE ? OR p.barcode LIKE ?)");
+      queryParams.push(`%${search}%`, `%${search}%`);
+    }
+
+    if (article_profile_id) {
+      whereConditions.push("p.article_profile_id = ?");
+      queryParams.push(article_profile_id);
+    }
+
+    const whereClause = "WHERE " + whereConditions.join(" AND ");
+
+    const allowedSortFields = ["count", "created_at", "title"];
+    const validSortBy = allowedSortFields.includes(sortBy) ? sortBy : "count";
+    const validSortOrder = sortOrder.toUpperCase() === "ASC" ? "ASC" : "DESC";
+
+    const query = `
+      SELECT 
+        p.*,
+        ap.title as article_profile_name,
+        w.title as warehouse_name,
+        w.location as store_location
+      FROM product p
+      LEFT JOIN article_profile ap ON p.article_profile_id = ap.id
+      LEFT JOIN warehouse w ON p.warehouse_id = w.id
+      ${whereClause}
+      ORDER BY p.${validSortBy} ${validSortOrder}
+      LIMIT ? OFFSET ?
+    `;
+
+    queryParams.push(parseInt(limit), parseInt(offset));
+
+    const products = await do_ma_query(query, queryParams);
+
+    const countQuery = `
+      SELECT COUNT(*) as total
+      FROM product p
+      ${whereClause}
+    `;
+
+    const countResult = await do_ma_query(countQuery, queryParams.slice(0, -2));
+
+    res.status(200).json({
+      success: true,
+      data: products,
+      pagination: {
+        total: countResult[0].total,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        totalPages: Math.ceil(countResult[0].total / limit),
+      },
+      timestamp: DateTime.local().toFormat("yyyy-MM-dd HH:mm:ss"),
+    });
+  } catch (error) {
+    console.error("Error fetching low stock products:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching low stock products",
+      error: error.message,
+      timestamp: DateTime.local().toFormat("yyyy-MM-dd HH:mm:ss"),
+    });
+  }
+};
+
+// GET out of stock products
+export const getOutOfStockProducts = async (req, res) => {
+  try {
+    const { warehouseFilter } = req;
+    const {
+      page = 1,
+      limit = 10,
+      search = "",
+      warehouse_id = "",
+      article_profile_id = "",
+      sortBy = "updated_at",
+      sortOrder = "DESC",
+    } = req.query;
+
+    const offset = (page - 1) * limit;
+
+    let whereConditions = ["p.count = 0"];
+    let queryParams = [];
+
+    if (warehouseFilter) {
+      whereConditions.push("p.warehouse_id = ?");
+      queryParams.push(warehouseFilter);
+    } else if (warehouse_id) {
+      whereConditions.push("p.warehouse_id = ?");
+      queryParams.push(warehouse_id);
+    }
+
+    if (search) {
+      whereConditions.push("(p.title LIKE ? OR p.barcode LIKE ?)");
+      queryParams.push(`%${search}%`, `%${search}%`);
+    }
+
+    if (article_profile_id) {
+      whereConditions.push("p.article_profile_id = ?");
+      queryParams.push(article_profile_id);
+    }
+
+    const whereClause = "WHERE " + whereConditions.join(" AND ");
+
+    const allowedSortFields = ["updated_at", "created_at", "title"];
+    const validSortBy = allowedSortFields.includes(sortBy) ? sortBy : "updated_at";
+    const validSortOrder = sortOrder.toUpperCase() === "ASC" ? "ASC" : "DESC";
+
+    const query = `
+      SELECT 
+        p.*,
+        ap.title as article_profile_name,
+        w.title as warehouse_name,
+        w.location as store_location
+      FROM product p
+      LEFT JOIN article_profile ap ON p.article_profile_id = ap.id
+      LEFT JOIN warehouse w ON p.warehouse_id = w.id
+      ${whereClause}
+      ORDER BY p.${validSortBy} ${validSortOrder}
+      LIMIT ? OFFSET ?
+    `;
+
+    queryParams.push(parseInt(limit), parseInt(offset));
+
+    const products = await do_ma_query(query, queryParams);
+
+    const countQuery = `
+      SELECT COUNT(*) as total
+      FROM product p
+      ${whereClause}
+    `;
+
+    const countResult = await do_ma_query(countQuery, queryParams.slice(0, -2));
+
+    res.status(200).json({
+      success: true,
+      data: products,
+      pagination: {
+        total: countResult[0].total,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        totalPages: Math.ceil(countResult[0].total / limit),
+      },
+      timestamp: DateTime.local().toFormat("yyyy-MM-dd HH:mm:ss"),
+    });
+  } catch (error) {
+    console.error("Error fetching out of stock products:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching out of stock products",
+      error: error.message,
+      timestamp: DateTime.local().toFormat("yyyy-MM-dd HH:mm:ss"),
+    });
+  }
+};
+
+// GET low stock statistics
+export const getLowStockStats = async (req, res) => {
+  try {
+    const { warehouseFilter } = req;
+    const { threshold = 10 } = req.query;
+
+    let whereClause = "";
+    let queryParams = [];
+
+    if (warehouseFilter) {
+      whereClause = "WHERE warehouse_id = ?";
+      queryParams = [warehouseFilter];
+    }
+
+    const statsQuery = `
+      SELECT 
+        COUNT(CASE WHEN count > 0 AND count <= ? THEN 1 END) as low_stock_count,
+        COUNT(CASE WHEN count = 0 THEN 1 END) as out_of_stock_count,
+        COUNT(*) as total_products,
+        SUM(CASE WHEN count > 0 AND count <= ? THEN count END) as low_stock_qty,
+        COUNT(DISTINCT warehouse_id) as affected_warehouses
+      FROM product
+      ${whereClause}
+    `;
+
+    const params = [threshold, threshold, ...queryParams];
+    const stats = await do_ma_query(statsQuery, params);
+
+    res.status(200).json({
+      success: true,
+      data: stats[0],
+      timestamp: DateTime.local().toFormat("yyyy-MM-dd HH:mm:ss"),
+    });
+  } catch (error) {
+    console.error("Error fetching low stock stats:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching statistics",
+      error: error.message,
+      timestamp: DateTime.local().toFormat("yyyy-MM-dd HH:mm:ss"),
+    });
+  }
+};
+
+// UPDATE low stock alert threshold
+export const updateLowStockAlert = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const schema = Joi.object({
+      alert_threshold: Joi.number().integer().min(0).required().label("alert threshold"),
+    });
+
+    const { error, value } = schema.validate(req.body, { abortEarly: false });
+
+    if (error) {
+      return res.status(400).json({
+        success: false,
+        timestamp: DateTime.local().toFormat("yyyy-MM-dd HH:mm:ss"),
+        message: error.details[0].message,
+      });
+    }
+
+    const updateQuery = `
+      UPDATE product 
+      SET alert_threshold = ?, updated_at = NOW()
+      WHERE id = ?
+    `;
+
+    const result = await do_ma_query(updateQuery, [value.alert_threshold, id]);
+
+    if (result.affectedRows === 1) {
+      res.status(200).json({
+        success: true,
+        timestamp: DateTime.local().toFormat("yyyy-MM-dd HH:mm:ss"),
+        message: "Alert threshold updated successfully",
+      });
+    } else {
+      res.status(404).json({
+        success: false,
+        timestamp: DateTime.local().toFormat("yyyy-MM-dd HH:mm:ss"),
+        message: "Product not found",
+      });
+    }
+  } catch (error) {
+    console.error("Error updating alert threshold:", error);
+    res.status(500).json({
+      success: false,
+      timestamp: DateTime.local().toFormat("yyyy-MM-dd HH:mm:ss"),
+      message: "Internal server error",
     });
   }
 };

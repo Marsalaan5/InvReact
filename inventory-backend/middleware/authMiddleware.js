@@ -329,9 +329,9 @@ export const authenticateToken = async (req, res, next) => {
       }
     }
     
-    // FIXED: Separate Super Admin and Admin
-    const isSuperAdmin = roleName === "Super Admin";
-    const isAdmin = roleName === "Admin";
+  const isSuperAdmin = roleName === "Super Admin";
+const isAdmin = roleName === "Admin";
+// const isAdminOrAbove = isSuperAdmin || isAdmin;
     
     // Attach complete user info to request
     req.user = {
@@ -346,15 +346,15 @@ export const authenticateToken = async (req, res, next) => {
       permissions,
       isSuperAdmin: isSuperAdmin,
       isAdmin: isAdmin,        
-      isAdminOrAbove: isSuperAdmin || isAdmin
+      // isAdminOrAbove: isSuperAdmin || isAdmin
     };
 
     console.log('Authenticated user:', {
       id: req.user.id,
       role: req.user.role,
       warehouse_id: req.user.warehouse_id,
-      isSuperAdmin: req.user.isSuperAdmin,
-      isAdmin: req.user.isAdmin
+      // isSuperAdmin: req.user.isSuperAdmin,
+      // isAdmin: req.user.isAdmin
     });
     
     next();
@@ -411,18 +411,7 @@ export const applyWarehouseFilter = (req, res, next) => {
   next();
 };
 
-/**
- * Middleware to check if user is Super Admin
- */
-export function isAdmin(req, res, next) {
-  if (req.user?.role !== "Super Admin") {
-    return res.status(403).json({ 
-      message: "Access denied. Super Admins only.",
-      userRole: req.user?.role 
-    });
-  }
-  next();
-}
+
 
 /**
  * Middleware to check minimum role requirement
