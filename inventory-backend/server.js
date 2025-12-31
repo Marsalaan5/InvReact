@@ -62,6 +62,7 @@ cron.schedule("*/5 * * * *", async () => {
   try {
     console.log("⏲ Checking follow-ups...");
     await automationService.checkFollowUps();
+    
   } catch (err) {
     console.error("Follow-ups cron job failed:", err);
   }

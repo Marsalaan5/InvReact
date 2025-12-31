@@ -106,22 +106,57 @@ getStockFlowStats:() => axiosInstance.get(`/auth/getStockFlowStats/stats`),
 
 
 
-//Email Service
-  // getEmails:() => axiosInstance.get(`/auth/getEmail`),
-  getEmails: (category = 'inbox', page = 1, limit = 10, search = '') => 
-    axiosInstance.get(`/auth/getEmail/${category}`, {
-      params: { page, limit, search }
-    }),
-  getEmailById: (id) => axiosInstance.get(`/auth/getEmailById/${id}`),
-  sendEmails:(data) => axiosInstance.post(`/auth/createEmail`,data),
-  markAsRead: (id,data) => axiosInstance.put(`/auth/editEmailMark/${id}/read`, data),
-  toggleStar: (id,data) => axiosInstance.put(`/auth/editEmailTogglemail/${id}/star`, data),
-  deleteEmail: (id) => axiosInstance.post(`/auth/deleteEmail/${id}`),
-  createBulkAction: (action,data) => axiosInstance.post(`/auth/createBulkEmail/bulk/${action}`, data),
 
-  getTemplates: (data) => axiosInstance.get(`/auth/getTemplates/All`, data),
-  
-downloadStockFlowInvoice: (id) => axiosInstance.get(`/auth/stockflow/${id}/invoice`, {
+//Email Service
+getEmails: (category = 'inbox', page = 1, limit = 10, search = '') => 
+  axiosInstance.get(`/auth/getEmail/${category}`, {
+    params: { page, limit, search }
+  }),
+
+getEmailById: (id) => axiosInstance.get(`/auth/getEmailById/${id}`),
+
+sendEmails: (data) => axiosInstance.post(`/auth/createEmail`, data),
+
+saveDraft: (draftData) => axiosInstance.post(`/auth/draftEmail`, draftData),
+
+sendStockRequest: (stockRequestData) =>
+  axiosInstance.post(`/auth/stock-request`, stockRequestData),
+
+respondToStockRequest: (emailId, action, notes = "") =>
+  axiosInstance.post(
+    `/auth/stock-request/${emailId}/respond`,
+    { action, notes }
+  ),
+
+// Email actions
+markEmailAsRead: (id) => 
+  axiosInstance.put(`/auth/editEmailMark/${id}/read`),
+
+toggleEmailStar: (id, starred) => 
+  axiosInstance.put(`/auth/editEmailTogglemail/${id}/star`, { starred }),
+
+deleteEmail: (id) => 
+  axiosInstance.delete(`/auth/deleteEmail/${id}`),
+
+bulkEmailAction: (action, emailIds) =>
+  axiosInstance.post(`/auth/bulkEmail/${action}`, { 
+    emailIds: emailIds 
+  }),
+
+getTemplates: () => 
+  axiosInstance.get(`/auth/getTemplates/all`),
+
+
+
+// Notifications
+getNotifications: (limit = 20) =>
+  axiosInstance.get(`/auth/notification`, { params: { limit } }),
+
+markNotificationAsRead: (id) =>
+  axiosInstance.put(`/auth/notification/${id}`),
+
+downloadStockFlowInvoice: (id) => 
+  axiosInstance.get(`/auth/stockflow/${id}/invoice`, {
     responseType: 'blob'
   }),
 

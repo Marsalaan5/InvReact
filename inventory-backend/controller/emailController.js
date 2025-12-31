@@ -164,17 +164,10 @@ export const sendEmails = async (req, res) => {
       body: Joi.string().required().label("body"),
       template: Joi.string().max(100).allow("", null).label("template"),
       enableFollowUp: Joi.boolean().default(false).label("enable follow-up"),
-      followUpDays: Joi.number()
-        .integer()
-        .min(1)
-        .max(30)
-        .default(2)
-        .label("follow-up days"),
+      followUpDays: Joi.number().integer().min(1).max(30).default(2).label("follow-up days"),
       enableEscalation: Joi.boolean().default(false).label("enable escalation"),
-      escalationEmail: Joi.string()
-        .email()
-        .allow("", null)
-        .label("escalation email"),
+      escalationEmail: Joi.string().email().allow("", null).label("escalation email"),
+      escalationDays: Joi.number().integer().min(1).max(30).default(3),
     });
 
     const { error, value } = emailSchema.validate(req.body, {
@@ -192,26 +185,20 @@ export const sendEmails = async (req, res) => {
     const userId = req.user.id;
     const userEmail = req.user.email;
 
-    // Insert email into database
-    const result = await do_ma_query(
-      `INSERT INTO emails (
-        sender_id, sender_email, recipient_email, subject, body, 
-        status, follow_up_scheduled, follow_up_days, 
-        escalation_enabled, escalation_email, template_type
-      ) VALUES (?, ?, ?, ?, ?, 'sent', ?, ?, ?, ?, ?)`,
-      [
-        userId,
-        userEmail,
-        value.to,
-        value.subject,
-        value.body,
-        value.enableFollowUp,
-        value.followUpDays,
-        value.enableEscalation,
-        value.escalationEmail || null,
-        value.template || "none",
-      ]
-    );
+    
+const result = await do_ma_query(
+  `INSERT INTO emails (
+    sender_id, sender_email, recipient_email, subject, body, 
+    status, follow_up_scheduled, follow_up_days, 
+    escalation_enabled, escalation_email, template_type
+  ) VALUES (?, ?, ?, ?, ?, 'sent', ?, ?, ?, ?, ?)`,
+  [
+    userId, userEmail, value.to, value.subject, value.body,
+    value.enableFollowUp, value.followUpDays,
+    value.enableEscalation, value.escalationEmail || null,
+    value.template || "none",
+  ]
+);
 
     const emailId = result.insertId;
 
@@ -230,13 +217,13 @@ export const sendEmails = async (req, res) => {
     );
 
     // Create notification for recipient
-    await createNotification({
-      userEmail: value.to,
-      emailId,
-      type: "new_email",
-      title: "New Email",
-      message: `You have a new email from ${userEmail}`,
-    });
+  await createNotificationByEmailService({
+  userEmail: value.to,
+  emailId,
+  type: "new_email",
+  title: "New Email",
+  message: `You have a new email from ${userEmail}`,
+});
 
     res.status(201).json({
       success: true,
@@ -462,7 +449,418 @@ export const getTemplates = async (req, res) => {
   }
 };
 
+export const getReceivedEmails = async (req, res) => {
+  try {
+    const { page = 1, limit = 10, search = "" } = req.query;
+    const userEmail = req.user.email;
+    const offset = (page - 1) * limit;
 
+    let searchClause = "";
+    let params = [userEmail];
+
+    if (search) {
+      searchClause = " AND MATCH(subject, body, sender_email) AGAINST(? IN BOOLEAN MODE)";
+      params.push(`${search}*`);
+    }
+
+    const query = `
+      SELECT * FROM emails
+      WHERE recipient_email = ? AND status = 'sent' ${searchClause}
+      ORDER BY created_at DESC
+      LIMIT ? OFFSET ?
+    `;
+
+    const countQuery = `
+      SELECT COUNT(*) as total FROM emails 
+      WHERE recipient_email = ? AND status = 'sent' ${searchClause}
+    `;
+
+    const emails = await do_ma_query(query, [...params, parseInt(limit), offset]);
+    const countResult = await do_ma_query(countQuery, params);
+    const total = countResult[0].total;
+
+    res.status(200).json({
+      success: true,
+      data: emails,
+      pagination: {
+        total,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        totalPages: Math.ceil(total / limit),
+      },
+      timestamp: DateTime.local().toISO(),
+    });
+  } catch (error) {
+    console.error("Error fetching received emails:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching received emails",
+      error: error.message,
+    });
+  }
+};
+
+
+export const saveDraft = async (req, res) => {
+  try {
+    const { to, subject, body, template } = req.body;
+    const userId = req.user.id;
+    const userEmail = req.user.email;
+
+    const result = await do_ma_query(
+      `INSERT INTO emails (
+        sender_id, sender_email, recipient_email, subject, body, 
+        status, template_type
+      ) VALUES (?, ?, ?, ?, ?, 'draft', ?)
+      ON DUPLICATE KEY UPDATE
+        subject = VALUES(subject),
+        body = VALUES(body),
+        updated_at = CURRENT_TIMESTAMP`,
+      [userId, userEmail, to || "", subject || "", body || "", template || "none"]
+    );
+
+    res.status(201).json({
+      success: true,
+      message: "Draft saved successfully",
+      data: { emailId: result.insertId },
+      timestamp: DateTime.local().toISO(),
+    });
+  } catch (error) {
+    console.error("Error saving draft:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error saving draft",
+      error: error.message,
+    });
+  }
+};
+
+// POST send stock request via email
+export const sendStockRequest = async (req, res) => {
+  try {
+    const stockRequestSchema = Joi.object({
+      to: Joi.string().email().required(),
+      productName: Joi.string().required(),
+      quantity: Joi.number().integer().min(1).required(),
+      urgency: Joi.string().valid('low', 'medium', 'high').default('medium'),
+      notes: Joi.string().allow(''),
+    });
+
+    const { error, value } = stockRequestSchema.validate(req.body);
+
+    if (error) {
+      return res.status(400).json({
+        success: false,
+        message: error.details[0].message,
+      });
+    }
+
+    const userId = req.user.id;
+    const userEmail = req.user.email;
+    const userName = req.user.username || userEmail;
+
+    const subject = `Stock Request: ${value.productName} (${value.quantity} units)`;
+    const body = `
+      <div style="font-family: Arial, sans-serif; padding: 20px;">
+        <h2>Stock Request</h2>
+        <p><strong>From:</strong> ${userName} (${userEmail})</p>
+        <p><strong>Product:</strong> ${value.productName}</p>
+        <p><strong>Quantity:</strong> ${value.quantity}</p>
+        <p><strong>Urgency:</strong> <span style="color: ${
+          value.urgency === 'high' ? 'red' : value.urgency === 'medium' ? 'orange' : 'green'
+        }">${value.urgency.toUpperCase()}</span></p>
+        ${value.notes ? `<p><strong>Notes:</strong> ${value.notes}</p>` : ''}
+        <hr/>
+        <p>Please review and respond to this request.</p>
+      </div>
+    `;
+
+    // Insert email with stock request metadata
+    const result = await do_ma_query(
+      `INSERT INTO emails (
+        sender_id, sender_email, recipient_email, subject, body, 
+        status, template_type
+      ) VALUES (?, ?, ?, ?, ?, 'sent', 'stock_request')`,
+      [userId, userEmail, value.to, subject, body]
+    );
+
+    const emailId = result.insertId;
+
+    // Send actual email
+    await sendEmail({
+      to: value.to,
+      from: userEmail,
+      subject,
+      html: body,
+    });
+
+    // Track email sent
+    await do_ma_query(
+      "INSERT INTO email_tracking (email_id, event_type, event_data) VALUES (?, ?, ?)",
+      [emailId, "sent", JSON.stringify({ 
+        timestamp: new Date(),
+        type: 'stock_request',
+        productName: value.productName,
+        quantity: value.quantity
+      })]
+    );
+
+    // Notify recipient
+    await createNotificationByEmailService({
+  userEmail: value.to,
+  emailId,
+  type: "stock_request",
+  title: "New Stock Request",
+  message: `${userName} has requested ${value.quantity} units of ${value.productName}`,
+});
+
+
+    res.status(201).json({
+      success: true,
+      message: "Stock request sent successfully",
+      data: { emailId },
+      timestamp: DateTime.local().toISO(),
+    });
+  } catch (error) {
+    console.error("Error sending stock request:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error sending stock request",
+      error: error.message,
+    });
+  }
+};
+
+// POST respond to stock request
+// export const respondToStockRequest = async (req, res) => {
+//   try {
+//     const { id } = req.params;
+//     const { action, notes } = req.body; // action: 'approve' or 'reject'
+//     const userId = req.user.id;
+//     const userEmail = req.user.email;
+//     const userName = req.user.username || userEmail;
+
+//     if (!['approve', 'reject'].includes(action)) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Invalid action. Use 'approve' or 'reject'",
+//       });
+//     }
+
+//     // Get original request
+//     const originalEmails = await do_ma_query(
+//       "SELECT * FROM emails WHERE id = ? AND recipient_email = ?",
+//       [id, userEmail]
+//     );
+
+//     if (originalEmails.length === 0) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "Stock request not found or access denied",
+//       });
+//     }
+
+//     const originalEmail = originalEmails[0];
+
+//     // Create response email
+//     const subject = `Re: ${originalEmail.subject} - ${action.toUpperCase()}`;
+//     const body = `
+//       <div style="font-family: Arial, sans-serif; padding: 20px;">
+//         <h2>Stock Request ${action === 'approve' ? 'Approved' : 'Rejected'}</h2>
+//         <p><strong>Responder:</strong> ${userName} (${userEmail})</p>
+//         <p><strong>Status:</strong> <span style="color: ${action === 'approve' ? 'green' : 'red'}">
+//           ${action.toUpperCase()}</span></p>
+//         ${notes ? `<p><strong>Notes:</strong> ${notes}</p>` : ''}
+//         <hr/>
+//         <h3>Original Request:</h3>
+//         ${originalEmail.body}
+//       </div>
+//     `;
+
+//     // Insert response email
+//     const result = await do_ma_query(
+//       `INSERT INTO emails (
+//         sender_id, sender_email, recipient_email, subject, body, 
+//         status, template_type
+//       ) VALUES (?, ?, ?, ?, ?, 'sent', 'stock_response')`,
+//       [userId, userEmail, originalEmail.sender_email, subject, body]
+//     );
+
+//     const responseEmailId = result.insertId;
+
+//     // Send email
+//     await sendEmail({
+//       to: originalEmail.sender_email,
+//       from: userEmail,
+//       subject,
+//       html: body,
+//     });
+
+//     // Track response
+//     await do_ma_query(
+//       "INSERT INTO email_tracking (email_id, event_type, event_data) VALUES (?, ?, ?)",
+//       [responseEmailId, "sent", JSON.stringify({ 
+//         timestamp: new Date(),
+//         type: 'stock_response',
+//         action,
+//         originalEmailId: id
+//       })]
+//     );
+
+//     // Notify original sender
+//     await createNotificationByEmail({
+//       userEmail: originalEmail.sender_email,
+//       emailId: responseEmailId,
+//       type: "stock_response",
+//       title: `Stock Request ${action === 'approve' ? 'Approved' : 'Rejected'}`,
+//       message: `${userName} has ${action}d your stock request`,
+//     });
+
+//     res.status(200).json({
+//       success: true,
+//       message: `Stock request ${action}d successfully`,
+//       data: { responseEmailId },
+//       timestamp: DateTime.local().toISO(),
+//     });
+//   } catch (error) {
+//     console.error("Error responding to stock request:", error);
+//     res.status(500).json({
+//       success: false,
+//       message: "Error responding to stock request",
+//       error: error.message,
+//     });
+//   }
+// };
+
+
+
+export const respondToStockRequest = async (req, res) => {
+  try {
+    console.log("REQ.USER:", req.user);
+    console.log("REQ.PARAMS:", req.params);
+    console.log("REQ.BODY:", req.body);
+
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        message: "User not authenticated",
+      });
+    }
+
+    const { id } = req.params;
+    const { action, notes } = req.body; // action: 'approve' or 'reject'
+    const userId = req.user.id;
+    const userEmail = req.user.email;
+    const userName = req.user.username || userEmail;
+
+    if (!['approve', 'reject'].includes(action)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid action. Use 'approve' or 'reject'",
+      });
+    }
+
+    // Get original request
+    const originalEmails = await do_ma_query(
+      "SELECT * FROM emails WHERE id = ? AND recipient_email = ?",
+      [id, userEmail]
+    );
+    console.log("ORIGINAL EMAILS:", originalEmails);
+
+    if (!originalEmails || originalEmails.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Stock request not found or access denied",
+      });
+    }
+
+    const originalEmail = originalEmails[0];
+
+    // Create response email
+    const subject = `Re: ${originalEmail.subject} - ${action.toUpperCase()}`;
+    const body = `
+      <div style="font-family: Arial, sans-serif; padding: 20px;">
+        <h2>Stock Request ${action === 'approve' ? 'Approved' : 'Rejected'}</h2>
+        <p><strong>Responder:</strong> ${userName} (${userEmail})</p>
+        <p><strong>Status:</strong> <span style="color: ${action === 'approve' ? 'green' : 'red'}">
+          ${action.toUpperCase()}</span></p>
+        ${notes ? `<p><strong>Notes:</strong> ${notes}</p>` : ''}
+        <hr/>
+        <h3>Original Request:</h3>
+        ${originalEmail.body}
+      </div>
+    `;
+
+    // Insert response email
+    const result = await do_ma_query(
+      `INSERT INTO emails (
+        sender_id, sender_email, recipient_email, subject, body, 
+        status, template_type
+      ) VALUES (?, ?, ?, ?, ?, 'sent', 'stock_response')`,
+      [userId, userEmail, originalEmail.sender_email, subject, body]
+    );
+
+    console.log("INSERT RESULT:", result);
+    const responseEmailId = result.insertId;
+
+    // Send email
+    try {
+      await sendEmail({
+        to: originalEmail.sender_email,
+        from: userEmail,
+        subject,
+        html: body,
+      });
+      console.log("Email sent successfully");
+    } catch (emailErr) {
+      console.error("Error sending email:", emailErr);
+    }
+
+    // Track response
+    try {
+      await do_ma_query(
+        "INSERT INTO email_tracking (email_id, event_type, event_data) VALUES (?, ?, ?)",
+        [responseEmailId, "sent", JSON.stringify({ 
+          timestamp: new Date(),
+          type: 'stock_response',
+          action,
+          originalEmailId: id
+        })]
+      );
+      console.log("Email tracking inserted");
+    } catch (trackingErr) {
+      console.error("Error inserting tracking:", trackingErr);
+    }
+
+    // Notify original sender
+    try {
+      await createNotificationByEmail({
+        userEmail: originalEmail.sender_email,
+        emailId: responseEmailId,
+        type: "stock_response",
+        title: `Stock Request ${action === 'approve' ? 'Approved' : 'Rejected'}`,
+        message: `${userName} has ${action}d your stock request`,
+      });
+      console.log("Notification created");
+    } catch (notifErr) {
+      console.error("Error creating notification:", notifErr);
+    }
+
+    res.status(200).json({
+      success: true,
+      message: `Stock request ${action}d successfully`,
+      data: { responseEmailId },
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error("Error responding to stock request:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error responding to stock request",
+      error: error.message,
+    });
+  }
+};
 
 
 

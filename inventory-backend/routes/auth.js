@@ -13,7 +13,7 @@ import {deleteMenu,getMenu,patchMenu,postMenu,postReorderMenu,putMenu,} from "..
 import { getProduct,getProductById,createProduct,updateProductById,deleteProduct, getProductByScan } from "../controller/productController.js";
 import { createWh, getWhEmail, getWhPhone, getWhTitle,getAllWarehouses,getWarehouseById,deleteWarehouse,updateWarehouse, getDashboard } from "../controller/warehouseController.js";
 
-import { getEmails,getEmailById,markAsRead,toggleStar,deleteEmail,bulkAction,getTemplates, sendEmails, getNotifications, createNotification, createNotificationByEmail, deleteNotification, markAllNotificationsAsRead, markNotificationAsRead} from "../controller/emailController.js";
+import { getEmails,getEmailById,markAsRead,toggleStar,deleteEmail,bulkAction,getTemplates, sendEmails, getNotifications, createNotification, createNotificationByEmail, deleteNotification, markAllNotificationsAsRead, markNotificationAsRead, getReceivedEmails, saveDraft, sendStockRequest, respondToStockRequest} from "../controller/emailController.js";
 import { exportToExcel, exportToPDF } from "../controller/exportController.js";
 import { createStockFlow, deleteStockFlow, getStockFlowById, getStockFlowOptions, getStockFlows, getStockFlowStats, updateStockFlowById } from "../controller/stockController.js";
 import { generateStockFlowInvoice } from "../controller/invoiceController.js";
@@ -135,13 +135,21 @@ router.delete("/notification/:id",authenticateToken,checkPermission("Notificatio
 // router.get('/getEmail',authenticateToken,checkPermission("Email", "view") ,getEmails);
 router.get('/getEmail/:category',authenticateToken,checkPermission("Email", "view") ,getEmails);
 router.get('/getEmailById/:id',authenticateToken,checkPermission("Email", "view"), getEmailById);
-router.post('/createEmail',authenticateToken,checkPermission("Email", "create"), sendEmails);
-router.post('/createBulkEmail/bulk/:action',authenticateToken,checkPermission("Email", "create"), bulkAction);
+router.get('/receivedEmail', authenticateToken, checkPermission("Email","view"),getReceivedEmails);
+router.post('/draftEmail', authenticateToken,checkPermission("Email","create"),saveDraft);
+router.post('/createEmail', authenticateToken,checkPermission("Email","create"),sendEmails);
+router.post('/stock-request', authenticateToken,checkPermission("Email","create"), sendStockRequest);
+router.post('/stock-request/:id/respond', authenticateToken,checkPermission("Email","create"), respondToStockRequest);
+
+// router.post('/createBulkEmail/bulk/:action',authenticateToken,checkPermission("Email", "create"), bulkAction);
+
+router.post('/bulkEmail/:action',authenticateToken,checkPermission("Email", "edit"),bulkAction);
+
 router.put('/editEmailMark/:id/read',authenticateToken,checkPermission("Email", "edit"), markAsRead);
 router.put('/editEmailTogglemail/:id/star',authenticateToken,checkPermission("Email", "edit"), toggleStar);
 router.delete('/deleteEmail/:id',authenticateToken,checkPermission("Email", "delete"), deleteEmail);
 
-router.get('/getTemplates/all',authenticateToken,checkPermission("templates", "view") ,getTemplates);
+router.get('/getTemplates/all',authenticateToken,checkPermission("Templates", "view") ,getTemplates);
 
 
 

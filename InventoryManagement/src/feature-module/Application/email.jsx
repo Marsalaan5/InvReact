@@ -1306,7 +1306,8 @@ const Email = () => {
     enableFollowUp: true,
     followUpDays: 2,
     enableEscalation: true,
-    escalationEmail: ""
+    escalationEmail: "",
+    escalationDays:3
   });
 
   const [stockRequestData, setStockRequestData] = useState({
@@ -1344,14 +1345,14 @@ const Email = () => {
   };
 
   // Fetch notifications
-  const fetchNotifications = async () => {
-    try {
-      const response = await AuthService.getNotifications(20);
-      setNotifications(response.data.data || []);
-    } catch (error) {
-      console.error("Error fetching notifications:", error);
-    }
-  };
+const fetchNotifications = async () => {
+  try {
+    const response = await AuthService.getNotifications(20);
+    setNotifications(response.data.data || []);
+  } catch (error) {
+    console.error("Error fetching notifications:", error);
+  }
+};
 
   useEffect(() => {
     fetchEmails();
@@ -1374,7 +1375,7 @@ const Email = () => {
     }
 
     try {
-      await AuthService.sendEmail(composeData);
+      await AuthService.sendEmails(composeData);
       showNotification("Email sent successfully!");
       setShowCompose(false);
       resetComposeForm();
@@ -1420,58 +1421,64 @@ const Email = () => {
   };
 
   // Mark as read
-  const markAsRead = async (emailId) => {
-    try {
-      await AuthService.markEmailAsRead(emailId);
-      setEmails(prev =>
-        prev.map(e => (e.id === emailId ? { ...e, is_read: true } : e))
-      );
-    } catch (error) {
-      console.error("Error marking email as read:", error);
-    }
-  };
+const markAsRead = async (emailId) => {
+  try {
+    await AuthService.markEmailAsRead(emailId); // ✅ Updated method name
+    setEmails(prev =>
+      prev.map(e => (e.id === emailId ? { ...e, is_read: true } : e))
+    );
+  } catch (error) {
+    console.error("Error marking email as read:", error);
+  }
+};
 
   // Toggle star
-  const toggleStar = async (emailId, currentStarred) => {
-    try {
-      await AuthService.toggleEmailStar(emailId, !currentStarred);
-      setEmails(prev =>
-        prev.map(e => (e.id === emailId ? { ...e, is_starred: !currentStarred } : e))
-      );
-    } catch (error) {
-      console.error("Error toggling star:", error);
-    }
-  };
+const toggleStar = async (emailId, currentStarred) => {
+  try {
+    await AuthService.toggleEmailStar(emailId, !currentStarred);
+    setEmails(prev =>
+      prev.map(e => (e.id === emailId ? { ...e, is_starred: !currentStarred } : e))
+    );
+  } catch (error) {
+    console.error("Error toggling star:", error);
+  }
+};
+
 
   // Delete email
-  const deleteEmail = async (emailId) => {
-    try {
-      await AuthService.deleteEmail(emailId);
-      showNotification("Email deleted");
-      fetchEmails();
-    } catch (error) {
-      console.error("Error deleting email:", error);
-      showNotification("Error deleting email");
-    }
-  };
+const deleteEmail = async (emailId) => {
+  try {
+    await AuthService.deleteEmail(emailId);
+    showNotification("Email deleted");
+    fetchEmails();
+  } catch (error) {
+    console.error("Error deleting email:", error);
+    showNotification("Error deleting email");
+  }
+};
 
   // Bulk actions
-  const handleBulkAction = async (action) => {
-    if (selectedEmails.length === 0) {
-      showNotification("Please select emails first");
-      return;
-    }
+const handleBulkAction = async (action) => {
+  if (selectedEmails.length === 0) {
+    showNotification("Please select emails first");
+    return;
+  }
 
-    try {
-      await AuthService.bulkEmailAction(action, selectedEmails);
-      showNotification(`${action} completed successfully`);
-      setSelectedEmails([]);
-      fetchEmails();
-    } catch (error) {
-      console.error("Error performing bulk action:", error);
-      showNotification("Error performing action");
-    }
-  };
+  try {
+    console.log('Performing bulk action:', action);
+    console.log('Selected email IDs:', selectedEmails);
+    
+  
+    await AuthService.bulkEmailAction(action, selectedEmails);
+    
+    showNotification(`Bulk ${action} completed successfully`);
+    setSelectedEmails([]);
+    fetchEmails();
+  } catch (error) {
+    console.error("Error performing bulk action:", error);
+    showNotification(error.response?.data?.message || "Error performing bulk action");
+  }
+};
 
   // Reply to email
   const replyToEmail = (email) => {
@@ -1512,7 +1519,8 @@ const Email = () => {
       enableFollowUp: true,
       followUpDays: 2,
       enableEscalation: true,
-      escalationEmail: ""
+      escalationEmail: "",
+      escalationDays:3
     });
   };
 
@@ -1743,40 +1751,62 @@ const Email = () => {
                       </div>
                     )}
 
-                    <div className="form-check mt-2">
-                      <input
-                        className="form-check-input"
-                        type="checkbox"
-                        checked={composeData.enableEscalation}
-                        onChange={(e) =>
-                          setComposeData({
-                            ...composeData,
-                            enableEscalation: e.target.checked
-                          })
-                        }
-                      />
-                      <label className="form-check-label">
-                        Enable auto-escalation
-                      </label>
-                    </div>
-                    {composeData.enableEscalation && (
-                      <div className="mt-2">
-                        <label className="form-label">Escalation email</label>
-                        <input
-                          type="email"
-                          className="form-control"
-                          value={composeData.escalationEmail}
-                          onChange={(e) =>
-                            setComposeData({
-                              ...composeData,
-                              escalationEmail: e.target.value
-                            })
-                          }
-                          placeholder="manager@company.com"
-                        />
-                      </div>
-                    )}
-                  </div>
+                    <div className="form-check mt-3">
+    <input
+      className="form-check-input"
+      type="checkbox"
+      checked={composeData.enableEscalation}
+      onChange={(e) =>
+        setComposeData({
+          ...composeData,
+          enableEscalation: e.target.checked
+        })
+      }
+    />
+    <label className="form-check-label">
+      Enable auto-escalation
+    </label>
+  </div>
+  {composeData.enableEscalation && (
+    <div className="mt-2">
+      <div className="mb-2">
+        <label className="form-label">Escalation email</label>
+        <input
+          type="email"
+          className="form-control"
+          value={composeData.escalationEmail}
+          onChange={(e) =>
+            setComposeData({
+              ...composeData,
+              escalationEmail: e.target.value
+            })
+          }
+          placeholder="any@gmail.com"
+        />
+      </div>
+      <div>
+        <label className="form-label">Escalate after (days)</label>
+        <input
+          type="number"
+          className="form-control"
+          style={{ width: "150px" }}
+          value={composeData.escalationDays}
+          onChange={(e) =>
+            setComposeData({
+              ...composeData,
+              escalationDays: parseInt(e.target.value)
+            })
+          }
+          min="1"
+          max="30"
+        />
+        <small className="text-muted">
+          Escalation will occur if no response is received within this timeframe
+        </small>
+      </div>
+    </div>
+  )}
+</div>
 
                   <div className="d-flex gap-2">
                     <button className="btn btn-primary" onClick={sendEmail}>

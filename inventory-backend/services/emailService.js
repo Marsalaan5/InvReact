@@ -148,7 +148,7 @@ export const sendEmail = async ({ to, from, subject, html, text }) => {
   };
 };
 
-// ✅ NEW: Send template email AND store in database
+// NEW: Send template email AND store in database
 export const sendTemplateEmail = async (templateName, to, variables, customSubject = null) => {
   try {
     // Get template from database
@@ -179,7 +179,7 @@ export const sendTemplateEmail = async (templateName, to, variables, customSubje
       html: body 
     });
 
-    // ✅ Store in emails table so it appears in Email.jsx inbox
+    // Store in emails table so it appears in Email.jsx inbox
     const emailInsertResult = await do_ma_query(
       `INSERT INTO emails (
         sender_id, 
@@ -202,9 +202,9 @@ export const sendTemplateEmail = async (templateName, to, variables, customSubje
       ]
     );
 
-    console.log(`✅ Email sent and stored in database (ID: ${emailInsertResult.insertId}) for ${to}`);
+    console.log(`Email sent and stored in database (ID: ${emailInsertResult.insertId}) for ${to}`);
 
-    // ✅ Create notification for recipient
+    //Create notification for recipient
     try {
       // Get recipient user ID by email
       const recipientUser = await do_ma_query(
@@ -261,3 +261,158 @@ export const sendBulkEmails = async (emails) => {
   }
   return results;
 };  
+
+
+
+
+
+//sendGrid for production
+
+
+// // emailService.js
+// import sgMail from '@sendgrid/mail';
+// import { do_ma_query } from '../db.js';
+// import pool from '../db.js';
+
+// sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+
+// // Generic sendEmail function
+// export const sendEmail = async ({ to, from, subject, html, text }) => {
+//   try {
+//     const msg = {
+//       to,
+//       from: from || process.env.FROM_EMAIL,
+//       subject,
+//       html,
+//       text: text || html.replace(/<[^>]*>/g, ''),
+//     };
+
+//     const info = await sgMail.send(msg);
+
+//     return {
+//       success: true,
+//       provider: 'sendgrid',
+//       messageId: info[0]?.headers['x-message-id'] || null,
+//     };
+//   } catch (error) {
+//     console.error('Error sending email via SendGrid:', error.response?.body || error.message);
+//     throw error;
+//   }
+// };
+
+// // Send template email AND store in database
+// export const sendTemplateEmail = async (templateName, to, variables, customSubject = null) => {
+//   try {
+//     // Get template from database
+//     const templates = await do_ma_query(
+//       'SELECT * FROM email_templates WHERE type = ? AND is_active = TRUE',
+//       [templateName]
+//     );
+
+//     if (templates.length === 0) {
+//       throw new Error(`Template ${templateName} not found`);
+//     }
+
+//     const template = templates[0];
+//     let subject = customSubject || template.subject;
+//     let body = template.body;
+
+//     // Replace variables in template
+//     for (const [key, value] of Object.entries(variables)) {
+//       subject = subject.replace(new RegExp(`\\{${key}\\}`, 'g'), value);
+//       body = body.replace(new RegExp(`\\{${key}\\}`, 'g'), value);
+//     }
+
+//     // Send physical email via SendGrid
+//     await sendEmail({
+//       to,
+//       from: process.env.FROM_EMAIL,
+//       subject,
+//       html: body,
+//     });
+
+//     // Store in database
+//     const emailInsertResult = await do_ma_query(
+//       `INSERT INTO emails (
+//         sender_id, 
+//         sender_email, 
+//         recipient_email, 
+//         subject, 
+//         body, 
+//         status, 
+//         template_type, 
+//         is_read,
+//         created_at
+//       ) VALUES (?, ?, ?, ?, ?, 'sent', ?, 0, NOW())`,
+//       [
+//         1, // system/admin ID
+//         process.env.FROM_EMAIL,
+//         to,
+//         subject,
+//         body,
+//         templateName,
+//       ]
+//     );
+
+//     console.log(`Email sent and stored (ID: ${emailInsertResult.insertId}) for ${to}`);
+
+//     // Create notification for recipient
+//     try {
+//       const recipientUser = await do_ma_query(
+//         'SELECT id FROM users WHERE email_1 = ? OR email = ?',
+//         [to, to]
+//       );
+
+//       if (recipientUser.length > 0) {
+//         await do_ma_query(
+//           `INSERT INTO notifications (
+//             user_id, 
+//             email_id, 
+//             type, 
+//             title, 
+//             message, 
+//             is_read,
+//             created_at
+//           ) VALUES (?, ?, 'new_email', ?, ?, 0, NOW())`,
+//           [
+//             recipientUser[0].id,
+//             emailInsertResult.insertId,
+//             subject,
+//             `You have a new email: ${subject}`,
+//           ]
+//         );
+//         console.log(`Notification created for user ${recipientUser[0].id}`);
+//       }
+//     } catch (notifError) {
+//       console.error('Failed to create notification:', notifError.message);
+//     }
+
+//     return { success: true, emailId: emailInsertResult.insertId };
+//   } catch (error) {
+//     console.error('Error sending template email:', error);
+//     throw error;
+//   }
+// };
+
+// // Bulk emails (parallel sending)
+// export const sendBulkEmails = async (emails) => {
+//   const results = await Promise.allSettled(
+//     emails.map(email => sendEmail(email))
+//   );
+
+//   return results.map((res, i) => ({
+//     email: emails[i].to,
+//     success: res.status === 'fulfilled',
+//     result: res.status === 'fulfilled' ? res.value : res.reason.message,
+//   }));
+// };
+
+
+
+
+
+
+
+
+
+
