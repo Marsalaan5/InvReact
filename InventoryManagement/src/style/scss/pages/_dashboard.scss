@@ -1,3 +1,86 @@
+
+.warehouse-card {
+    background: $white;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e2e8f0;
+    transition: all 0.3s ease;
+    margin-bottom: 25px;
+    
+    &:hover {
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        transform: translateY(-2px);
+    }
+    
+    .warehouse-card-body {
+        padding: 20px;
+    }
+    
+    .warehouse-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+        
+        h4 {
+            font-size: 1.125rem;
+            font-weight: $font-weight-bold;
+            color: #1e293b;
+            margin-bottom: 0;
+        }
+        
+        .alert-icon {
+            color: #f59e0b;
+        }
+    }
+    
+    .warehouse-stats {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+    
+    .stat-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        
+        .stat-label {
+            font-size: 0.875rem;
+            color: #64748b;
+        }
+        
+        .stat-value {
+            font-size: 0.875rem;
+            font-weight: $font-weight-semibold;
+            color: #1e293b;
+            
+            &.low-stock {
+                color: #f59e0b;
+            }
+            
+            &.out-of-stock {
+                color: #dc2626;
+            }
+        }
+    }
+}
+
+// Alert info box
+.alert-info-custom {
+    background-color: #dbeafe;
+    border: 1px solid #93c5fd;
+    color: #1e40af;
+    padding: 15px;
+    border-radius: 6px;
+    margin-bottom: 25px;
+    
+    p {
+        margin-bottom: 0;
+    }
+}
+
+
 .dash-widget {
     display: -webkit-box;
     display: -ms-flexbox;

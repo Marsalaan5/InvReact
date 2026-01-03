@@ -1,4 +1,5 @@
 
+
 import axiosInstance from "./axiosInstance";
 
 const AuthService = {
@@ -57,6 +58,9 @@ const AuthService = {
   getMenu: (showAll = false) =>
     axiosInstance.get(`/auth/menu?showAll=${showAll}`),
   getAllMenuItems: () => axiosInstance.get("/auth/menu?showAll=true"),
+
+  // getMenu:() => axiosInstance.get(`/auth/menu`),
+  // getAllMenuItems:() => axiosInstance.get(`/auth/menu/All`),
   createMenuItem: (data) => axiosInstance.post("/auth/menu", data),
   updateMenuItem: (id, data) => axiosInstance.put(`/auth/menu/${id}`, data),
   deleteMenuItem: (id) => axiosInstance.delete(`/auth/menu/${id}`),
@@ -122,10 +126,29 @@ saveDraft: (draftData) => axiosInstance.post(`/auth/draftEmail`, draftData),
 sendStockRequest: (stockRequestData) =>
   axiosInstance.post(`/auth/stock-request`, stockRequestData),
 
-respondToStockRequest: (emailId, action, notes = "") =>
-  axiosInstance.post(
-    `/auth/stock-request/${emailId}/respond`,
-    { action, notes }
+// sendStockRequest: (stockRequestData) =>
+//   axiosInstance.post(`/auth/stock-request`, {
+//     to: stockRequestData.to,
+//     productName: stockRequestData.productName,
+//     quantity: stockRequestData.quantity,
+//     urgency: stockRequestData.urgency,
+//     notes: stockRequestData.notes,
+//     enableFollowUp: stockRequestData.enableFollowUp,
+//     followUpDays: stockRequestData.followUpDays,
+//     enableEscalation: stockRequestData.enableEscalation,
+//     escalationEmail: stockRequestData.escalationEmail,
+//     escalationDays: stockRequestData.escalationDays
+//   }),
+
+// respondToStockRequest: (emailId, action, notes = "") =>
+//   axiosInstance.post(
+//     `/auth/stock-request/${emailId}/respond`,
+//     { action, notes }
+//   ),
+
+respondToStockRequest: (emailId, action,deadlineDays, notes = "") =>
+  axiosInstance.post(`/auth/stock-request/${emailId}/respond`, 
+    { action,deadlineDays, notes }
   ),
 
 // Email actions

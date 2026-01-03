@@ -1175,12 +1175,12 @@ export const getLowStockProducts = async (req, res) => {
       article_profile_id = "",
       sortBy = "count",
       sortOrder = "ASC",
-      threshold = 10, // Default low stock threshold
+      threshold = 10,
     } = req.query;
 
     const offset = (page - 1) * limit;
 
-    let whereConditions = ["p.count <= ?"];
+    let whereConditions = ["p.count > 0 AND p.count <= ?"];
     let queryParams = [threshold];
 
     // Apply warehouse filter for Admin users
@@ -1440,3 +1440,65 @@ export const updateLowStockAlert = async (req, res) => {
     });
   }
 };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

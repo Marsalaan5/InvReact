@@ -9,7 +9,7 @@ import {createUser,getUser,getCurrentUser,editUserById,deleteUserById,createRole
 
 import { applyWarehouseFilter, authenticateToken, enforceWarehouseAccess } from "../middleware/authMiddleware.js";
 import {checkPermission} from "../middleware/checkPermission.js";
-import {deleteMenu,getMenu,patchMenu,postMenu,postReorderMenu,putMenu,} from "../controller/menuController.js";
+import {deleteMenu,getAllMenuItems,getMenu,patchMenu,postMenu,postReorderMenu,putMenu,} from "../controller/menuController.js";
 import { getProduct,getProductById,createProduct,updateProductById,deleteProduct, getProductByScan } from "../controller/productController.js";
 import { createWh, getWhEmail, getWhPhone, getWhTitle,getAllWarehouses,getWarehouseById,deleteWarehouse,updateWarehouse, getDashboard } from "../controller/warehouseController.js";
 
@@ -67,6 +67,7 @@ router.post("/permissions/update",authenticateToken,checkPermission("Permission"
 router.get("/permissions/modules",authenticateToken,checkPermission("Permission", "view"),getModules);
 
 // Menu
+router.get('/menu/all', authenticateToken,checkPermission("Menu Management", "view"), getAllMenuItems);
 router.get("/menu",authenticateToken,checkPermission("Menu Management", "view"),getMenu);
 router.post("/menu",authenticateToken,checkPermission("Menu Management", "create"),postMenu);
 router.put("/menu/:id",authenticateToken,checkPermission("Menu Management", "edit"),putMenu);

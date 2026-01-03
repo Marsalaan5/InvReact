@@ -1286,6 +1286,12 @@ import { Link } from "react-router-dom";
 import AuthService from "../../services/authService";
 
 
+const stripHtmlTags = (html) => {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, 'text/html');
+  return doc.body.textContent || '';
+};
+
 const Email = () => {
   const [emails, setEmails] = useState([]);
   const [selectedEmails, setSelectedEmails] = useState([]);
@@ -1310,13 +1316,26 @@ const Email = () => {
     escalationDays:3
   });
 
-  const [stockRequestData, setStockRequestData] = useState({
-    to: "",
-    productName: "",
-    quantity: 1,
-    urgency: "medium",
-    notes: ""
-  });
+  // const [stockRequestData, setStockRequestData] = useState({
+  //   to: "",
+  //   productName: "",
+  //   quantity: 1,
+  //   urgency: "medium",
+  //   notes: ""
+  // });
+
+ const [stockRequestData, setStockRequestData] = useState({
+  to: "",
+  productName: "",
+  quantity: 1,
+  urgency: "medium",
+  notes: "",
+  enableFollowUp: true,
+  followUpDays: 2,
+  enableEscalation: true,
+  escalationEmail: "",
+  escalationDays: 3
+});
 
   const [pagination, setPagination] = useState({
     currentPage: 1,
@@ -1365,6 +1384,7 @@ const fetchNotifications = async () => {
     }, 30000);
 
     return () => clearInterval(interval);
+    //eslint-disable-next-line
   }, [currentView, searchQuery]);
 
   // Send email
@@ -1406,19 +1426,19 @@ const fetchNotifications = async () => {
   };
 
   // Respond to stock request
-  const respondToStockRequest = async (emailId, action) => {
-    const notes = prompt(`${action === 'approve' ? 'Approve' : 'Reject'} this request. Add notes (optional):`);
-    
-    try {
-      await AuthService.respondToStockRequest(emailId, action, notes || '');
-      showNotification(`Stock request ${action}d successfully!`);
-      setSelectedEmail(null);
-      fetchEmails();
-    } catch (error) {
-      console.error("Error responding to stock request:", error);
-      showNotification(error.response?.data?.message || "Error responding to stock request");
-    }
-  };
+
+
+  const respondToStockRequest = async (emailId, action, deadlineDays = null, notes = '') => {
+  try {
+    await AuthService.respondToStockRequest(emailId, action, deadlineDays, notes);
+    showNotification(`Stock request ${action}d successfully!`);
+    setSelectedEmail(null);
+    fetchEmails();
+  } catch (error) {
+    console.error("Error responding to stock request:", error);
+    showNotification(error.response?.data?.message || "Error responding to stock request");
+  }
+};
 
   // Mark as read
 const markAsRead = async (emailId) => {
@@ -1481,28 +1501,56 @@ const handleBulkAction = async (action) => {
 };
 
   // Reply to email
+  // const replyToEmail = (email) => {
+  //   setComposeData({
+  //     ...composeData,
+  //     to: email.sender_email,
+  //     subject: `Re: ${email.subject}`,
+  //     body: `\n\n--- Original Message ---\nFrom: ${email.sender_email}\nDate: ${new Date(email.created_at).toLocaleString()}\n\n${email.body}`
+  //   });
+  //   setShowCompose(true);
+  //   setSelectedEmail(null);
+  // };
+
   const replyToEmail = (email) => {
-    setComposeData({
-      ...composeData,
-      to: email.sender_email,
-      subject: `Re: ${email.subject}`,
-      body: `\n\n--- Original Message ---\nFrom: ${email.sender_email}\nDate: ${new Date(email.created_at).toLocaleString()}\n\n${email.body}`
-    });
-    setShowCompose(true);
-    setSelectedEmail(null);
-  };
+  const plainTextBody = stripHtmlTags(email.body);
+  
+  setComposeData({
+    ...composeData,
+    to: email.sender_email,
+    subject: `Re: ${email.subject}`,
+    body: `\n\n--- Original Message ---\nFrom: ${email.sender_email}\nDate: ${new Date(email.created_at).toLocaleString()}\n\n${plainTextBody}`
+  });
+  setShowCompose(true);
+  setSelectedEmail(null);
+};
+
 
   // Forward email
+  // const forwardEmail = (email) => {
+  //   setComposeData({
+  //     ...composeData,
+  //     to: "",
+  //     subject: `Fwd: ${email.subject}`,
+  //     body: `\n\n--- Forwarded Message ---\nFrom: ${email.sender_email}\nDate: ${new Date(email.created_at).toLocaleString()}\nSubject: ${email.subject}\n\n${email.body}`
+  //   });
+  //   setShowCompose(true);
+  //   setSelectedEmail(null);
+  // };
+
+
   const forwardEmail = (email) => {
-    setComposeData({
-      ...composeData,
-      to: "",
-      subject: `Fwd: ${email.subject}`,
-      body: `\n\n--- Forwarded Message ---\nFrom: ${email.sender_email}\nDate: ${new Date(email.created_at).toLocaleString()}\nSubject: ${email.subject}\n\n${email.body}`
-    });
-    setShowCompose(true);
-    setSelectedEmail(null);
-  };
+  const plainTextBody = stripHtmlTags(email.body);
+  
+  setComposeData({
+    ...composeData,
+    to: "",
+    subject: `Fwd: ${email.subject}`,
+    body: `\n\n--- Forwarded Message ---\nFrom: ${email.sender_email}\nDate: ${new Date(email.created_at).toLocaleString()}\nSubject: ${email.subject}\n\n${plainTextBody}`
+  });
+  setShowCompose(true);
+  setSelectedEmail(null);
+};
 
 
 
@@ -1524,15 +1572,33 @@ const handleBulkAction = async (action) => {
     });
   };
 
-  const resetStockRequestForm = () => {
-    setStockRequestData({
-      to: "",
-      productName: "",
-      quantity: 1,
-      urgency: "medium",
-      notes: ""
-    });
-  };
+  // const resetStockRequestForm = () => {
+  //   setStockRequestData({
+  //     to: "",
+  //     productName: "",
+  //     quantity: 1,
+  //     urgency: "medium",
+  //     notes: ""
+  //   });
+  // };
+
+
+ const resetStockRequestForm = () => {
+  setStockRequestData({
+    to: "",
+    productName: "",
+    quantity: 1,
+    urgency: "medium",
+    notes: "",
+    enableFollowUp: true,
+    followUpDays: 2,
+    enableEscalation: true,
+    escalationEmail: "",
+    escalationDays: 3
+  });
+};
+
+  
 
   const toggleEmailSelection = (emailId) => {
     setSelectedEmails(prev =>
@@ -1826,94 +1892,199 @@ const handleBulkAction = async (action) => {
                 </div>
               </div>
             ) : showStockRequest ? (
-              <div className="card bg-white">
-                <div className="card-body">
-                  <h4 className="mb-4">Stock Request</h4>
-                  
-                  <div className="mb-3">
-                    <label className="form-label">Send To</label>
-                    <input
-                      type="email"
-                      className="form-control"
-                      value={stockRequestData.to}
-                      onChange={(e) =>
-                        setStockRequestData({ ...stockRequestData, to: e.target.value })
-                      }
-                      placeholder="warehouse@example.com"
-                    />
-                  </div>
+  <div className="card bg-white">
+    <div className="card-body">
+      <h4 className="mb-4">Stock Request</h4>
+      
+      <div className="mb-3">
+        <label className="form-label">Send To</label>
+        <input
+          type="email"
+          className="form-control"
+          value={stockRequestData.to}
+          onChange={(e) =>
+            setStockRequestData({ ...stockRequestData, to: e.target.value })
+          }
+          placeholder="warehouse@example.com"
+        />
+      </div>
 
-                  <div className="mb-3">
-                    <label className="form-label">Product Name</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      value={stockRequestData.productName}
-                      onChange={(e) =>
-                        setStockRequestData({ ...stockRequestData, productName: e.target.value })
-                      }
-                      placeholder="Product name"
-                    />
-                  </div>
+      <div className="mb-3">
+        <label className="form-label">Product Name</label>
+        <input
+          type="text"
+          className="form-control"
+          value={stockRequestData.productName}
+          onChange={(e) =>
+            setStockRequestData({ ...stockRequestData, productName: e.target.value })
+          }
+          placeholder="Product name"
+        />
+      </div>
 
-                  <div className="mb-3">
-                    <label className="form-label">Quantity</label>
-                    <input
-                      type="number"
-                      className="form-control"
-                      value={stockRequestData.quantity}
-                      onChange={(e) =>
-                        setStockRequestData({ ...stockRequestData, quantity: parseInt(e.target.value) })
-                      }
-                      min="1"
-                    />
-                  </div>
+      <div className="row">
+        <div className="col-md-6 mb-3">
+          <label className="form-label">Quantity</label>
+          <input
+            type="number"
+            className="form-control"
+            value={stockRequestData.quantity}
+            onChange={(e) =>
+              setStockRequestData({ ...stockRequestData, quantity: parseInt(e.target.value) })
+            }
+            min="1"
+          />
+        </div>
 
-                  <div className="mb-3">
-                    <label className="form-label">Urgency</label>
-                    <select
-                      className="form-select"
-                      value={stockRequestData.urgency}
-                      onChange={(e) =>
-                        setStockRequestData({ ...stockRequestData, urgency: e.target.value })
-                      }
-                    >
-                      <option value="low">Low</option>
-                      <option value="medium">Medium</option>
-                      <option value="high">High</option>
-                    </select>
-                  </div>
+        <div className="col-md-6 mb-3">
+          <label className="form-label">Urgency</label>
+          <select
+            className="form-select"
+            value={stockRequestData.urgency}
+            onChange={(e) =>
+              setStockRequestData({ ...stockRequestData, urgency: e.target.value })
+            }
+          >
+            <option value="low">Low</option>
+            <option value="medium">Medium</option>
+            <option value="high">High</option>
+          </select>
+        </div>
+      </div>
 
-                  <div className="mb-3">
-                    <label className="form-label">Notes (Optional)</label>
-                    <textarea
-                      className="form-control"
-                      rows="4"
-                      value={stockRequestData.notes}
-                      onChange={(e) =>
-                        setStockRequestData({ ...stockRequestData, notes: e.target.value })
-                      }
-                      placeholder="Additional notes..."
-                    />
-                  </div>
+      <div className="mb-3">
+        <label className="form-label">Notes (Optional)</label>
+        <textarea
+          className="form-control"
+          rows="4"
+          value={stockRequestData.notes}
+          onChange={(e) =>
+            setStockRequestData({ ...stockRequestData, notes: e.target.value })
+          }
+          placeholder="Additional notes..."
+        />
+      </div>
 
-                  <div className="d-flex gap-2">
-                    <button className="btn btn-success" onClick={sendStockRequest}>
-                      <i className="fas fa-box me-2" />
-                      Send Stock Request
-                    </button>
-                    <button
-                      className="btn btn-secondary"
-                      onClick={() => {
-                        setShowStockRequest(false);
-                        resetStockRequestForm();
-                      }}
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              </div>
+      <div className="mb-3">
+        <h5>Automation Settings</h5>
+        
+        <div className="form-check">
+          <input
+            className="form-check-input"
+            type="checkbox"
+            checked={stockRequestData.enableFollowUp}
+            onChange={(e) =>
+              setStockRequestData({
+                ...stockRequestData,
+                enableFollowUp: e.target.checked
+              })
+            }
+          />
+          <label className="form-check-label">
+            Enable follow-up reminder
+          </label>
+        </div>
+        
+        {stockRequestData.enableFollowUp && (
+          <div className="mt-2">
+            <label className="form-label">Follow-up after (days)</label>
+            <input
+              type="number"
+              className="form-control"
+              style={{ width: "150px" }}
+              value={stockRequestData.followUpDays}
+              onChange={(e) =>
+                setStockRequestData({
+                  ...stockRequestData,
+                  followUpDays: parseInt(e.target.value)
+                })
+              }
+              min="1"
+              max="30"
+            />
+            <small className="text-muted">
+              Reminder will be sent if no response received
+            </small>
+          </div>
+        )}
+
+        <div className="form-check mt-3">
+          <input
+            className="form-check-input"
+            type="checkbox"
+            checked={stockRequestData.enableEscalation}
+            onChange={(e) =>
+              setStockRequestData({
+                ...stockRequestData,
+                enableEscalation: e.target.checked
+              })
+            }
+          />
+          <label className="form-check-label">
+            Enable auto-escalation
+          </label>
+        </div>
+        
+        {stockRequestData.enableEscalation && (
+          <div className="mt-2">
+            <div className="mb-2">
+              <label className="form-label">Escalation email</label>
+              <input
+                type="email"
+                className="form-control"
+                value={stockRequestData.escalationEmail}
+                onChange={(e) =>
+                  setStockRequestData({
+                    ...stockRequestData,
+                    escalationEmail: e.target.value
+                  })
+                }
+                placeholder="manager@example.com"
+              />
+            </div>
+            <div>
+              <label className="form-label">Escalate after (days)</label>
+              <input
+                type="number"
+                className="form-control"
+                style={{ width: "150px" }}
+                value={stockRequestData.escalationDays}
+                onChange={(e) =>
+                  setStockRequestData({
+                    ...stockRequestData,
+                    escalationDays: parseInt(e.target.value)
+                  })
+                }
+                min="1"
+                max="30"
+              />
+              <small className="text-muted">
+                Escalation will occur if no response is received within this timeframe
+              </small>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="d-flex gap-2">
+        <button className="btn btn-success" onClick={sendStockRequest}>
+          <i className="fas fa-box me-2" />
+          Send Stock Request
+        </button>
+        <button
+          className="btn btn-secondary"
+          onClick={() => {
+            setShowStockRequest(false);
+            resetStockRequestForm();
+          }}
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+
+
             ) : (
               <div className="card bg-white">
                 <div className="card-body">
@@ -2210,96 +2381,105 @@ const handleBulkAction = async (action) => {
 
       {/* Email Detail Modal */}
       {selectedEmail && (
-        <div
-          className="modal fade show"
-          style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)" }}
-          onClick={() => setSelectedEmail(null)}
-        >
-          <div
-            className="modal-dialog modal-lg"
-            onClick={(e) => e.stopPropagation()}
+  <div
+    className="modal fade show"
+    style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)" }}
+    onClick={() => setSelectedEmail(null)}
+  >
+    <div
+      className="modal-dialog modal-lg"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <div className="modal-content">
+        <div className="modal-header">
+          <h5 className="modal-title">{selectedEmail.subject}</h5>
+          <button
+            type="button"
+            className="btn-close"
+            onClick={() => setSelectedEmail(null)}
+          />
+        </div>
+        <div className="modal-body">
+          <div className="mb-3">
+            <strong>From:</strong> {selectedEmail.sender_email}
+            <br />
+            <strong>To:</strong> {selectedEmail.recipient_email}
+            <br />
+            <strong>Date:</strong>{" "}
+            {new Date(selectedEmail.created_at).toLocaleString()}
+            <br />
+            {selectedEmail.template_type === 'stock_request' && (
+              <span className="badge bg-info mt-2">Stock Request</span>
+            )}
+          </div>
+          <hr />
+          <div dangerouslySetInnerHTML={{ __html: selectedEmail.body }} />
+        </div>
+        <div className="modal-footer">
+          <button
+            className="btn btn-primary"
+            onClick={() => replyToEmail(selectedEmail)}
           >
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">{selectedEmail.subject}</h5>
-                <button
-                  type="button"
-                  className="btn-close"
-                  onClick={() => setSelectedEmail(null)}
-                />
-              </div>
-              <div className="modal-body">
-                <div className="mb-3">
-                  <strong>From:</strong> {selectedEmail.sender_email}
-                  <br />
-                  <strong>To:</strong> {selectedEmail.recipient_email}
-                  <br />
-                  <strong>Date:</strong>{" "}
-                  {new Date(selectedEmail.created_at).toLocaleString()}
-                  <br />
-                  {selectedEmail.template_type === 'stock_request' && (
-                    <span className="badge bg-info mt-2">Stock Request</span>
-                  )}
-                </div>
-                <hr />
-                <div dangerouslySetInnerHTML={{ __html: selectedEmail.body }} />
-              </div>
-              <div className="modal-footer">
-                <button
-                  className="btn btn-primary"
-                  onClick={() => replyToEmail(selectedEmail)}
-                >
-                  <i className="fas fa-reply me-2" />
-                  Reply
-                </button>
-                <button
-                  className="btn btn-secondary"
-                  onClick={() => forwardEmail(selectedEmail)}
-                >
-                  <i className="fas fa-share me-2" />
-                  Forward
-                </button>
+            <i className="fas fa-reply me-2" />
+            Reply
+          </button>
+          <button
+            className="btn btn-secondary"
+            onClick={() => forwardEmail(selectedEmail)}
+          >
+            <i className="fas fa-share me-2" />
+            Forward
+          </button>
                 
                 {/* Stock Request Response Buttons */}
-                {selectedEmail.template_type === 'stock_request' && 
-                 currentView === 'inbox' && (
-                  <>
-                    <button
-                      className="btn btn-success"
-                      onClick={() => {
-                        respondToStockRequest(selectedEmail.id, 'approve');
-                      }}
-                    >
-                      <i className="fas fa-check me-2" />
-                      Approve
-                    </button>
-                    <button
-                      className="btn btn-danger"
-                      onClick={() => {
-                        respondToStockRequest(selectedEmail.id, 'reject');
-                      }}
-                    >
-                      <i className="fas fa-times me-2" />
-                      Reject
-                    </button>
-                  </>
-                )}
-                
-                <button
-                  className="btn btn-danger"
-                  onClick={() => {
-                    deleteEmail(selectedEmail.id);
-                    setSelectedEmail(null);
-                  }}
-                >
-                  <i className="fas fa-trash me-2" />
-                  Delete
-                </button>
-              </div>
-            </div>
-          </div>
+                 {selectedEmail.template_type === 'stock_request' && 
+           currentView === 'inbox' && (
+            <>
+              <button
+                className="btn btn-success"
+                onClick={() => {
+                  const deadline = prompt('Approve this request. Enter delivery deadline in days:');
+                  if (deadline && !isNaN(deadline) && parseInt(deadline) > 0) {
+                    const notes = prompt('Add approval notes (optional):');
+                    respondToStockRequest(selectedEmail.id, 'approve', parseInt(deadline), notes || '');
+                  } else if (deadline !== null) {
+                    alert('Please enter a valid number of days');
+                  }
+                }}
+              >
+                <i className="fas fa-check me-2" />
+                Approve
+              </button>
+              <button
+                className="btn btn-danger"
+                onClick={() => {
+                  const notes = prompt('Reject this request. Add reason (optional):');
+                  if (notes !== null) {
+                    respondToStockRequest(selectedEmail.id, 'reject', null, notes || '');
+                  }
+                }}
+              >
+                <i className="fas fa-times me-2" />
+                Reject
+              </button>
+            </>
+          )}
+          
+          <button
+            className="btn btn-danger"
+            onClick={() => {
+              deleteEmail(selectedEmail.id);
+              setSelectedEmail(null);
+            }}
+          >
+            <i className="fas fa-trash me-2" />
+            Delete
+          </button>
         </div>
-      )}
+      </div>
+    </div>
+  </div>
+)}
     </div>
   );
 };

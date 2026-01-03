@@ -536,6 +536,102 @@ export const saveDraft = async (req, res) => {
 };
 
 // POST send stock request via email
+// export const sendStockRequest = async (req, res) => {
+//   try {
+//     const stockRequestSchema = Joi.object({
+//       to: Joi.string().email().required(),
+//       productName: Joi.string().required(),
+//       quantity: Joi.number().integer().min(1).required(),
+//       urgency: Joi.string().valid('low', 'medium', 'high').default('medium'),
+//       notes: Joi.string().allow(''),
+//     });
+
+//     const { error, value } = stockRequestSchema.validate(req.body);
+
+//     if (error) {
+//       return res.status(400).json({
+//         success: false,
+//         message: error.details[0].message,
+//       });
+//     }
+
+//     const userId = req.user.id;
+//     const userEmail = req.user.email;
+//     const userName = req.user.username || userEmail;
+
+//     const subject = `Stock Request: ${value.productName} (${value.quantity} units)`;
+//     const body = `
+//       <div style="font-family: Arial, sans-serif; padding: 20px;">
+//         <h2>Stock Request</h2>
+//         <p><strong>From:</strong> ${userName} (${userEmail})</p>
+//         <p><strong>Product:</strong> ${value.productName}</p>
+//         <p><strong>Quantity:</strong> ${value.quantity}</p>
+//         <p><strong>Urgency:</strong> <span style="color: ${
+//           value.urgency === 'high' ? 'red' : value.urgency === 'medium' ? 'orange' : 'green'
+//         }">${value.urgency.toUpperCase()}</span></p>
+//         ${value.notes ? `<p><strong>Notes:</strong> ${value.notes}</p>` : ''}
+//         <hr/>
+//         <p>Please review and respond to this request.</p>
+//       </div>
+//     `;
+
+//     // Insert email with stock request metadata
+//     const result = await do_ma_query(
+//       `INSERT INTO emails (
+//         sender_id, sender_email, recipient_email, subject, body, 
+//         status, template_type
+//       ) VALUES (?, ?, ?, ?, ?, 'sent', 'stock_request')`,
+//       [userId, userEmail, value.to, subject, body]
+//     );
+
+//     const emailId = result.insertId;
+
+//     // Send actual email
+//     await sendEmail({
+//       to: value.to,
+//       from: userEmail,
+//       subject,
+//       html: body,
+//     });
+
+//     // Track email sent
+//     await do_ma_query(
+//       "INSERT INTO email_tracking (email_id, event_type, event_data) VALUES (?, ?, ?)",
+//       [emailId, "sent", JSON.stringify({ 
+//         timestamp: new Date(),
+//         type: 'stock_request',
+//         productName: value.productName,
+//         quantity: value.quantity
+//       })]
+//     );
+
+//     // Notify recipient
+//     await createNotificationByEmailService({
+//   userEmail: value.to,
+//   emailId,
+//   type: "stock_request",
+//   title: "New Stock Request",
+//   message: `${userName} has requested ${value.quantity} units of ${value.productName}`,
+// });
+
+
+//     res.status(201).json({
+//       success: true,
+//       message: "Stock request sent successfully",
+//       data: { emailId },
+//       timestamp: DateTime.local().toISO(),
+//     });
+//   } catch (error) {
+//     console.error("Error sending stock request:", error);
+//     res.status(500).json({
+//       success: false,
+//       message: "Error sending stock request",
+//       error: error.message,
+//     });
+//   }
+// };
+
+
 export const sendStockRequest = async (req, res) => {
   try {
     const stockRequestSchema = Joi.object({
@@ -544,6 +640,11 @@ export const sendStockRequest = async (req, res) => {
       quantity: Joi.number().integer().min(1).required(),
       urgency: Joi.string().valid('low', 'medium', 'high').default('medium'),
       notes: Joi.string().allow(''),
+      enableFollowUp: Joi.boolean().default(true),
+      followUpDays: Joi.number().integer().min(1).max(30).default(2),
+      enableEscalation: Joi.boolean().default(false),
+      escalationEmail: Joi.string().email().allow('', null),
+      escalationDays: Joi.number().integer().min(1).max(30).default(3),
     });
 
     const { error, value } = stockRequestSchema.validate(req.body);
@@ -561,27 +662,61 @@ export const sendStockRequest = async (req, res) => {
 
     const subject = `Stock Request: ${value.productName} (${value.quantity} units)`;
     const body = `
-      <div style="font-family: Arial, sans-serif; padding: 20px;">
-        <h2>Stock Request</h2>
-        <p><strong>From:</strong> ${userName} (${userEmail})</p>
-        <p><strong>Product:</strong> ${value.productName}</p>
-        <p><strong>Quantity:</strong> ${value.quantity}</p>
-        <p><strong>Urgency:</strong> <span style="color: ${
-          value.urgency === 'high' ? 'red' : value.urgency === 'medium' ? 'orange' : 'green'
-        }">${value.urgency.toUpperCase()}</span></p>
-        ${value.notes ? `<p><strong>Notes:</strong> ${value.notes}</p>` : ''}
-        <hr/>
-        <p>Please review and respond to this request.</p>
+      <div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
+        <h2 style="color: #333;">Stock Request</h2>
+        
+        <div style="background: #f5f5f5; padding: 15px; border-radius: 5px; margin: 15px 0;">
+          <p style="margin: 5px 0;"><strong>From:</strong> ${userName} (${userEmail})</p>
+          <p style="margin: 5px 0;"><strong>Product:</strong> ${value.productName}</p>
+          <p style="margin: 5px 0;"><strong>Quantity:</strong> ${value.quantity}</p>
+          <p style="margin: 5px 0;"><strong>Urgency:</strong> <span style="color: ${
+            value.urgency === 'high' ? 'red' : value.urgency === 'medium' ? 'orange' : 'green'
+          }; font-weight: bold;">${value.urgency.toUpperCase()}</span></p>
+        </div>
+        
+        ${value.notes ? `
+          <div style="margin: 15px 0;">
+            <p><strong>Additional Notes:</strong></p>
+            <p style="background: #fff; padding: 10px; border-left: 3px solid #5bc0de;">${value.notes}</p>
+          </div>
+        ` : ''}
+        
+        <hr style="margin: 20px 0; border: none; border-top: 1px solid #ddd;"/>
+        
+        <div style="background: #d9edf7; padding: 10px; border-radius: 5px;">
+          <p style="margin: 0; font-size: 14px;">
+            <strong>⚠️ Action Required:</strong> Please review and respond to this request. 
+            When approving, provide a delivery deadline.
+          </p>
+        </div>
+        
+        ${value.enableFollowUp ? `
+          <p style="font-size: 12px; color: #777; margin-top: 10px;">
+            📅 A follow-up reminder will be sent after ${value.followUpDays} days if no response is received.
+          </p>
+        ` : ''}
+        
+        ${value.enableEscalation ? `
+          <p style="font-size: 12px; color: #777; margin-top: 5px;">
+            🔔 This request will be escalated to ${value.escalationEmail} after ${value.escalationDays} days without response.
+          </p>
+        ` : ''}
       </div>
     `;
 
-    // Insert email with stock request metadata
+    // ✅ FIX: Insert email WITHOUT deadline_date (deadline is set when approving)
     const result = await do_ma_query(
       `INSERT INTO emails (
         sender_id, sender_email, recipient_email, subject, body, 
-        status, template_type
-      ) VALUES (?, ?, ?, ?, ?, 'sent', 'stock_request')`,
-      [userId, userEmail, value.to, subject, body]
+        status, template_type,
+        follow_up_scheduled, follow_up_days,
+        escalation_enabled, escalation_email, escalation_days
+      ) VALUES (?, ?, ?, ?, ?, 'sent', 'stock_request', ?, ?, ?, ?, ?)`,
+      [
+        userId, userEmail, value.to, subject, body,
+        value.enableFollowUp, value.followUpDays,
+        value.enableEscalation, value.escalationEmail || null, value.escalationDays
+      ]
     );
 
     const emailId = result.insertId;
@@ -607,18 +742,21 @@ export const sendStockRequest = async (req, res) => {
 
     // Notify recipient
     await createNotificationByEmailService({
-  userEmail: value.to,
-  emailId,
-  type: "stock_request",
-  title: "New Stock Request",
-  message: `${userName} has requested ${value.quantity} units of ${value.productName}`,
-});
-
+      userEmail: value.to,
+      emailId,
+      type: "stock_request",
+      title: "New Stock Request",
+      message: `${userName} has requested ${value.quantity} units of ${value.productName}`,
+    });
 
     res.status(201).json({
       success: true,
       message: "Stock request sent successfully",
-      data: { emailId },
+      data: { 
+        emailId,
+        followUpScheduled: value.enableFollowUp,
+        escalationEnabled: value.enableEscalation
+      },
       timestamp: DateTime.local().toISO(),
     });
   } catch (error) {
@@ -748,7 +886,7 @@ export const respondToStockRequest = async (req, res) => {
     }
 
     const { id } = req.params;
-    const { action, notes } = req.body; // action: 'approve' or 'reject'
+    const { action, deadlineDays, notes } = req.body; // deadlineDays is required for approval
     const userId = req.user.id;
     const userEmail = req.user.email;
     const userName = req.user.username || userEmail;
@@ -757,6 +895,14 @@ export const respondToStockRequest = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: "Invalid action. Use 'approve' or 'reject'",
+      });
+    }
+
+    // Validate deadline for approval
+    if (action === 'approve' && (!deadlineDays || deadlineDays < 1)) {
+      return res.status(400).json({
+        success: false,
+        message: "Deadline in days is required when approving stock request",
       });
     }
 
@@ -776,32 +922,81 @@ export const respondToStockRequest = async (req, res) => {
 
     const originalEmail = originalEmails[0];
 
+    // ✅ FIX: Calculate deadline date in MySQL format if approved
+    let deadlineDate = null;
+    let deadlineText = '';
+    if (action === 'approve') {
+      // Convert to MySQL datetime format: 'YYYY-MM-DD HH:MM:SS'
+      deadlineDate = DateTime.local()
+        .plus({ days: parseInt(deadlineDays) })
+        .toFormat('yyyy-MM-dd HH:mm:ss'); // ✅ MySQL format
+      
+      deadlineText = `
+        <div style="background: #dff0d8; padding: 15px; border-radius: 5px; margin: 15px 0; border-left: 4px solid #5cb85c;">
+          <p style="margin: 0;"><strong>📦 Delivery Deadline:</strong> 
+            <span style="color: #5cb85c; font-size: 16px; font-weight: bold;">
+              ${deadlineDays} days (by ${DateTime.local().plus({ days: parseInt(deadlineDays) }).toLocaleString(DateTime.DATE_MED)})
+            </span>
+          </p>
+        </div>
+      `;
+    }
+
     // Create response email
     const subject = `Re: ${originalEmail.subject} - ${action.toUpperCase()}`;
     const body = `
-      <div style="font-family: Arial, sans-serif; padding: 20px;">
-        <h2>Stock Request ${action === 'approve' ? 'Approved' : 'Rejected'}</h2>
-        <p><strong>Responder:</strong> ${userName} (${userEmail})</p>
-        <p><strong>Status:</strong> <span style="color: ${action === 'approve' ? 'green' : 'red'}">
-          ${action.toUpperCase()}</span></p>
-        ${notes ? `<p><strong>Notes:</strong> ${notes}</p>` : ''}
-        <hr/>
-        <h3>Original Request:</h3>
-        ${originalEmail.body}
+      <div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
+        <h2 style="color: ${action === 'approve' ? '#5cb85c' : '#d9534f'};">
+          Stock Request ${action === 'approve' ? 'Approved ✓' : 'Rejected ✗'}
+        </h2>
+        
+        <div style="background: #f5f5f5; padding: 15px; border-radius: 5px; margin: 15px 0;">
+          <p style="margin: 5px 0;"><strong>Responder:</strong> ${userName} (${userEmail})</p>
+          <p style="margin: 5px 0;"><strong>Status:</strong> 
+            <span style="color: ${action === 'approve' ? 'green' : 'red'}; font-weight: bold;">
+              ${action.toUpperCase()}
+            </span>
+          </p>
+          <p style="margin: 5px 0;"><strong>Response Date:</strong> ${DateTime.local().toLocaleString(DateTime.DATETIME_MED)}</p>
+        </div>
+        
+        ${action === 'approve' ? deadlineText : ''}
+        
+        ${notes ? `
+          <div style="margin: 15px 0;">
+            <p><strong>${action === 'approve' ? 'Approval Notes:' : 'Rejection Reason:'}</strong></p>
+            <p style="background: #fff; padding: 10px; border-left: 3px solid ${action === 'approve' ? '#5cb85c' : '#d9534f'};">
+              ${notes}
+            </p>
+          </div>
+        ` : ''}
+        
+        <hr style="margin: 20px 0; border: none; border-top: 1px solid #ddd;"/>
+        
+        <h3 style="color: #666;">Original Request:</h3>
+        <div style="background: #f9f9f9; padding: 10px; border-radius: 5px;">
+          ${originalEmail.body}
+        </div>
       </div>
     `;
 
-    // Insert response email
+    // Insert response email with deadline if approved
     const result = await do_ma_query(
       `INSERT INTO emails (
         sender_id, sender_email, recipient_email, subject, body, 
-        status, template_type
-      ) VALUES (?, ?, ?, ?, ?, 'sent', 'stock_response')`,
-      [userId, userEmail, originalEmail.sender_email, subject, body]
+        status, template_type, deadline_date
+      ) VALUES (?, ?, ?, ?, ?, 'sent', 'stock_response', ?)`,
+      [userId, userEmail, originalEmail.sender_email, subject, body, deadlineDate]
     );
 
     console.log("INSERT RESULT:", result);
     const responseEmailId = result.insertId;
+
+    // Update original email to mark as responded
+    await do_ma_query(
+      "UPDATE emails SET is_read = TRUE WHERE id = ?",
+      [id]
+    );
 
     // Send email
     try {
@@ -824,7 +1019,9 @@ export const respondToStockRequest = async (req, res) => {
           timestamp: new Date(),
           type: 'stock_response',
           action,
-          originalEmailId: id
+          originalEmailId: id,
+          deadlineDays: action === 'approve' ? deadlineDays : null,
+          deadlineDate: deadlineDate
         })]
       );
       console.log("Email tracking inserted");
@@ -834,12 +1031,14 @@ export const respondToStockRequest = async (req, res) => {
 
     // Notify original sender
     try {
-      await createNotificationByEmail({
+      await createNotificationByEmailService({
         userEmail: originalEmail.sender_email,
         emailId: responseEmailId,
         type: "stock_response",
         title: `Stock Request ${action === 'approve' ? 'Approved' : 'Rejected'}`,
-        message: `${userName} has ${action}d your stock request`,
+        message: action === 'approve' 
+          ? `${userName} has approved your stock request with ${deadlineDays} days delivery deadline`
+          : `${userName} has rejected your stock request`,
       });
       console.log("Notification created");
     } catch (notifErr) {
@@ -849,8 +1048,12 @@ export const respondToStockRequest = async (req, res) => {
     res.status(200).json({
       success: true,
       message: `Stock request ${action}d successfully`,
-      data: { responseEmailId },
-      timestamp: new Date().toISOString(),
+      data: { 
+        responseEmailId,
+        deadlineDate: action === 'approve' ? deadlineDate : null,
+        deadlineDays: action === 'approve' ? deadlineDays : null
+      },
+      timestamp: DateTime.local().toISO(),
     });
   } catch (error) {
     console.error("Error responding to stock request:", error);

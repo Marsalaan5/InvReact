@@ -136,6 +136,7 @@ export const roleHierarchy = {
   "user": 2,
   "admin": 3,
   "super admin": 4,
+  "main": 5,
 };
 
 /**

@@ -3,6 +3,12 @@ import Joi from "joi"
 import  {DateTime} from "luxon";
 import { do_ma_query } from '../db.js';
 
+// import { v4 as uuidv4 } from 'uuid';
+
+
+// // UUID validation schema
+// const uuidSchema = Joi.string().uuid({ version: 'uuidv4' });
+
 
 
 
@@ -15,15 +21,18 @@ function parseDateSafe(dateStr) {
 
 //Dashboard
 
+
+
 // export const getDashboard = async (req, res) => {
 //   try {
 //     const { warehouseFilter, user } = req;
 
-//     // Get users count (only for Super Admin)
+//     // FIXED: Get users count with warehouse filtering
 //     let usersCount = { total: 0, active: 0, inactive: 0 };
 //     let rolesCount = 0;
 
 //     if (user.isSuperAdmin) {
+//       // Super Admin sees ALL users
 //       const users = await do_ma_query("SELECT status FROM users");
 //       usersCount.total = users.length;
 //       usersCount.active = users.filter(u => u.status === 'Active').length;
@@ -31,8 +40,27 @@ function parseDateSafe(dateStr) {
 
 //       const roles = await do_ma_query("SELECT COUNT(*) as count FROM roles");
 //       rolesCount = roles[0].count;
+//     } else if (user.isAdmin && user.warehouse_id) {
+//       // FIXED: Admin sees only THEIR WAREHOUSE users
+//       const users = await do_ma_query(
+//         "SELECT status FROM users WHERE warehouse_id = ?",
+//         [user.warehouse_id]
+//       );
+//       usersCount.total = users.length;
+//       usersCount.active = users.filter(u => u.status === 'Active').length;
+//       usersCount.inactive = users.filter(u => u.status === 'Inactive').length;
+
+//       // FIXED: Count roles that have users in this warehouse
+//       const roleCountQuery = await do_ma_query(
+//         `SELECT COUNT(DISTINCT role_id) as count 
+//          FROM users 
+//          WHERE warehouse_id = ? AND role_id IS NOT NULL`,
+//         [user.warehouse_id]
+//       );
+//       rolesCount = roleCountQuery[0].count;
 //     }
 
+//     // Warehouse query (already filtered correctly)
 //     let warehousesQuery = `
 //       SELECT w.id, w.title as name, 
 //              COALESCE(COUNT(DISTINCT p.id), 0) AS total_products,
@@ -76,6 +104,8 @@ function parseDateSafe(dateStr) {
 //       };
 //     });
 
+//     console.log(`📊 Dashboard stats - Users: ${usersCount.total}, Roles: ${rolesCount}, Warehouses: ${warehouses.length}`);
+
 //     res.status(200).json({
 //       success: true,
 //       data: {
@@ -93,6 +123,7 @@ function parseDateSafe(dateStr) {
 //           low: lowStockCount,
 //         },
 //         isSuperAdmin: user.isSuperAdmin,
+//         isAdmin: user.isAdmin,
 //         userWarehouseId: user.warehouse_id,
 //       },
 //       timestamp: DateTime.local().toFormat("yyyy-MM-dd HH:mm:ss"),
@@ -107,11 +138,16 @@ function parseDateSafe(dateStr) {
 // };
 
 
+
+
 export const getDashboard = async (req, res) => {
   try {
     const { warehouseFilter, user } = req;
+    const lowStockThreshold = 10;
 
-    // FIXED: Get users count with warehouse filtering
+    // ============================================
+    // 1. USER & ROLE COUNTS
+    // ============================================
     let usersCount = { total: 0, active: 0, inactive: 0 };
     let rolesCount = 0;
 
@@ -125,7 +161,7 @@ export const getDashboard = async (req, res) => {
       const roles = await do_ma_query("SELECT COUNT(*) as count FROM roles");
       rolesCount = roles[0].count;
     } else if (user.isAdmin && user.warehouse_id) {
-      // FIXED: Admin sees only THEIR WAREHOUSE users
+      // Admin sees only THEIR WAREHOUSE users
       const users = await do_ma_query(
         "SELECT status FROM users WHERE warehouse_id = ?",
         [user.warehouse_id]
@@ -134,7 +170,6 @@ export const getDashboard = async (req, res) => {
       usersCount.active = users.filter(u => u.status === 'Active').length;
       usersCount.inactive = users.filter(u => u.status === 'Inactive').length;
 
-      // FIXED: Count roles that have users in this warehouse
       const roleCountQuery = await do_ma_query(
         `SELECT COUNT(DISTINCT role_id) as count 
          FROM users 
@@ -144,16 +179,23 @@ export const getDashboard = async (req, res) => {
       rolesCount = roleCountQuery[0].count;
     }
 
-    // Warehouse query (already filtered correctly)
+    // ============================================
+    // 2. WAREHOUSE DATA WITH LOW STOCK
+    // ============================================
     let warehousesQuery = `
-      SELECT w.id, w.title as name, 
-             COALESCE(COUNT(DISTINCT p.id), 0) AS total_products,
-             COALESCE(SUM(p.count), 0) AS total_stock
+      SELECT 
+        w.id, 
+        w.title as name, 
+        COALESCE(COUNT(DISTINCT p.id), 0) AS total_products,
+        COALESCE(SUM(p.count), 0) AS total_stock,
+        COALESCE(SUM(CASE WHEN p.count > 0 AND p.count <= ? THEN 1 ELSE 0 END), 0) AS low_stock_count,
+        COALESCE(SUM(CASE WHEN p.count = 0 THEN 1 ELSE 0 END), 0) AS out_of_stock_count
       FROM warehouse w
       LEFT JOIN product p ON p.warehouse_id = w.id
     `;
     
-    let warehouseParams = [];
+    let warehouseParams = [lowStockThreshold];
+    
     if (warehouseFilter) {
       warehousesQuery += " WHERE w.id = ?";
       warehouseParams.push(warehouseFilter);
@@ -162,8 +204,10 @@ export const getDashboard = async (req, res) => {
     warehousesQuery += " GROUP BY w.id, w.title";
     const warehouses = await do_ma_query(warehousesQuery, warehouseParams);
 
-    // Get products (filtered)
-    let productsQuery = "SELECT * FROM product";
+    // ============================================
+    // 3. ALL PRODUCTS (FILTERED)
+    // ============================================
+    let productsQuery = "SELECT id, warehouse_id, count, status FROM product";
     let productParams = [];
     
     if (warehouseFilter) {
@@ -173,10 +217,75 @@ export const getDashboard = async (req, res) => {
     
     const products = await do_ma_query(productsQuery, productParams);
 
-    // Calculate stats
+    // ============================================
+    // 4. CALCULATE OVERALL STATS
+    // ============================================
     const totalStock = products.reduce((sum, p) => sum + (p.count || 0), 0);
-    const lowStockCount = products.filter(p => (p.count || 0) < 10).length;
+    const lowStockCount = products.filter(p => (p.count || 0) > 0 && (p.count || 0) <= lowStockThreshold).length;
+    const outOfStockCount = products.filter(p => (p.count || 0) === 0).length;
 
+    // ============================================
+    // 5. GET LOW STOCK PRODUCTS (TOP 10)
+    // ============================================
+    let lowStockQuery = `
+      SELECT 
+        p.id,
+        p.title,
+        p.barcode,
+        p.count,
+        p.status,
+        w.title as warehouse_name,
+        ap.title as article_profile_name
+      FROM product p
+      LEFT JOIN warehouse w ON p.warehouse_id = w.id
+      LEFT JOIN article_profile ap ON p.article_profile_id = ap.id
+      WHERE p.count > 0 AND p.count <= ?
+    `;
+    
+    let lowStockParams = [lowStockThreshold];
+    
+    if (warehouseFilter) {
+      lowStockQuery += " AND p.warehouse_id = ?";
+      lowStockParams.push(warehouseFilter);
+    }
+    
+    lowStockQuery += " ORDER BY p.count ASC LIMIT 10";
+    
+    const lowStockProducts = await do_ma_query(lowStockQuery, lowStockParams);
+
+    // ============================================
+    // 6. GET OUT OF STOCK PRODUCTS (TOP 10)
+    // ============================================
+    let outOfStockQuery = `
+      SELECT 
+        p.id,
+        p.title,
+        p.barcode,
+        p.count,
+        p.status,
+        p.updated_at,
+        w.title as warehouse_name,
+        ap.title as article_profile_name
+      FROM product p
+      LEFT JOIN warehouse w ON p.warehouse_id = w.id
+      LEFT JOIN article_profile ap ON p.article_profile_id = ap.id
+      WHERE p.count = 0
+    `;
+    
+    let outOfStockParams = [];
+    
+    if (warehouseFilter) {
+      outOfStockQuery += " AND p.warehouse_id = ?";
+      outOfStockParams.push(warehouseFilter);
+    }
+    
+    outOfStockQuery += " ORDER BY p.updated_at DESC LIMIT 10";
+    
+    const outOfStockProducts = await do_ma_query(outOfStockQuery, outOfStockParams);
+
+    // ============================================
+    // 7. WAREHOUSE DETAILS WITH STOCK INFO
+    // ============================================
     const warehouseDetails = warehouses.map(wh => {
       const whProducts = products.filter(p => p.warehouse_id === wh.id);
       return {
@@ -184,12 +293,61 @@ export const getDashboard = async (req, res) => {
         name: wh.name,
         products: whProducts.length,
         stock: wh.total_stock || 0,
-        lowStock: whProducts.filter(p => (p.count || 0) < 10).length,
+        lowStock: wh.low_stock_count || 0,
+        outOfStock: wh.out_of_stock_count || 0,
       };
     });
 
-    console.log(`📊 Dashboard stats - Users: ${usersCount.total}, Roles: ${rolesCount}, Warehouses: ${warehouses.length}`);
+    // ============================================
+    // 8. STOCK STATUS BY CATEGORY
+    // ============================================
+    let stockStatusQuery = `
+      SELECT 
+        p.status,
+        COUNT(*) as count,
+        SUM(p.count) as total_quantity
+      FROM product p
+    `;
+    
+    let stockStatusParams = [];
+    
+    if (warehouseFilter) {
+      stockStatusQuery += " WHERE p.warehouse_id = ?";
+      stockStatusParams.push(warehouseFilter);
+    }
+    
+    stockStatusQuery += " GROUP BY p.status";
+    
+    const stockByStatus = await do_ma_query(stockStatusQuery, stockStatusParams);
 
+    // ============================================
+    // 9. LOW STOCK TREND (LAST 30 DAYS)
+    // ============================================
+    let trendQuery = `
+      SELECT 
+        DATE(created_at) as date,
+        COUNT(*) as count
+      FROM product
+      WHERE count <= ?
+        AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+    `;
+    
+    let trendParams = [lowStockThreshold];
+    
+    if (warehouseFilter) {
+      trendQuery += " AND warehouse_id = ?";
+      trendParams.push(warehouseFilter);
+    }
+    
+    trendQuery += " GROUP BY DATE(created_at) ORDER BY date DESC";
+    
+    const lowStockTrend = await do_ma_query(trendQuery, trendParams);
+
+    console.log(`📊 Dashboard stats - Users: ${usersCount.total}, Roles: ${rolesCount}, Warehouses: ${warehouses.length}, Low Stock: ${lowStockCount}, Out of Stock: ${outOfStockCount}`);
+
+    // ============================================
+    // 10. SEND RESPONSE
+    // ============================================
     res.status(200).json({
       success: true,
       data: {
@@ -205,7 +363,13 @@ export const getDashboard = async (req, res) => {
         stocks: {
           total: totalStock,
           low: lowStockCount,
+          outOfStock: outOfStockCount,
+          threshold: lowStockThreshold,
         },
+        lowStockProducts: lowStockProducts,
+        outOfStockProducts: outOfStockProducts,
+        stockByStatus: stockByStatus,
+        lowStockTrend: lowStockTrend,
         isSuperAdmin: user.isSuperAdmin,
         isAdmin: user.isAdmin,
         userWarehouseId: user.warehouse_id,
@@ -217,6 +381,7 @@ export const getDashboard = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Internal server error.",
+      error: err.message,
     });
   }
 };
