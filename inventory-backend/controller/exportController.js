@@ -59,11 +59,10 @@ const exportConfigs = {
 
     // PDF Table Configuration
     pdfTable: {
-      headers: ['Product', 'SKU', 'Barcode', 'Article Profile', 'Warehouse', 'Location', 'Qty', 'Status'],
-      colWidths: [150, 100, 100, 120, 100, 80, 60, 80],
+      headers: ['Product', 'Barcode', 'Article Profile', 'Warehouse', 'Location', 'Qty', 'Status'],
+      colWidths: [150, 100, 120, 80, 100, 60, 80],
       getRowData: (item) => [
         item.title || 'N/A',
-        item.sku || 'N/A',
         item.barcode || 'N/A',
         item.article_profile_name || 'N/A',
         item.warehouse_name || 'N/A',
@@ -77,7 +76,6 @@ const exportConfigs = {
     excelColumns: [
       { header: 'ID', key: 'id', width: 10 },
       { header: 'Product Name', key: 'title', width: 30 },
-      { header: 'SKU', key: 'sku', width: 20 },
       { header: 'Barcode', key: 'barcode', width: 20 },
       { header: 'Article Profile', key: 'article_profile_name', width: 25 },
       { header: 'Warehouse', key: 'warehouse_name', width: 25 },
@@ -93,7 +91,6 @@ const exportConfigs = {
     mapDataToRow: (item) => ({
       id: item.id,
       title: item.title,
-      sku: item.sku,
       barcode: item.barcode,
       article_profile_name: item.article_profile_name || 'N/A',
       warehouse_name: item.warehouse_name || 'N/A',
@@ -107,7 +104,8 @@ const exportConfigs = {
     })
   },
 
-  // Fixed warehouse export configuration
+
+  //warehouse export configuration
 warehouses: {
   filename: 'warehouses',
   title: 'Warehouses Report',
@@ -175,9 +173,9 @@ warehouses: {
     getRowData: (item) => [
       item.title || 'N/A',
       item.contact_person_name || 'N/A',
-      (item.phone || 'N/A').replace('+91', ''), // Remove country code
+      (item.phone || 'N/A').replace('+91', ''), 
       item.email || 'N/A',
-      (item.address || 'N/A').substring(0, 50), // Truncate long addresses
+      (item.address || 'N/A').substring(0, 50),
       (item.total_products || 0).toString(),
       item.status || 'N/A'
     ]
@@ -555,7 +553,7 @@ export const exportToExcel = async (req, res) => {
 
     const data = await do_ma_query(query, queryParams);
 
-    // Create Excel workbook
+    
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet(config.sheetName);
 

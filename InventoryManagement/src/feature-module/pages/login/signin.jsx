@@ -331,11 +331,11 @@ const Signin = () => {
                   </h4>
                 </div>
 
-                <div className="form-setlogin or-text">
+                {/* <div className="form-setlogin or-text">
                   <h4>OR</h4>
-                </div>
+                </div> */}
 
-                <div className="form-sociallink">
+                {/* <div className="form-sociallink">
                   <ul className="d-flex">
                     <li>
                       <Link to="#" className="facebook-logo">
@@ -362,7 +362,7 @@ const Signin = () => {
                       </Link>
                     </li>
                   </ul>
-                </div>
+                </div> */}
 
                 <div className="my-4 d-flex justify-content-center align-items-center copyright-text">
                   <p>Copyright © 2025 StockWise. All rights reserved</p>

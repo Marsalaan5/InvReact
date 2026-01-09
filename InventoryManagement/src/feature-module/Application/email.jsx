@@ -1284,6 +1284,7 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import AuthService from "../../services/authService";
+// import { usePermissions } from "../../hooks/usePermission";
 
 
 const stripHtmlTags = (html) => {
@@ -1302,7 +1303,8 @@ const Email = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(false);
-  // const { canAccess, isSuperAdmin } = usePermissionCheck();
+  // const { hasPermission} = usePermissions();
+  
   
   const [composeData, setComposeData] = useState({
     to: "",
@@ -1551,7 +1553,6 @@ const handleBulkAction = async (action) => {
   setShowCompose(true);
   setSelectedEmail(null);
 };
-
 
 
   const showNotification = (message) => {
@@ -2008,7 +2009,8 @@ const handleBulkAction = async (action) => {
           </div>
         )}
 
-        <div className="form-check mt-3">
+         {/* {hasPermission('Email','view') &&  */}
+         <div className="form-check mt-3">
           <input
             className="form-check-input"
             type="checkbox"
@@ -2024,8 +2026,10 @@ const handleBulkAction = async (action) => {
             Enable auto-escalation
           </label>
         </div>
+        {/* } */}
         
-        {stockRequestData.enableEscalation && (
+       {/* {hasPermission('Email','view') &&  */}
+       {stockRequestData.enableEscalation && (
           <div className="mt-2">
             <div className="mb-2">
               <label className="form-label">Escalation email</label>
@@ -2307,6 +2311,8 @@ const handleBulkAction = async (action) => {
                                     </span>
                                   )}
                                   {email.escalated && (
+
+                                    
                                     <span className="badge bg-danger ms-2">
                                       Escalated
                                     </span>

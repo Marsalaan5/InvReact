@@ -779,7 +779,6 @@ const Users = () => {
         ...roles.map(role => ({ value: role.name, label: role.name }))
     ];
 
-    // Tooltips
 
     // Table columns
     const columns = [

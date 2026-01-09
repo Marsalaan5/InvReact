@@ -702,7 +702,7 @@ import {
   fetchWarehouseById,
   createWarehouse,
   updateWarehouseById,
-  deleteWarehouse,
+  // deleteWarehouse,
   clearCurrentWarehouse,
   clearError,
 } from '../../redux/slices/warehouseSlice';
@@ -869,39 +869,39 @@ const WareHouses = () => {
     }
   };
 
-  const handleDelete = async (id) => {
-    const result = await Swal.fire({
-      title: "Are you sure?",
-      text: "You won't be able to revert this!",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#d33",
-      cancelButtonColor: "#3085d6",
-      confirmButtonText: "Yes, delete it!",
-      cancelButtonText: "Cancel",
-    });
+  // const handleDelete = async (id) => {
+  //   const result = await Swal.fire({
+  //     title: "Are you sure?",
+  //     text: "You won't be able to revert this!",
+  //     icon: "warning",
+  //     showCancelButton: true,
+  //     confirmButtonColor: "#d33",
+  //     cancelButtonColor: "#3085d6",
+  //     confirmButtonText: "Yes, delete it!",
+  //     cancelButtonText: "Cancel",
+  //   });
 
-    if (result.isConfirmed) {
-      try {
-        await dispatch(deleteWarehouse(id)).unwrap();
-        Swal.fire({
-          icon: "success",
-          title: "Deleted!",
-          text: "Warehouse has been deleted.",
-          timer: 2000,
-          showConfirmButton: false,
-        });
-      } catch (error) {
-        console.error("Error deleting warehouse:", error);
-        Swal.fire({
-          icon: "error",
-          title: "Error",
-          text: error || "Failed to delete warehouse",
-          timer: 3000,
-        });
-      }
-    }
-  };
+  //   if (result.isConfirmed) {
+  //     try {
+  //       await dispatch(deleteWarehouse(id)).unwrap();
+  //       Swal.fire({
+  //         icon: "success",
+  //         title: "Deleted!",
+  //         text: "Warehouse has been deleted.",
+  //         timer: 2000,
+  //         showConfirmButton: false,
+  //       });
+  //     } catch (error) {
+  //       console.error("Error deleting warehouse:", error);
+  //       Swal.fire({
+  //         icon: "error",
+  //         title: "Error",
+  //         text: error || "Failed to delete warehouse",
+  //         timer: 3000,
+  //       });
+  //     }
+  //   }
+  // };
 
   const resetForm = () => {
     setFormData({
@@ -1071,7 +1071,8 @@ const WareHouses = () => {
                           </td>
                           <td>{warehouse.total_products}</td>
                           <td>{warehouse.total_qty || 0}</td>
-                          <td>{new Date(warehouse.created_at).toLocaleDateString()}</td>
+                          <td>{new Date(warehouse.created_at).toLocaleString()}</td>
+                          
                           <td>
                             <span
                               className={`badge ${
@@ -1085,7 +1086,7 @@ const WareHouses = () => {
                           </td>
                          {hasPermission('Warehouse','view') && <td className="action-table-data">
                             <div className="edit-delete-action">
-                              <Link
+                              {/* <Link
                                 className="me-2 edit-icon p-2"
                                 to="#"
                                 onClick={() => handleEdit(warehouse.id)}
@@ -1093,7 +1094,7 @@ const WareHouses = () => {
                                 data-bs-target="#edit-units"
                               >
                                 <i data-feather="eye" className="feather-eye" />
-                              </Link>
+                              </Link> */}
                               <Link
                                 className="me-2 p-2"
                                 to="#"
@@ -1103,13 +1104,13 @@ const WareHouses = () => {
                               >
                                 <i data-feather="edit" className="feather-edit" />
                               </Link>
-                              <Link
+                              {/* <Link
                                 className="confirm-text p-2"
                                 to="#"
                                 onClick={() => handleDelete(warehouse.id)}
                               >
                                 <i data-feather="trash-2" className="feather-trash-2" />
-                              </Link>
+                              </Link> */}
                             </div>
                           </td>}
                         </tr>

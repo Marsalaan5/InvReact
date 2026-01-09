@@ -535,7 +535,7 @@ export const saveDraft = async (req, res) => {
   }
 };
 
-// POST send stock request via email
+
 // export const sendStockRequest = async (req, res) => {
 //   try {
 //     const stockRequestSchema = Joi.object({
@@ -769,7 +769,7 @@ export const sendStockRequest = async (req, res) => {
   }
 };
 
-// POST respond to stock request
+
 // export const respondToStockRequest = async (req, res) => {
 //   try {
 //     const { id } = req.params;

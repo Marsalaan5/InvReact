@@ -493,6 +493,7 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { do_ma_query } from '../db.js';
+import { logActivity } from '../services/activityService.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -509,6 +510,23 @@ if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir);
 //   return `${prefix}-${timestamp}-${randomStr}`;
 // }
 
+function formatDateLabel(dateKey, period) {
+  if (!dateKey) return 'Unknown';
+  
+  switch(period) {
+    case 'daily':
+      return DateTime.fromISO(dateKey.toString()).toFormat('MMM dd');
+    case 'weekly':
+      const year = dateKey.toString().substring(0, 4);
+      const week = dateKey.toString().substring(4);
+      return `Week ${week}, ${year}`;
+    case 'monthly':
+      return DateTime.fromFormat(dateKey.toString(), 'yyyy-MM').toFormat('MMM yyyy');
+    default:
+      return dateKey.toString();
+  }
+}
+
 
 function luhnChecksum(numStr) {
   let sum = 0;
@@ -524,7 +542,6 @@ function luhnChecksum(numStr) {
   }
   return (10 - (sum % 10)) % 10;
 }
-
 
 export function generateBarcodeNumber(productName) {
   
@@ -624,7 +641,7 @@ export const getProduct = async (req, res) => {
 
     const whereClause = whereConditions.length > 0 ? "WHERE " + whereConditions.join(" AND ") : "";
 
-    // Validate sortBy to prevent SQL injection
+  
     const allowedSortFields = ["created_at", "updated_at", "title", "count", "status"];
     const validSortBy = allowedSortFields.includes(sortBy) ? sortBy : "created_at";
     const validSortOrder = sortOrder.toUpperCase() === "ASC" ? "ASC" : "DESC";
@@ -758,7 +775,7 @@ export const getProductByScan = async (req, res) => {
       });
     }
 
-    // Search by both SKU and Barcode
+    // Search by Barcode
     const query = `
       SELECT 
         p.*,
@@ -870,8 +887,8 @@ export const createProduct = async (req, res) => {
       });
     }
 
-    // Generate SKU and Barcode
-    // const sku = generateUniqueSKU(value.title);
+
+  
     const barcodeNumber = generateBarcodeNumber(value.title);
     let barcodeImagePath;
 
@@ -907,14 +924,40 @@ export const createProduct = async (req, res) => {
       ]
     );
 
-    if (product_insert_res.affectedRows === 1) {
+     if (product_insert_res.affectedRows === 1) {
+    
+      const [warehouse] = await do_ma_query(
+        "SELECT title FROM warehouse WHERE id = ?",
+        [value.warehouse_id]
+      );
+      const [user] = await do_ma_query(
+        "SELECT name FROM users WHERE id = ?",
+        [value.last_updated_by]
+      );
+
+      await logActivity({
+        activity_type: 'product',
+        action: 'created',
+        entity_id: product_insert_res.insertId,
+        entity_name: value.title,
+        description: `"${value.title}" created with ${value.count} items`,
+        user_id: req.user?.id || value.user_id,
+        user_name: req.user?.name || 'System',
+        warehouse_id: value.warehouse_id,
+        warehouse_name: warehouse[0]?.title || 'Unknown',
+        metadata: {
+          barcode: barcodeNumber,
+          status: value.status,
+          count: value.count
+        }
+      });
+
       res.status(201).json({
         success: true,
         timestamp: DateTime.local().toFormat("yyyy-MM-dd HH:mm:ss"),
         message: "Product created successfully",
         data: {
           id: product_insert_res.insertId,
-        
           barcode: barcodeNumber,
           barcode_image: barcodeImagePath,
         },
@@ -935,6 +978,7 @@ export const createProduct = async (req, res) => {
     });
   }
 };
+
 
 
 
@@ -977,6 +1021,8 @@ export const updateProductById = async (req, res) => {
       });
     }
 
+    const oldProduct = product_check[0];
+
     // Verify article profile exists
     const article_check = await do_ma_query("SELECT COUNT(*) AS count FROM article_profile WHERE id = ?", [
       value.article_profile_id,
@@ -1003,7 +1049,7 @@ export const updateProductById = async (req, res) => {
       });
     }
 
-    // Update product (SKU and Barcode remain unchanged)
+  
     const product_update_res = await do_ma_query(
       `UPDATE product SET
         title = ?, article_profile_id = ?, warehouse_id = ?, location = ?, 
@@ -1023,6 +1069,41 @@ export const updateProductById = async (req, res) => {
     );
 
     if (product_update_res.affectedRows === 1) {
+        const [warehouse] = await do_ma_query(
+        "SELECT title FROM warehouse WHERE id = ?",
+        [value.warehouse_id]
+      );
+      const [user] = await do_ma_query(
+        "SELECT name FROM users WHERE id = ?",
+        [value.last_updated_by]
+      );
+
+  
+      const changes = [];
+      if (oldProduct.count !== value.count) {
+        changes.push(`count: ${oldProduct.count} → ${value.count}`);
+      }
+      if (oldProduct.status !== value.status) {
+        changes.push(`status: ${oldProduct.status} → ${value.status}`);
+      }
+
+      await logActivity({
+        activity_type: 'product',
+        action: 'updated',
+        entity_id: id,
+        entity_name: value.title,
+        description: `"${value.title}" updated${changes.length ? ': ' + changes.join(', ') : ''}`,
+        user_id: req.user?.id || null,
+        user_name:req.user?.name || 'System',
+        warehouse_id: value.warehouse_id,
+        warehouse_name: warehouse[0]?.title || 'System',
+        metadata: {
+          changes: changes,
+          old_count: oldProduct.count,
+          new_count: value.count
+        }
+      });
+
       res.status(200).json({
         success: true,
         timestamp: DateTime.local().toFormat("yyyy-MM-dd HH:mm:ss"),
@@ -1065,7 +1146,11 @@ export const deleteProduct = async (req, res) => {
     }
 
     // Check if product exists and get barcode path
-    const product_check = await do_ma_query("SELECT barcode FROM product WHERE id = ?", [id]);
+    // const product_check = await do_ma_query("SELECT barcode FROM product WHERE id = ?", [id]);
+        const product_check = await do_ma_query(
+      "SELECT p.*, w.title as warehouse_name FROM product p LEFT JOIN warehouse w ON p.warehouse_id = w.id WHERE p.id = ?",
+      [id]
+    );
 
     if (product_check.length === 0) {
       return res.status(404).json({
@@ -1074,6 +1159,8 @@ export const deleteProduct = async (req, res) => {
         message: "Product not found",
       });
     }
+
+      const product = product_check[0];
 
     // Delete barcode file if exists
     const barcodePath = product_check[0].barcode;
@@ -1092,6 +1179,27 @@ export const deleteProduct = async (req, res) => {
     const product_delete_res = await do_ma_query("DELETE FROM product WHERE id = ?", [id]);
 
     if (product_delete_res.affectedRows === 1) {
+     const [user] = await do_ma_query(
+        "SELECT name FROM users WHERE id = ?",
+        [product.last_updated_by]
+      );
+
+      await logActivity({
+        activity_type: 'product',
+        action: 'deleted',
+        entity_id: id,
+        entity_name: product.title,
+        description: `"${product.title}" deleted (had ${product.count} items)`,
+        user_id:  req.user?.id,
+        user_name: req.user?.name  || 'Unknown',
+        warehouse_id: product.warehouse_id,
+        warehouse_name: product.warehouse_name || 'Unknown',
+        metadata: {
+          barcode: product.barcode,
+          final_count: product.count
+        }
+      });
+
       res.status(200).json({
         success: true,
         timestamp: DateTime.local().toFormat("yyyy-MM-dd HH:mm:ss"),
@@ -1164,6 +1272,99 @@ export const getWarehousesForDropdown = async (req, res) => {
 //LOW STOCKS and OUT OF STOCKS
 
 
+// export const getLowStockProducts = async (req, res) => {
+//   try {
+//     const { warehouseFilter } = req;
+//     const {
+//       page = 1,
+//       limit = 10,
+//       search = "",
+//       warehouse_id = "",
+//       article_profile_id = "",
+//       sortBy = "count",
+//       sortOrder = "ASC",
+//       threshold = 10,
+//     } = req.query;
+
+//     const offset = (page - 1) * limit;
+
+//     let whereConditions = ["p.count > 0 AND p.count <= ?"];
+//     let queryParams = [threshold];
+
+//     // Apply warehouse filter for Admin users
+//     if (warehouseFilter) {
+//       whereConditions.push("p.warehouse_id = ?");
+//       queryParams.push(warehouseFilter);
+//     } else if (warehouse_id) {
+//       whereConditions.push("p.warehouse_id = ?");
+//       queryParams.push(warehouse_id);
+//     }
+
+//     if (search) {
+//       whereConditions.push("(p.title LIKE ? OR p.barcode LIKE ?)");
+//       queryParams.push(`%${search}%`, `%${search}%`);
+//     }
+
+//     if (article_profile_id) {
+//       whereConditions.push("p.article_profile_id = ?");
+//       queryParams.push(article_profile_id);
+//     }
+
+//     const whereClause = "WHERE " + whereConditions.join(" AND ");
+
+//     const allowedSortFields = ["count", "created_at", "title"];
+//     const validSortBy = allowedSortFields.includes(sortBy) ? sortBy : "count";
+//     const validSortOrder = sortOrder.toUpperCase() === "ASC" ? "ASC" : "DESC";
+
+//     const query = `
+//       SELECT 
+//         p.*,
+//         ap.title as article_profile_name,
+//         w.title as warehouse_name,
+//         w.location as store_location
+//       FROM product p
+//       LEFT JOIN article_profile ap ON p.article_profile_id = ap.id
+//       LEFT JOIN warehouse w ON p.warehouse_id = w.id
+//       ${whereClause}
+//       ORDER BY p.${validSortBy} ${validSortOrder}
+//       LIMIT ? OFFSET ?
+//     `;
+
+//     queryParams.push(parseInt(limit), parseInt(offset));
+
+//     const products = await do_ma_query(query, queryParams);
+
+//     const countQuery = `
+//       SELECT COUNT(*) as total
+//       FROM product p
+//       ${whereClause}
+//     `;
+
+//     const countResult = await do_ma_query(countQuery, queryParams.slice(0, -2));
+
+//     res.status(200).json({
+//       success: true,
+//       data: products,
+//       pagination: {
+//         total: countResult[0].total,
+//         page: parseInt(page),
+//         limit: parseInt(limit),
+//         totalPages: Math.ceil(countResult[0].total / limit),
+//       },
+//       timestamp: DateTime.local().toFormat("yyyy-MM-dd HH:mm:ss"),
+//     });
+//   } catch (error) {
+//     console.error("Error fetching low stock products:", error);
+//     res.status(500).json({
+//       success: false,
+//       message: "Error fetching low stock products",
+//       error: error.message,
+//       timestamp: DateTime.local().toFormat("yyyy-MM-dd HH:mm:ss"),
+//     });
+//   }
+// };
+
+
 export const getLowStockProducts = async (req, res) => {
   try {
     const { warehouseFilter } = req;
@@ -1176,14 +1377,33 @@ export const getLowStockProducts = async (req, res) => {
       sortBy = "count",
       sortOrder = "ASC",
       threshold = 10,
+      period = 'all', // 'all', 'daily', 'weekly', 'monthly'
     } = req.query;
 
     const offset = (page - 1) * limit;
 
+    // Base conditions
     let whereConditions = ["p.count > 0 AND p.count <= ?"];
     let queryParams = [threshold];
 
-    // Apply warehouse filter for Admin users
+    // Period filtering
+    if (period !== 'all') {
+      let dateCondition;
+      switch(period) {
+        case 'daily':
+          dateCondition = "p.updated_at >= DATE_SUB(NOW(), INTERVAL 1 DAY)";
+          break;
+        case 'weekly':
+          dateCondition = "p.updated_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)";
+          break;
+        case 'monthly':
+          dateCondition = "p.updated_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
+          break;
+      }
+      if (dateCondition) whereConditions.push(dateCondition);
+    }
+
+    // Warehouse filter
     if (warehouseFilter) {
       whereConditions.push("p.warehouse_id = ?");
       queryParams.push(warehouseFilter);
@@ -1192,11 +1412,13 @@ export const getLowStockProducts = async (req, res) => {
       queryParams.push(warehouse_id);
     }
 
+    // Search filter
     if (search) {
       whereConditions.push("(p.title LIKE ? OR p.barcode LIKE ?)");
       queryParams.push(`%${search}%`, `%${search}%`);
     }
 
+    // Article profile filter
     if (article_profile_id) {
       whereConditions.push("p.article_profile_id = ?");
       queryParams.push(article_profile_id);
@@ -1204,44 +1426,89 @@ export const getLowStockProducts = async (req, res) => {
 
     const whereClause = "WHERE " + whereConditions.join(" AND ");
 
-    const allowedSortFields = ["count", "created_at", "title"];
+    // Validate sort parameters
+    const allowedSortFields = ["count", "created_at", "updated_at", "title"];
     const validSortBy = allowedSortFields.includes(sortBy) ? sortBy : "count";
     const validSortOrder = sortOrder.toUpperCase() === "ASC" ? "ASC" : "DESC";
 
+    // Main query
     const query = `
       SELECT 
-        p.*,
-        ap.title as article_profile_name,
+        p.id,
+        p.title,
+        p.barcode,
+        p.count,
+        p.status,
+        p.location,
+        p.updated_at,
+        p.created_at,
+        w.id as warehouse_id,
         w.title as warehouse_name,
-        w.location as store_location
+        ap.id as article_profile_id,
+        ap.title as article_profile_name,
+        CASE 
+          WHEN p.count <= ? THEN 'critical'
+          WHEN p.count <= ? THEN 'warning'
+          ELSE 'low'
+        END as alert_level
       FROM product p
-      LEFT JOIN article_profile ap ON p.article_profile_id = ap.id
       LEFT JOIN warehouse w ON p.warehouse_id = w.id
+      LEFT JOIN article_profile ap ON p.article_profile_id = ap.id
       ${whereClause}
       ORDER BY p.${validSortBy} ${validSortOrder}
       LIMIT ? OFFSET ?
     `;
 
+    // Add alert level thresholds (critical = 5, warning = threshold/2)
+    const criticalThreshold = Math.ceil(threshold / 2);
+    const warningThreshold = threshold;
+    
+    queryParams.unshift(criticalThreshold, warningThreshold);
     queryParams.push(parseInt(limit), parseInt(offset));
 
     const products = await do_ma_query(query, queryParams);
 
+    // Count query
     const countQuery = `
       SELECT COUNT(*) as total
       FROM product p
       ${whereClause}
     `;
+    const countParams = queryParams.slice(2, -2); // Remove alert thresholds, limit, offset
+    const countResult = await do_ma_query(countQuery, countParams);
 
-    const countResult = await do_ma_query(countQuery, queryParams.slice(0, -2));
+    // Get summary statistics
+    const summaryQuery = `
+      SELECT 
+        w.id,
+        w.title as warehouse_name,
+        COUNT(*) as low_stock_count,
+        SUM(p.count) as total_quantity,
+        MIN(p.count) as min_stock,
+        MAX(p.count) as max_stock,
+        AVG(p.count) as avg_stock
+      FROM product p
+      LEFT JOIN warehouse w ON p.warehouse_id = w.id
+      ${whereClause}
+      GROUP BY w.id, w.title
+      ORDER BY low_stock_count DESC
+    `;
+    const summary = await do_ma_query(summaryQuery, countParams);
 
     res.status(200).json({
       success: true,
       data: products,
+      summary: summary,
       pagination: {
         total: countResult[0].total,
         page: parseInt(page),
         limit: parseInt(limit),
         totalPages: Math.ceil(countResult[0].total / limit),
+      },
+      filters: {
+        threshold: parseInt(threshold),
+        period: period,
+        warehouse_id: warehouse_id || warehouseFilter || null,
       },
       timestamp: DateTime.local().toFormat("yyyy-MM-dd HH:mm:ss"),
     });
@@ -1268,13 +1535,33 @@ export const getOutOfStockProducts = async (req, res) => {
       article_profile_id = "",
       sortBy = "updated_at",
       sortOrder = "DESC",
+      period = 'all', // 'all', 'daily', 'weekly', 'monthly'
     } = req.query;
 
     const offset = (page - 1) * limit;
 
+    // Base conditions
     let whereConditions = ["p.count = 0"];
     let queryParams = [];
 
+    // Period filtering - when product went out of stock
+    if (period !== 'all') {
+      let dateCondition;
+      switch(period) {
+        case 'daily':
+          dateCondition = "p.updated_at >= DATE_SUB(NOW(), INTERVAL 1 DAY)";
+          break;
+        case 'weekly':
+          dateCondition = "p.updated_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)";
+          break;
+        case 'monthly':
+          dateCondition = "p.updated_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
+          break;
+      }
+      if (dateCondition) whereConditions.push(dateCondition);
+    }
+
+    // Warehouse filter
     if (warehouseFilter) {
       whereConditions.push("p.warehouse_id = ?");
       queryParams.push(warehouseFilter);
@@ -1283,11 +1570,13 @@ export const getOutOfStockProducts = async (req, res) => {
       queryParams.push(warehouse_id);
     }
 
+    // Search filter
     if (search) {
       whereConditions.push("(p.title LIKE ? OR p.barcode LIKE ?)");
       queryParams.push(`%${search}%`, `%${search}%`);
     }
 
+    // Article profile filter
     if (article_profile_id) {
       whereConditions.push("p.article_profile_id = ?");
       queryParams.push(article_profile_id);
@@ -1295,44 +1584,77 @@ export const getOutOfStockProducts = async (req, res) => {
 
     const whereClause = "WHERE " + whereConditions.join(" AND ");
 
+    // Validate sort parameters
     const allowedSortFields = ["updated_at", "created_at", "title"];
     const validSortBy = allowedSortFields.includes(sortBy) ? sortBy : "updated_at";
     const validSortOrder = sortOrder.toUpperCase() === "ASC" ? "ASC" : "DESC";
 
+    // Main query with additional info
     const query = `
       SELECT 
-        p.*,
-        ap.title as article_profile_name,
+        p.id,
+        p.title,
+        p.barcode,
+        p.count,
+        p.status,
+        p.location,
+        p.updated_at,
+        p.created_at,
+        w.id as warehouse_id,
         w.title as warehouse_name,
-        w.location as store_location
+        ap.id as article_profile_id,
+        ap.title as article_profile_name,
+        DATEDIFF(NOW(), p.updated_at) as days_out_of_stock,
+        u.name as last_updated_by_name
       FROM product p
-      LEFT JOIN article_profile ap ON p.article_profile_id = ap.id
       LEFT JOIN warehouse w ON p.warehouse_id = w.id
+      LEFT JOIN article_profile ap ON p.article_profile_id = ap.id
+      LEFT JOIN users u ON p.last_updated_by = u.id
       ${whereClause}
       ORDER BY p.${validSortBy} ${validSortOrder}
       LIMIT ? OFFSET ?
     `;
 
     queryParams.push(parseInt(limit), parseInt(offset));
-
     const products = await do_ma_query(query, queryParams);
 
+    // Count query
     const countQuery = `
       SELECT COUNT(*) as total
       FROM product p
       ${whereClause}
     `;
+    const countParams = queryParams.slice(0, -2);
+    const countResult = await do_ma_query(countQuery, countParams);
 
-    const countResult = await do_ma_query(countQuery, queryParams.slice(0, -2));
+    // Get summary by warehouse
+    const summaryQuery = `
+      SELECT 
+        w.id,
+        w.title as warehouse_name,
+        COUNT(*) as out_of_stock_count,
+        AVG(DATEDIFF(NOW(), p.updated_at)) as avg_days_out_of_stock
+      FROM product p
+      LEFT JOIN warehouse w ON p.warehouse_id = w.id
+      ${whereClause}
+      GROUP BY w.id, w.title
+      ORDER BY out_of_stock_count DESC
+    `;
+    const summary = await do_ma_query(summaryQuery, countParams);
 
     res.status(200).json({
       success: true,
       data: products,
+      summary: summary,
       pagination: {
         total: countResult[0].total,
         page: parseInt(page),
         limit: parseInt(limit),
         totalPages: Math.ceil(countResult[0].total / limit),
+      },
+      filters: {
+        period: period,
+        warehouse_id: warehouse_id || warehouseFilter || null,
       },
       timestamp: DateTime.local().toFormat("yyyy-MM-dd HH:mm:ss"),
     });
@@ -1347,41 +1669,114 @@ export const getOutOfStockProducts = async (req, res) => {
   }
 };
 
-// GET low stock statistics
-export const getLowStockStats = async (req, res) => {
+/**
+ * GET Low/Out of Stock Statistics with Chart Data
+ */
+export const getStockAlertStats = async (req, res) => {
   try {
     const { warehouseFilter } = req;
-    const { threshold = 10 } = req.query;
+    const { 
+      threshold = 10,
+      period = 'monthly' // 'daily', 'weekly', 'monthly'
+    } = req.query;
 
     let whereClause = "";
     let queryParams = [];
 
     if (warehouseFilter) {
-      whereClause = "WHERE warehouse_id = ?";
+      whereClause = "WHERE p.warehouse_id = ?";
       queryParams = [warehouseFilter];
     }
 
-    const statsQuery = `
+    // Overall statistics
+    const overallStatsQuery = `
       SELECT 
-        COUNT(CASE WHEN count > 0 AND count <= ? THEN 1 END) as low_stock_count,
-        COUNT(CASE WHEN count = 0 THEN 1 END) as out_of_stock_count,
+        COUNT(CASE WHEN p.count > 0 AND p.count <= ? THEN 1 END) as low_stock_count,
+        COUNT(CASE WHEN p.count = 0 THEN 1 END) as out_of_stock_count,
+        COUNT(CASE WHEN p.count > ? THEN 1 END) as healthy_stock_count,
         COUNT(*) as total_products,
-        SUM(CASE WHEN count > 0 AND count <= ? THEN count END) as low_stock_qty,
-        COUNT(DISTINCT warehouse_id) as affected_warehouses
-      FROM product
+        SUM(CASE WHEN p.count > 0 AND p.count <= ? THEN p.count END) as low_stock_qty,
+        SUM(p.count) as total_stock_qty,
+        COUNT(DISTINCT p.warehouse_id) as affected_warehouses
+      FROM product p
       ${whereClause}
     `;
+    const overallParams = [threshold, threshold, threshold, ...queryParams];
+    const [overallStats] = await do_ma_query(overallStatsQuery, overallParams);
 
-    const params = [threshold, threshold, ...queryParams];
-    const stats = await do_ma_query(statsQuery, params);
+    // Trend data based on period
+    let dateGrouping, dateRange;
+    switch(period) {
+      case 'daily':
+        dateGrouping = 'DATE(p.updated_at)';
+        dateRange = 'INTERVAL 7 DAY';
+        break;
+      case 'weekly':
+        dateGrouping = 'YEARWEEK(p.updated_at, 1)';
+        dateRange = 'INTERVAL 8 WEEK';
+        break;
+      case 'monthly':
+        dateGrouping = 'DATE_FORMAT(p.updated_at, "%Y-%m")';
+        dateRange = 'INTERVAL 6 MONTH';
+        break;
+      default:
+        dateGrouping = 'DATE(p.updated_at)';
+        dateRange = 'INTERVAL 7 DAY';
+    }
+
+    const trendQuery = `
+      SELECT 
+        ${dateGrouping} as date_key,
+        COUNT(CASE WHEN p.count > 0 AND p.count <= ? THEN 1 END) as low_stock,
+        COUNT(CASE WHEN p.count = 0 THEN 1 END) as out_of_stock,
+        SUM(CASE WHEN p.count > 0 AND p.count <= ? THEN p.count END) as low_stock_qty
+      FROM product p
+      ${whereClause ? whereClause + ' AND' : 'WHERE'} p.updated_at >= DATE_SUB(NOW(), ${dateRange})
+      GROUP BY ${dateGrouping}
+      ORDER BY date_key ASC
+    `;
+    const trendParams = [threshold, threshold, ...queryParams];
+    const trendData = await do_ma_query(trendQuery, trendParams);
+
+    // Format trend data
+    const formattedTrend = trendData.map(item => ({
+      date: formatDateLabel(item.date_key, period),
+      low_stock: item.low_stock,
+      out_of_stock: item.out_of_stock,
+      low_stock_qty: item.low_stock_qty || 0
+    }));
+
+    // Warehouse breakdown
+    const warehouseBreakdownQuery = `
+      SELECT 
+        w.id,
+        w.title as warehouse_name,
+        COUNT(CASE WHEN p.count > 0 AND p.count <= ? THEN 1 END) as low_stock,
+        COUNT(CASE WHEN p.count = 0 THEN 1 END) as out_of_stock,
+        SUM(CASE WHEN p.count > 0 AND p.count <= ? THEN p.count END) as low_stock_qty
+      FROM warehouse w
+      LEFT JOIN product p ON p.warehouse_id = w.id
+      ${whereClause ? whereClause.replace('p.warehouse_id', 'w.id') : ''}
+      GROUP BY w.id, w.title
+      HAVING low_stock > 0 OR out_of_stock > 0
+      ORDER BY (low_stock + out_of_stock) DESC
+    `;
+    const warehouseParams = [threshold, threshold, ...queryParams];
+    const warehouseBreakdown = await do_ma_query(warehouseBreakdownQuery, warehouseParams);
 
     res.status(200).json({
       success: true,
-      data: stats[0],
+      data: {
+        overall: overallStats,
+        trend: formattedTrend,
+        warehouseBreakdown: warehouseBreakdown,
+        threshold: parseInt(threshold),
+        period: period
+      },
       timestamp: DateTime.local().toFormat("yyyy-MM-dd HH:mm:ss"),
     });
   } catch (error) {
-    console.error("Error fetching low stock stats:", error);
+    console.error("Error fetching stock alert stats:", error);
     res.status(500).json({
       success: false,
       message: "Error fetching statistics",
@@ -1390,115 +1785,4 @@ export const getLowStockStats = async (req, res) => {
     });
   }
 };
-
-// UPDATE low stock alert threshold
-export const updateLowStockAlert = async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    const schema = Joi.object({
-      alert_threshold: Joi.number().integer().min(0).required().label("alert threshold"),
-    });
-
-    const { error, value } = schema.validate(req.body, { abortEarly: false });
-
-    if (error) {
-      return res.status(400).json({
-        success: false,
-        timestamp: DateTime.local().toFormat("yyyy-MM-dd HH:mm:ss"),
-        message: error.details[0].message,
-      });
-    }
-
-    const updateQuery = `
-      UPDATE product 
-      SET alert_threshold = ?, updated_at = NOW()
-      WHERE id = ?
-    `;
-
-    const result = await do_ma_query(updateQuery, [value.alert_threshold, id]);
-
-    if (result.affectedRows === 1) {
-      res.status(200).json({
-        success: true,
-        timestamp: DateTime.local().toFormat("yyyy-MM-dd HH:mm:ss"),
-        message: "Alert threshold updated successfully",
-      });
-    } else {
-      res.status(404).json({
-        success: false,
-        timestamp: DateTime.local().toFormat("yyyy-MM-dd HH:mm:ss"),
-        message: "Product not found",
-      });
-    }
-  } catch (error) {
-    console.error("Error updating alert threshold:", error);
-    res.status(500).json({
-      success: false,
-      timestamp: DateTime.local().toFormat("yyyy-MM-dd HH:mm:ss"),
-      message: "Internal server error",
-    });
-  }
-};
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 

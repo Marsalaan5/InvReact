@@ -336,6 +336,7 @@ const isAdmin = roleName === "Admin";
     // Attach complete user info to request
     req.user = {
       id: user.id,
+      name: user.username,
       email: user.email,
       username: user.username,
       role: roleName,   

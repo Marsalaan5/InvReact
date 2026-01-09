@@ -3,7 +3,7 @@
 
 
 import express from "express";
-import {signup,signin,forgotPassword,resetPassword,} from "../controller/authController.js";
+import {signup,signin,forgotPassword,resetPassword, verifyEmail, resendVerification,} from "../controller/authController.js";
 
 import {createUser,getUser,getCurrentUser,editUserById,deleteUserById,createRole,getRoles,getRoleById,updateRoleById,deleteRoleById,getProfile,getProfileById,editProfileById,getAllPermissions,getPermissionsByRole,updatePermissions,getModules,} from "../controller/userController.js";
 
@@ -15,8 +15,11 @@ import { createWh, getWhEmail, getWhPhone, getWhTitle,getAllWarehouses,getWareho
 
 import { getEmails,getEmailById,markAsRead,toggleStar,deleteEmail,bulkAction,getTemplates, sendEmails, getNotifications, createNotification, createNotificationByEmail, deleteNotification, markAllNotificationsAsRead, markNotificationAsRead, getReceivedEmails, saveDraft, sendStockRequest, respondToStockRequest} from "../controller/emailController.js";
 import { exportToExcel, exportToPDF } from "../controller/exportController.js";
-import { createStockFlow, deleteStockFlow, getStockFlowById, getStockFlowOptions, getStockFlows, getStockFlowStats, updateStockFlowById } from "../controller/stockController.js";
+import { createStockFlow, deleteStockFlow, getLowStockChartData, getOutOfStockTrendData, getStockFlowById, getStockFlowChartData, getStockFlowOptions, getStockFlows, getStockFlowStats, getStockStatusDistribution, getWarehouseComparison, updateStockFlowById } from "../controller/stockController.js";
 import { generateStockFlowInvoice } from "../controller/invoiceController.js";
+import { getActivities, getActivitiesStats } from "../controller/activityController.js";
+import { createArticle, getArticle } from "../controller/articleController.js";
+import { createGLossary, editGlossary, getGlossaries, getGlossaryById } from "../controller/glossaryController.js";
 // import { exportToExcel, exportToPDF } from "../services/exportC.js";
 
 
@@ -32,6 +35,10 @@ router.use("/users", authenticateToken);
 
 // Public auth routes
 router.post("/signup", signup);
+
+router.get('/verify-email/:token', verifyEmail);
+router.post('/resend-verification', resendVerification);
+
 router.post("/signin", signin);
 router.post("/forgot-password", forgotPassword);
 router.post("/reset-password", resetPassword);
@@ -60,6 +67,7 @@ router.get("/roles/:id",authenticateToken,checkPermission("Role", "view"),getRol
 router.post("/roles",authenticateToken,checkPermission("Role", "create"),createRole);
 router.put("/roles/:id",authenticateToken,checkPermission("Role", "edit"),updateRoleById);
 router.delete("/roles/:id", checkPermission("Role", "delete"), deleteRoleById);
+
 
 // Permissions
 router.get("/permissions/role/:roleId",authenticateToken,checkPermission("Permission", "view"),getPermissionsByRole);
@@ -94,6 +102,21 @@ router.put("/editWarehouseById/:id",authenticateToken,checkPermission("Warehouse
 router.delete("/deleteWarehouseById/:id",authenticateToken,checkPermission("Warehouse", "delete"),deleteWarehouse);
 
 
+//Glossaries
+router.get("/getGlossaries",authenticateToken,checkPermission("Glossary","view"),getGlossaries);
+router.get("/getGlossariesById",authenticateToken,checkPermission("Glossary","view"),getGlossaryById);
+router.post("/createGlossary",authenticateToken,createGLossary)
+router.put("/editGlossary",authenticateToken,editGlossary)
+
+
+//Articles Profile
+router.get("/getArticle",authenticateToken,checkPermission("ArticleProfile","view"),getArticle);
+// router.get("/getArticleById",authenticateToken,checkPermission("ArticleProfile","view"),getArt);
+router.post("/createArticle",authenticateToken,checkPermission("ArticleProfile","create"),createArticle);
+
+
+
+//Products
 router.get("/getProduct",authenticateToken, enforceWarehouseAccess,
   applyWarehouseFilter,checkPermission("Product", "view"), getProduct)
 router.get("/getProductById/:id",authenticateToken, enforceWarehouseAccess,
@@ -105,6 +128,8 @@ router.put("/editProductById/:id",authenticateToken,checkPermission("Product", "
 router.delete("/deleteProductById/:id",authenticateToken,checkPermission("Product", "delete"),deleteProduct);
 
 
+
+//StockFlow
 router.get('/getStockFlowOptions',authenticateToken,checkPermission('StockFlow', 'view'), getStockFlowOptions);
 router.get('/getStockFlows',authenticateToken,applyWarehouseFilter,checkPermission('StockFlow', 'view'),getStockFlows);
 router.get('/getStockFlowStats/stats',authenticateToken,applyWarehouseFilter,checkPermission('StockFlow', 'view'),getStockFlowStats);
@@ -116,20 +141,31 @@ router.delete('/deleteStockFlow/:id',authenticateToken,applyWarehouseFilter,
 
 
 
+  
+
+router.get('/getStockFlowChartData', authenticateToken, applyWarehouseFilter,checkPermission("StockFlow", "view"), getStockFlowChartData);
+router.get('/getLowStockChartData', authenticateToken, enforceWarehouseAccess,applyWarehouseFilter,checkPermission("Product", "view"), getLowStockChartData);
+router.get('/getOutOfStockTrendData', authenticateToken, enforceWarehouseAccess,applyWarehouseFilter,checkPermission("Product", "view"), getOutOfStockTrendData);
+router.get('/getStockStatusDistribution', authenticateToken, enforceWarehouseAccess,applyWarehouseFilter,checkPermission("Product", "view"), getStockStatusDistribution);
+router.get('/getWarehouseComparison', authenticateToken, enforceWarehouseAccess,applyWarehouseFilter, checkPermission("Warehouse", "view"), getWarehouseComparison)
 
 
 
 
 
+// Activity routes
+router.get('/activities', authenticateToken,applyWarehouseFilter,checkPermission("Activity", "view"),getActivities);
+router.get('/activities/stats',authenticateToken,applyWarehouseFilter,checkPermission("Activity", "view"),getActivitiesStats);
 
-router.get("/notification",authenticateToken,checkPermission("Notification", "view"), getNotifications)
-// router.get("/notification/:id",authenticateToken,checkPermission("Notification", "view"),getNotificationById);
-router.post("/notification",authenticateToken,checkPermission("Notification", "create"), createNotification)
-router.post("/notification/:id",authenticateToken,checkPermission("Notification", "create"),createNotificationByEmail);
-router.put("/notification/:id",authenticateToken,checkPermission("Product", "edit"),markNotificationAsRead);
-router.put("/notification/:id",authenticateToken,checkPermission("Product", "edit"),markAllNotificationsAsRead);
-router.delete("/notification/:id",authenticateToken,checkPermission("Notification", "delete"),deleteNotification);
 
+
+
+router.get("/notification", authenticateToken, checkPermission("Notification", "view"), getNotifications);
+router.post("/notification", authenticateToken, checkPermission("Notification", "create"), createNotification);
+router.post("/notification/email", authenticateToken, checkPermission("Notification", "create"), createNotificationByEmail);
+router.put("/notification/:id/read", authenticateToken, checkPermission("Notification", "edit"), markNotificationAsRead);
+router.put("/notification/mark-all-read", authenticateToken, checkPermission("Notification", "edit"), markAllNotificationsAsRead);
+router.delete("/notification/:id", authenticateToken, checkPermission("Notification", "delete"), deleteNotification);
 
 
 
@@ -150,9 +186,8 @@ router.put('/editEmailMark/:id/read',authenticateToken,checkPermission("Email", 
 router.put('/editEmailTogglemail/:id/star',authenticateToken,checkPermission("Email", "edit"), toggleStar);
 router.delete('/deleteEmail/:id',authenticateToken,checkPermission("Email", "delete"), deleteEmail);
 
+
 router.get('/getTemplates/all',authenticateToken,checkPermission("Templates", "view") ,getTemplates);
-
-
 
 router.get('/stockflow/:id/invoice',authenticateToken, generateStockFlowInvoice);
 

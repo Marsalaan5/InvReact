@@ -730,9 +730,11 @@ import { useDispatch } from 'react-redux';
 import { Plus, Edit2, Trash2, Eye, EyeOff, GripVertical, ChevronDown, ChevronRight } from 'lucide-react';
 import AuthService from '../../services/authService';
 import { fetchMenu } from '../../core/redux/slices/menuSlice';
+import { usePermissions } from '../../hooks/usePermission';
 
 const MenuManagement = () => {
   const dispatch = useDispatch();
+  const {hasPermission} = usePermissions();
   
   const [menuItems, setMenuItems] = useState([]);
   const [availableRoles, setAvailableRoles] = useState([]);
@@ -1061,7 +1063,7 @@ const MenuManagement = () => {
           <tr style={{ 
             backgroundColor: level === 0 ? '#f8f9fa' : 'white',
             borderLeft: level > 0 ? `3px solid #${level * 2}98a0` : 'none',
-            // ✅ Dim inactive items
+            
             opacity: item.status === 'inactive' ? 0.6 : 1
           }}>
             <td style={{ paddingLeft: `${level * 30 + 10}px` }}>
@@ -1102,7 +1104,7 @@ const MenuManagement = () => {
               </span>
             </td>
             <td>
-              <div className="d-flex gap-2">
+            {hasPermission('Menu','view')  &&  <div className="d-flex gap-2">
                 <button
                   className="btn btn-sm btn-outline-primary"
                   onClick={() => handleEdit(item)}
@@ -1122,9 +1124,10 @@ const MenuManagement = () => {
                   onClick={() => handleDelete(item.id)}
                   title="Delete"
                 >
+                  
                   <Trash2 size={14} />
                 </button>
-              </div>
+              </div>}
             </td>
           </tr>
           {expandedItems[item.id] && hasChildren && renderMenuTree(item.children, level + 1)}
@@ -1190,7 +1193,7 @@ const MenuManagement = () => {
                       <th>Icon</th>
                       <th>Section</th>
                       <th>Status</th>
-                      <th>Actions</th>
+                     {hasPermission('Menu','view')  && <th>Actions</th>}
                     </tr>
                   </thead>
                   <tbody>

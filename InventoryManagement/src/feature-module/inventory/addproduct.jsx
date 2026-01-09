@@ -1458,7 +1458,7 @@ const AddProduct = () => {
     warehouse_id: null,
     location: "",
     status: { value: "new", label: "New" },
-    count: 0,
+    count: 1,
     description: "",
   });
 
@@ -1544,16 +1544,16 @@ const AddProduct = () => {
             <p><strong>Warehouse:</strong> ${product.warehouse_name || 'N/A'}</p>
             <p><strong>Quantity:</strong> ${product.count || 0}</p>
             <hr>
-            <p class="text-muted">This product is already in the system. Do you want to view/edit it instead?</p>
+            <p class="text-muted">This product is already in the system. Do you want to view</p>
           </div>
         `,
         showCancelButton: true,
-        showDenyButton: true,
-        confirmButtonText: "View/Edit Product",
-        denyButtonText: "Add Anyway",
+        // showDenyButton: true,
+        // confirmButtonText: "View/Edit Product",
+        // denyButtonText: "Add Anyway",
         cancelButtonText: "Cancel",
-        confirmButtonColor: "#28a745",
-        denyButtonColor: "#ffc107",
+        // confirmButtonColor: "#28a745",
+        // denyButtonColor: "#ffc107",
         cancelButtonColor: "#6c757d",
       }).then((result) => {
         if (result.isConfirmed) {
@@ -1620,7 +1620,7 @@ const AddProduct = () => {
 
   const fetchArticleProfile = async () => {
     try {
-      const res = await AuthService.getArticleProfile();
+      const res = await AuthService.getArticles();
       const formatted = res.data.data.map((item) => ({
         value: item.id,
         label: item.name || item.title,
@@ -1922,7 +1922,7 @@ const AddProduct = () => {
                         </div>
                       </div>
                       <div className="row">
-                        <div className="col-lg-6 col-sm-6 col-12">
+                        <div className="col-lg-4 col-sm-6 col-12">
                           <div className="mb-3 add-product">
                             <label className="form-label">
                               Product Name <span className="text-danger">*</span>
@@ -1937,7 +1937,7 @@ const AddProduct = () => {
                             />
                           </div>
                         </div>
-                        <div className="col-lg-3 col-sm-6 col-12">
+                        <div className="col-lg-4 col-sm-6 col-12">
                           <div className="mb-3 add-product">
                             <label className="form-label">Quantity</label>
                             <input
@@ -1951,7 +1951,7 @@ const AddProduct = () => {
                             />
                           </div>
                         </div>
-                        <div className="col-lg-3 col-sm-6 col-12">
+                        <div className="col-lg-4 col-sm-6 col-12">
                           <div className="mb-3 add-product">
                             <label className="form-label">Status</label>
                             <Select
@@ -1964,7 +1964,7 @@ const AddProduct = () => {
                           </div>
                         </div>
                       </div>
-                      <div className="col-lg-12">
+                      <div className="col-lg-6">
                         <div className="input-blocks summer-description-box transfer mb-3">
                           <label>Description</label>
                           <textarea

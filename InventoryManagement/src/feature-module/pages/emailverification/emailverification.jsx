@@ -1,10 +1,14 @@
 import React from "react";
 import ImageWithBasePath from "../../../core/img/imagewithbasebath";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { all_routes } from "../../../Router/all_routes";
 
 const EmailVerification = () => {
-  const route = all_routes;
+  
+const route = all_routes;
+const location = useLocation();
+const email = location.state?.email;
+
   return (
     <div className="main-wrapper">
       <div className="account-content">
@@ -22,9 +26,11 @@ const EmailVerification = () => {
               <div className="login-userheading text-center">
                 <h3>Verify Your Email</h3>
                 <h4 className="verfy-mail-content">
-                  We&apos;ve sent a link to your email ter4@example.com. Please
-                  follow the link inside to continue
-                </h4>
+  We&apos;ve sent a link to your email{" "}
+  <strong>{email || "your registered email"}</strong>. Please
+  follow the link inside to continue
+</h4>
+
               </div>
               <div className="signinform text-center">
                 <h4>

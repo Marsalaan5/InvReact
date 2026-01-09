@@ -7,6 +7,7 @@ import path from "path";
 import fs from "fs";
 import { roleHierarchy } from "../utils/roleHierarchy.js";
 import { canManageRole, getRoleLevel } from '../utils/roleHierarchy.js';
+import { logActivity } from "../services/activityService.js";
 
 
 // import { autoAssignMenuToRole } from "./menuController.js";
@@ -51,7 +52,139 @@ const upload = multer({
 
 
 
+// export const createUser = (req, res) => {
+//   upload.single("avatar")(req, res, async (err) => {
+//     if (err) {
+//       return res.status(400).json({
+//         message: "File upload failed",
+//         error: err.message,
+//       });
+//     }
 
+//     const { name, email, password, phone, username, role_id, warehouse_id } = req.body;
+
+//     // Basic validation
+//     if (!name || !email || !password) {
+//       return res.status(400).json({
+//         message: "Name, email, and password are required",
+//       });
+//     }
+
+//     if (!role_id) {
+//       return res.status(400).json({
+//         message: "Role is required",
+//       });
+//     }
+
+//     if (!warehouse_id) {
+//       return res.status(400).json({
+//         message: "Warehouse is required",
+//       });
+//     }
+
+//     // Ensure logged-in user exists
+//     if (!req.user || !req.user.role) {
+//       return res.status(401).json({ message: "Unauthorized. No role found." });
+//     }
+
+//     try {
+//       // Fetch target role name from roles table
+//       const [roleRow] = await pool.execute(
+//         "SELECT name FROM roles WHERE id = ?",
+//         [role_id]
+//       );
+
+//       if (roleRow.length === 0) {
+//         return res.status(400).json({ message: "Invalid role ID." });
+//       }
+
+//       const targetRoleName = roleRow[0].name;
+//       const creatorRoleName = req.user.role;
+
+//       console.log('Creator role:', creatorRoleName);
+//       console.log('Target role:', targetRoleName);
+
+//       // Use utility function to check if creator can assign this role
+//       if (!canManageRole(creatorRoleName, targetRoleName)) {
+//         return res.status(403).json({
+//           message: `Access denied. You can only assign roles lower than "${creatorRoleName}".`,
+//         });
+//       }
+
+//       // Verify warehouse exists
+//       const [warehouseRow] = await pool.execute(
+//         "SELECT id FROM warehouse WHERE id = ? AND status = 'active'",
+//         [warehouse_id]
+//       );
+
+//       if (warehouseRow.length === 0) {
+//         return res.status(400).json({ message: "Invalid warehouse ID." });
+//       }
+
+//       // Check if user already exists
+//       const [existingUser] = await pool.execute(
+//         "SELECT * FROM users WHERE email = ? OR username = ?",
+//         [email, username || email]
+//       );
+
+//       if (existingUser.length) {
+//         if (req.file && fs.existsSync(req.file.path)) {
+//           fs.unlinkSync(req.file.path);
+//         }
+//         return res.status(400).json({
+//           message: "Email or username already exists",
+//         });
+//       }
+
+//       // Hash password
+//       const hashedPassword = await bcrypt.hash(password, 10);
+
+//       // Handle avatar
+//       let avatarPath = null;
+//       if (req.file) {
+//         avatarPath = req.file.path.replace(/\\/g, "/");
+//       }
+
+//       // Insert user with role_id and warehouse_id
+//       const [result] = await pool.execute(
+//         "INSERT INTO users (name, email, password, phone, username, avatar, role_id, warehouse_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+//         [
+//           name,
+//           email,
+//           hashedPassword,
+//           phone || null,
+//           username || email,
+//           avatarPath,
+//           role_id,
+//           warehouse_id,
+//         ]
+//       );
+
+//       res.status(201).json({
+//         message: "User created successfully",
+//         user: {
+//           id: result.insertId,
+//           name,
+//           email,
+//           phone,
+//           username: username || email,
+//           avatar: avatarPath,
+//           role_id,
+//           role: targetRoleName,
+//           warehouse_id,
+//         },
+//       });
+//     } catch (err) {
+//       console.error("Error in user creation:", err);
+
+//       if (req.file && fs.existsSync(req.file.path)) {
+//         fs.unlinkSync(req.file.path);
+//       }
+
+//       res.status(500).json({ message: "Internal Server Error" });
+//     }
+//   });
+// };
 
 
 export const createUser = (req, res) => {
@@ -65,7 +198,7 @@ export const createUser = (req, res) => {
 
     const { name, email, password, phone, username, role_id, warehouse_id } = req.body;
 
-    // Basic validation
+  
     if (!name || !email || !password) {
       return res.status(400).json({
         message: "Name, email, and password are required",
@@ -73,15 +206,11 @@ export const createUser = (req, res) => {
     }
 
     if (!role_id) {
-      return res.status(400).json({
-        message: "Role is required",
-      });
+      return res.status(400).json({ message: "Role is required" });
     }
 
     if (!warehouse_id) {
-      return res.status(400).json({
-        message: "Warehouse is required",
-      });
+      return res.status(400).json({ message: "Warehouse is required" });
     }
 
     // Ensure logged-in user exists
@@ -90,7 +219,7 @@ export const createUser = (req, res) => {
     }
 
     try {
-      // Fetch target role name from roles table
+      // Fetch target role name
       const [roleRow] = await pool.execute(
         "SELECT name FROM roles WHERE id = ?",
         [role_id]
@@ -103,10 +232,7 @@ export const createUser = (req, res) => {
       const targetRoleName = roleRow[0].name;
       const creatorRoleName = req.user.role;
 
-      console.log('Creator role:', creatorRoleName);
-      console.log('Target role:', targetRoleName);
-
-      // Use utility function to check if creator can assign this role
+      // Check role hierarchy
       if (!canManageRole(creatorRoleName, targetRoleName)) {
         return res.status(403).json({
           message: `Access denied. You can only assign roles lower than "${creatorRoleName}".`,
@@ -147,7 +273,7 @@ export const createUser = (req, res) => {
         avatarPath = req.file.path.replace(/\\/g, "/");
       }
 
-      // Insert user with role_id and warehouse_id
+      // Insert user
       const [result] = await pool.execute(
         "INSERT INTO users (name, email, password, phone, username, avatar, role_id, warehouse_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
         [
@@ -161,6 +287,30 @@ export const createUser = (req, res) => {
           warehouse_id,
         ]
       );
+
+      // Fetch warehouse name for logging
+      const [warehouse] = await pool.execute(
+        "SELECT title FROM warehouse WHERE id = ?",
+        [warehouse_id]
+      );
+
+      // Log activity
+      await logActivity({
+        activity_type: "user",
+        action: "created",
+        entity_id: result.insertId,
+        entity_name: name,
+        description: `"${name}" created with role "${targetRoleName}"`,
+        user_id: req.user?.id || result.insertId,
+        user_name: req.user?.name || "System",
+        warehouse_id: warehouse_id,
+        warehouse_name: warehouse[0]?.title || "Unknown",
+        metadata: {
+          email: email,
+          role: targetRoleName,
+          created_by: req.user?.name || "System",
+        },
+      });
 
       res.status(201).json({
         message: "User created successfully",
@@ -505,17 +655,198 @@ export const getUserById = async (req, res) => {
   }
 };
 
-// ============= EDIT USER BY ID - NEEDS CORRECTION =============
+
+// export const editUserById = (req, res) => {
+//   upload.single("avatar")(req, res, async (err) => {
+//     if (err) {
+//       console.error("File upload error:", err);
+//       return res
+//         .status(400)
+//         .json({ message: "File upload failed", error: err.message });
+//     }
+
+//     const { name, email, phone, username, role_id, status } = req.body;
+//     const userId = req.params.id;
+
+//     try {
+//       // Validate userId
+//       if (!Number.isInteger(Number(userId)) || Number(userId) <= 0) {
+//         return res.status(400).json({ message: "Invalid user ID" });
+//       }
+
+//       // Fetch existing user WITH role name using JOIN
+//       const [existingUser] = await pool.execute(
+//         `SELECT u.*, r.name as role_name 
+//          FROM users u 
+//          LEFT JOIN roles r ON u.role_id = r.id 
+//          WHERE u.id = ?`,
+//         [userId]
+//       );
+
+//       if (existingUser.length === 0) {
+//         return res.status(404).json({ message: "User not found" });
+//       }
+
+//       const currentUserRoleName = existingUser[0].role_name;
+//       const editorRoleName = req.user.role;
+
+//       console.log(' Editor role:', editorRoleName);
+//       console.log(' Target user current role:', currentUserRoleName);
+
+//       // Check if editor can modify this user's current role
+//       if (!canManageRole(editorRoleName, currentUserRoleName)) {
+//         return res.status(403).json({
+//           message: `Access denied. You cannot edit users with role "${currentUserRoleName}" or higher.`,
+//         });
+//       }
+
+//       // If role is being changed, validate the new role
+//       if (role_id && role_id !== existingUser[0].role_id) {
+//         // Fetch new role name
+//         const [newRoleRow] = await pool.execute(
+//           "SELECT name FROM roles WHERE id = ?",
+//           [role_id]
+//         );
+
+//         if (newRoleRow.length === 0) {
+//           return res.status(400).json({ message: "Invalid role ID." });
+//         }
+
+//         const newRoleName = newRoleRow[0].name;
+
+//         console.log('Changing role to:', newRoleName);
+
+//         // Check if editor can assign the new role
+//         if (!canManageRole(editorRoleName, newRoleName)) {
+//           return res.status(403).json({
+//             message: `Access denied. You can only assign roles lower than "${editorRoleName}".`,
+//           });
+//         }
+//       }
+
+//       // Check if email or username are already taken
+//       if (email || username) {
+//         const [duplicate] = await pool.execute(
+//           "SELECT * FROM users WHERE (email = ? OR username = ?) AND id != ?",
+//           [
+//             email || existingUser[0].email,
+//             username || existingUser[0].username,
+//             userId,
+//           ]
+//         );
+//         if (duplicate.length > 0) {
+//           return res
+//             .status(400)
+//             .json({ message: "Email or username already exists" });
+//         }
+//       }
+
+//       // Build update query
+//       const updates = [];
+//       const values = [];
+
+//       if (name) {
+//         updates.push("name = ?");
+//         values.push(name);
+//       }
+
+//       if (email) {
+//         updates.push("email = ?");
+//         values.push(email);
+//       }
+
+//       if (phone !== undefined) {
+//         updates.push("phone = ?");
+//         values.push(phone);
+//       }
+
+//       if (username) {
+//         updates.push("username = ?");
+//         values.push(username);
+//       }
+
+//       if (role_id) {
+//         updates.push("role_id = ?");
+//         values.push(role_id);
+//       }
+
+//       if (status) {
+//         updates.push("status = ?");
+//         values.push(status);
+//       }
+
+//       if (req.file) {
+//         const normalizedPath = req.file.path.replace(/\\/g, "/");
+//         updates.push("avatar = ?");
+//         values.push(normalizedPath);
+
+//         if (existingUser[0].avatar && fs.existsSync(existingUser[0].avatar)) {
+//           fs.unlinkSync(existingUser[0].avatar);
+//         }
+//       }
+
+//       if (updates.length === 0) {
+//         return res.status(400).json({ message: "No fields to update" });
+//       }
+
+//       values.push(userId);
+
+//       const query = `UPDATE users SET ${updates.join(", ")} WHERE id = ?`;
+//       await pool.execute(query, values);
+
+//       const changes = [];
+//     if (name && name !== existingUser[0].name) changes.push(`name: ${existingUser[0].name} → ${name}`);
+//     if (role_id && role_id !== existingUser[0].role_id) changes.push(`role changed`);
+//     if (status && status !== existingUser[0].status) changes.push(`status: ${existingUser[0].status} → ${status}`);
+
+//       await logActivity({
+//       activity_type: 'user',
+//       action: 'updated',
+//       entity_id: userId,
+//       entity_name: name || existingUser[0].name,
+//       description: `User "${existingUser[0].name}" updated${changes.length ? ': ' + changes.join(', ') : ''}`,
+//       user_id: req.user?.id || userId,
+//       user_name: req.user?.name || 'System',
+//       warehouse_id: existingUser[0].warehouse_id,
+//       warehouse_name: existingUser[0].warehouse_name || 'Unknown',
+//       metadata: {
+//         changes: changes,
+//         edited_by: req.user?.name || 'System'
+//       }
+//     });
+
+//       //  Fetch updated user WITH role name
+//       const [updatedUser] = await pool.execute(
+//         `SELECT u.id, u.name, u.email, u.phone, u.username, u.avatar, u.role_id, u.status, r.name as role_name
+//          FROM users u
+//          LEFT JOIN roles r ON u.role_id = r.id
+//          WHERE u.id = ?`,
+//         [userId]
+//       );
+
+//       res.json({
+//         message: "User updated successfully",
+//         user: updatedUser[0],
+//       });
+//     } catch (err) {
+//       console.error("Error updating user:", err);
+//       res.status(500).json({
+//         message: "Internal Server Error",
+//         error: err.message,
+//       });
+//     }
+//   });
+// };
+
+
 export const editUserById = (req, res) => {
   upload.single("avatar")(req, res, async (err) => {
     if (err) {
       console.error("File upload error:", err);
-      return res
-        .status(400)
-        .json({ message: "File upload failed", error: err.message });
+      return res.status(400).json({ message: "File upload failed", error: err.message });
     }
 
-    const { name, email, phone, username, role_id, status } = req.body;
+    const { name, email, phone, username, role_id, status, warehouse_id } = req.body;
     const userId = req.params.id;
 
     try {
@@ -524,11 +855,12 @@ export const editUserById = (req, res) => {
         return res.status(400).json({ message: "Invalid user ID" });
       }
 
-      // Fetch existing user WITH role name using JOIN
+      // Fetch existing user WITH role name and warehouse info
       const [existingUser] = await pool.execute(
-        `SELECT u.*, r.name as role_name 
-         FROM users u 
-         LEFT JOIN roles r ON u.role_id = r.id 
+        `SELECT u.*, r.name AS role_name, w.id AS warehouse_id, w.title AS warehouse_name
+         FROM users u
+         LEFT JOIN roles r ON u.role_id = r.id
+         LEFT JOIN warehouse w ON u.warehouse_id = w.id
          WHERE u.id = ?`,
         [userId]
       );
@@ -537,36 +869,25 @@ export const editUserById = (req, res) => {
         return res.status(404).json({ message: "User not found" });
       }
 
-      const currentUserRoleName = existingUser[0].role_name;
+      const user = existingUser[0];
       const editorRoleName = req.user.role;
 
-      console.log(' Editor role:', editorRoleName);
-      console.log(' Target user current role:', currentUserRoleName);
-
       // Check if editor can modify this user's current role
-      if (!canManageRole(editorRoleName, currentUserRoleName)) {
+      if (!canManageRole(editorRoleName, user.role_name)) {
         return res.status(403).json({
-          message: `Access denied. You cannot edit users with role "${currentUserRoleName}" or higher.`,
+          message: `Access denied. You cannot edit users with role "${user.role_name}" or higher.`,
         });
       }
 
       // If role is being changed, validate the new role
-      if (role_id && role_id !== existingUser[0].role_id) {
-        // Fetch new role name
-        const [newRoleRow] = await pool.execute(
-          "SELECT name FROM roles WHERE id = ?",
-          [role_id]
-        );
-
+      let newRoleName;
+      if (role_id && Number(role_id) !== user.role_id) {
+        const [newRoleRow] = await pool.execute("SELECT name FROM roles WHERE id = ?", [role_id]);
         if (newRoleRow.length === 0) {
           return res.status(400).json({ message: "Invalid role ID." });
         }
+        newRoleName = newRoleRow[0].name;
 
-        const newRoleName = newRoleRow[0].name;
-
-        console.log('Changing role to:', newRoleName);
-
-        // Check if editor can assign the new role
         if (!canManageRole(editorRoleName, newRoleName)) {
           return res.status(403).json({
             message: `Access denied. You can only assign roles lower than "${editorRoleName}".`,
@@ -578,16 +899,10 @@ export const editUserById = (req, res) => {
       if (email || username) {
         const [duplicate] = await pool.execute(
           "SELECT * FROM users WHERE (email = ? OR username = ?) AND id != ?",
-          [
-            email || existingUser[0].email,
-            username || existingUser[0].username,
-            userId,
-          ]
+          [email || user.email, username || user.username, userId]
         );
         if (duplicate.length > 0) {
-          return res
-            .status(400)
-            .json({ message: "Email or username already exists" });
+          return res.status(400).json({ message: "Email or username already exists" });
         }
       }
 
@@ -595,43 +910,21 @@ export const editUserById = (req, res) => {
       const updates = [];
       const values = [];
 
-      if (name) {
-        updates.push("name = ?");
-        values.push(name);
-      }
-
-      if (email) {
-        updates.push("email = ?");
-        values.push(email);
-      }
-
-      if (phone !== undefined) {
-        updates.push("phone = ?");
-        values.push(phone);
-      }
-
-      if (username) {
-        updates.push("username = ?");
-        values.push(username);
-      }
-
-      if (role_id) {
-        updates.push("role_id = ?");
-        values.push(role_id);
-      }
-
-      if (status) {
-        updates.push("status = ?");
-        values.push(status);
-      }
+      if (name) { updates.push("name = ?"); values.push(name); }
+      if (email) { updates.push("email = ?"); values.push(email); }
+      if (phone !== undefined) { updates.push("phone = ?"); values.push(phone); }
+      if (username) { updates.push("username = ?"); values.push(username); }
+      if (role_id) { updates.push("role_id = ?"); values.push(role_id); }
+      if (status) { updates.push("status = ?"); values.push(status); }
+      if (warehouse_id) { updates.push("warehouse_id = ?"); values.push(warehouse_id); }
 
       if (req.file) {
         const normalizedPath = req.file.path.replace(/\\/g, "/");
         updates.push("avatar = ?");
         values.push(normalizedPath);
 
-        if (existingUser[0].avatar && fs.existsSync(existingUser[0].avatar)) {
-          fs.unlinkSync(existingUser[0].avatar);
+        if (user.avatar && fs.existsSync(user.avatar)) {
+          fs.unlinkSync(user.avatar);
         }
       }
 
@@ -640,15 +933,50 @@ export const editUserById = (req, res) => {
       }
 
       values.push(userId);
-
       const query = `UPDATE users SET ${updates.join(", ")} WHERE id = ?`;
       await pool.execute(query, values);
 
-      //  Fetch updated user WITH role name
+      // Track changes
+      const changes = [];
+      if (name && name !== user.name) changes.push(`name: ${user.name} → ${name}`);
+      if (role_id && Number(role_id) !== user.role_id) changes.push(`role: ${user.role_name} → ${newRoleName}`);
+      if (status && status !== user.status) changes.push(`status: ${user.status} → ${status}`);
+
+      let logWarehouseId = user.warehouse_id;
+      let logWarehouseName = user.warehouse_name || 'Unknown';
+
+      if (warehouse_id && warehouse_id !== user.warehouse_id) {
+        const [whRow] = await pool.execute("SELECT title FROM warehouse WHERE id = ?", [warehouse_id]);
+        const newWarehouseName = whRow[0]?.title || 'Unknown';
+        changes.push(`warehouse: ${user.warehouse_name || 'None'} → ${newWarehouseName}`);
+        logWarehouseId = warehouse_id;
+        logWarehouseName = newWarehouseName;
+      }
+
+      // Log activity
+      await logActivity({
+        activity_type: 'user',
+        action: 'updated',
+        entity_id: userId,
+        entity_name: name || user.name,
+        description: `"${user.name}" updated${changes.length ? ': ' + changes.join(', ') : ''}`,
+        user_id: req.user?.id || userId,
+        user_name: req.user?.name || 'System',
+        warehouse_id: logWarehouseId,
+        warehouse_name: logWarehouseName,
+        metadata: {
+          changes: changes,
+          edited_by: req.user?.name || 'System'
+        }
+      });
+
+      // Fetch updated user
       const [updatedUser] = await pool.execute(
-        `SELECT u.id, u.name, u.email, u.phone, u.username, u.avatar, u.role_id, u.status, r.name as role_name
+        `SELECT u.id, u.name, u.email, u.phone, u.username, u.avatar, u.role_id, u.status, r.name AS role_name,
+                u.warehouse_id, w.title AS warehouse_name
          FROM users u
          LEFT JOIN roles r ON u.role_id = r.id
+         LEFT JOIN warehouse w ON u.warehouse_id = w.id
          WHERE u.id = ?`,
         [userId]
       );
@@ -666,6 +994,7 @@ export const editUserById = (req, res) => {
     }
   });
 };
+
 
 // ============= DELETE USER BY ID - NEEDS CORRECTION =============
 export const deleteUserById = async (req, res) => {
@@ -705,6 +1034,22 @@ export const deleteUserById = async (req, res) => {
 
     // Delete user
     await pool.execute("DELETE FROM users WHERE id = ?", [userId]);
+  await logActivity({
+      activity_type: 'user',
+      action: 'deleted',
+      entity_id: userId,
+      entity_name: user[0].name,
+      description: `"${user[0].name}" with role "${user[0].role_name}" deleted`,
+      user_id: req.user?.id || null,
+      user_name: req.user?.name || 'System',
+      warehouse_id: user[0].warehouse_id,
+      warehouse_name: user[0].warehouse_name || 'Unknown',
+      metadata: {
+        deleted_user_email: user[0].email,
+        deleted_user_role: user[0].role_name,
+        deleted_by: req.user?.name || 'System'
+      }
+    });
 
     res.json({ message: "User deleted successfully" });
   } catch (err) {
@@ -712,7 +1057,6 @@ export const deleteUserById = async (req, res) => {
     res.status(500).json({ message: "Internal Server Error" });
   }
 };
-
 
 //Profile Crud
 
@@ -1183,6 +1527,7 @@ export const getModules = async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 };
+
 
 // export const getRoles = async (req, res) => {
 //   try {

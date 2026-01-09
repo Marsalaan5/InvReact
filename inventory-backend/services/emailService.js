@@ -280,6 +280,37 @@ const transporter = nodemailer.createTransport({
   }
 });
 
+export const sendVerificationEmail = async (email, name, verificationToken) => {
+    const verificationUrl = `${process.env.FRONTEND_URL}/verify-email/${verificationToken}`;
+    
+    const mailOptions = {
+        from: `"StockWise" <${process.env.EMAIL_USER}>`,
+        to: email,
+        subject: 'Verify Your Email - StockWise',
+        html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <h2>Welcome to StockWise, ${name}!</h2>
+                <p>Thank you for signing up. Please verify your email address to activate your account.</p>
+                <div style="margin: 30px 0;">
+                    <a href="${verificationUrl}" 
+                       style="background-color: #4CAF50; color: white; padding: 12px 24px; 
+                              text-decoration: none; border-radius: 4px; display: inline-block;">
+                        Verify Email Address
+                    </a>
+                </div>
+                <p>Or copy and paste this link in your browser:</p>
+                <p style="color: #666; word-break: break-all;">${verificationUrl}</p>
+                <p>This link will expire in 24 hours.</p>
+                <p>If you didn't create this account, please ignore this email.</p>
+                <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;">
+                <p style="color: #999; font-size: 12px;">© 2025 StockWise. All rights reserved.</p>
+            </div>
+        `
+    };
+
+    await transporter.sendMail(mailOptions);
+};
+
 // Existing sendEmail function
 export const sendEmail = async ({ to, from, subject, html, text }) => {
   const mailOptions = {
@@ -308,7 +339,7 @@ export const sendTemplateEmail = async (
   senderInfo = null
 ) => {
   try {
-    // Get template from database
+
     const templates = await do_ma_query(
       'SELECT * FROM email_templates WHERE type = ? AND is_active = TRUE',
       [templateName]
@@ -330,20 +361,20 @@ export const sendTemplateEmail = async (
       body = body.replace(new RegExp(`\\{${key}\\}`, 'g'), stringValue);
     }
     
-    // Determine sender information
+  
     const senderId = senderInfo?.senderId || 1;
     const senderEmail = senderInfo?.senderEmail || process.env.FROM_EMAIL;
     const senderName = senderInfo?.senderName || 'System';
     
-    // Send physical email
+  
     await sendEmail({ 
       to, 
-      from: senderEmail,
+      from: `"${senderName}" <${senderEmail}>`, //senderEmail,
       subject, 
       html: body 
     });
     
-    // Store in emails table so it appears in Email.jsx inbox
+
     const emailInsertResult = await do_ma_query(
       `INSERT INTO emails (
         sender_id, 

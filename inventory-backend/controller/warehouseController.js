@@ -2,6 +2,7 @@ import pool from '../db.js';
 import Joi from "joi"
 import  {DateTime} from "luxon";
 import { do_ma_query } from '../db.js';
+import { logActivity } from '../services/activityService.js';
 
 // import { v4 as uuidv4 } from 'uuid';
 
@@ -17,9 +18,6 @@ function parseDateSafe(dateStr) {
 	const dt = DateTime.fromFormat(dateStr, "yyyy-MM-dd HH:mm:ss ZZ");
 	return dt.isValid ? dt.toFormat("yyyy-MM-dd HH:mm:ss") : null;
 }
-
-
-//Dashboard
 
 
 
@@ -138,6 +136,8 @@ function parseDateSafe(dateStr) {
 // };
 
 
+// FIXED getDashboard - Replace in warehouseController.js
+
 
 
 export const getDashboard = async (req, res) => {
@@ -152,7 +152,6 @@ export const getDashboard = async (req, res) => {
     let rolesCount = 0;
 
     if (user.isSuperAdmin) {
-      // Super Admin sees ALL users
       const users = await do_ma_query("SELECT status FROM users");
       usersCount.total = users.length;
       usersCount.active = users.filter(u => u.status === 'Active').length;
@@ -161,7 +160,6 @@ export const getDashboard = async (req, res) => {
       const roles = await do_ma_query("SELECT COUNT(*) as count FROM roles");
       rolesCount = roles[0].count;
     } else if (user.isAdmin && user.warehouse_id) {
-      // Admin sees only THEIR WAREHOUSE users
       const users = await do_ma_query(
         "SELECT status FROM users WHERE warehouse_id = ?",
         [user.warehouse_id]
@@ -321,32 +319,107 @@ export const getDashboard = async (req, res) => {
     const stockByStatus = await do_ma_query(stockStatusQuery, stockStatusParams);
 
     // ============================================
-    // 9. LOW STOCK TREND (LAST 30 DAYS)
+    // 9. ENHANCED LOW STOCK TREND (LAST 30 DAYS)
+    // FIXED: Handle Date objects correctly
     // ============================================
     let trendQuery = `
       SELECT 
-        DATE(created_at) as date,
-        COUNT(*) as count
-      FROM product
-      WHERE count <= ?
-        AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+        DATE(p.updated_at) as date,
+        w.id as warehouse_id,
+        w.title as warehouse_name,
+        COUNT(*) as count,
+        SUM(p.count) as quantity
+      FROM product p
+      LEFT JOIN warehouse w ON p.warehouse_id = w.id
+      WHERE p.count > 0 
+        AND p.count <= ?
+        AND p.updated_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
     `;
     
     let trendParams = [lowStockThreshold];
     
     if (warehouseFilter) {
-      trendQuery += " AND warehouse_id = ?";
+      trendQuery += " AND p.warehouse_id = ?";
       trendParams.push(warehouseFilter);
     }
     
-    trendQuery += " GROUP BY DATE(created_at) ORDER BY date DESC";
+    trendQuery += " GROUP BY DATE(p.updated_at), w.id, w.title ORDER BY date DESC";
     
-    const lowStockTrend = await do_ma_query(trendQuery, trendParams);
+    const lowStockTrendRaw = await do_ma_query(trendQuery, trendParams);
+
+    // Transform for chart - FIXED
+    const trendMap = {};
+    const warehouseNames = new Set();
+
+    lowStockTrendRaw.forEach(item => {
+      // FIXED: Handle Date object correctly
+      const dateStr = item.date instanceof Date 
+        ? item.date.toISOString().split('T')[0]
+        : item.date.toString().split('T')[0];
+        
+      if (!trendMap[dateStr]) {
+        trendMap[dateStr] = { date: dateStr };
+      }
+      trendMap[dateStr][item.warehouse_name || 'Unknown'] = item.count;
+      warehouseNames.add(item.warehouse_name || 'Unknown');
+    });
+
+    const lowStockTrend = Object.values(trendMap).sort((a, b) => 
+      new Date(a.date) - new Date(b.date)
+    );
+
+    // ============================================
+    // 10. STOCK FLOW CHART DATA (LAST 30 DAYS)
+    // FIXED: Handle Date objects correctly
+    // ============================================
+    let stockFlowQuery = `
+      SELECT 
+        DATE(created_at) as date,
+        status,
+        COUNT(*) as flow_count,
+        SUM(quantity) as total_quantity
+      FROM stock_flow
+      WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+    `;
+    
+    let stockFlowParams = [];
+    
+    if (warehouseFilter) {
+      stockFlowQuery += " AND (from_wh = ? OR to_wh = ?)";
+      stockFlowParams.push(warehouseFilter, warehouseFilter);
+    }
+    
+    stockFlowQuery += " GROUP BY DATE(created_at), status ORDER BY date ASC";
+    
+    const stockFlowRaw = await do_ma_query(stockFlowQuery, stockFlowParams);
+
+    // Transform stock flow data - FIXED
+    const flowMap = {};
+    stockFlowRaw.forEach(item => {
+      // FIXED: Handle Date object correctly
+      const dateStr = item.date instanceof Date 
+        ? item.date.toISOString().split('T')[0]
+        : item.date.toString().split('T')[0];
+        
+      if (!flowMap[dateStr]) {
+        flowMap[dateStr] = { 
+          date: dateStr,
+          approved: 0,
+          'in-transit': 0,
+          delivered: 0
+        };
+      }
+      flowMap[dateStr][item.status] = item.total_quantity;
+    });
+
+    const stockFlowChartData = Object.values(flowMap).sort((a, b) => 
+      new Date(a.date) - new Date(b.date)
+    );
 
     console.log(`📊 Dashboard stats - Users: ${usersCount.total}, Roles: ${rolesCount}, Warehouses: ${warehouses.length}, Low Stock: ${lowStockCount}, Out of Stock: ${outOfStockCount}`);
 
     // ============================================
-    // 10. SEND RESPONSE
+    // 11. SEND ENHANCED RESPONSE
     // ============================================
     res.status(200).json({
       success: true,
@@ -366,10 +439,23 @@ export const getDashboard = async (req, res) => {
           outOfStock: outOfStockCount,
           threshold: lowStockThreshold,
         },
+        
+        // Enhanced chart data structure
+        
+        charts: {
+          stockByStatus: stockByStatus,
+          lowStockTrend: lowStockTrend,
+          lowStockTrendWarehouses: Array.from(warehouseNames),
+          stockFlowMovement: stockFlowChartData,
+        },
+        
+        // Individual product lists (for backward compatibility)
         lowStockProducts: lowStockProducts,
         outOfStockProducts: outOfStockProducts,
         stockByStatus: stockByStatus,
         lowStockTrend: lowStockTrend,
+        
+        // User context
         isSuperAdmin: user.isSuperAdmin,
         isAdmin: user.isAdmin,
         userWarehouseId: user.warehouse_id,
@@ -555,32 +641,35 @@ export const getDashboard = async (req, res) => {
 
 // Get all warehouses with filters
 export const getAllWarehouses = async (req, res) => {
+  console.log("getAllWarehouses route hit");
   try {
-	const {warehouseFilter,user} = req
-    const { searchTerm, sortBy } = req.query;
+    
+const warehouseFilter = req.warehouseFilter;
+console.log("WAREHOUSE FILTER" , warehouseFilter)
+const user = req.user;
 
-
+  const { searchTerm, sortBy } = req.query;
 	let query = `
   SELECT 
-    w.id,
-    w.title AS name,
-    w.phone_1 AS phone,
-    w.email_1 AS email,
-    w.address,
-    w.status,
-    w.created_at,
-    w.updated_at,
-    u.name AS contact_person_name,
-    COALESCE(COUNT(DISTINCT p.id), 0) AS total_products
+  w.id,
+  w.title AS name,
+  w.phone_1 AS phone,
+  w.email_1 AS email,
+  w.address,
+  w.status,
+  w.created_at,
+  w.updated_at,
+  u.name AS contact_person_name,
+  COALESCE(COUNT(DISTINCT p.id), 0) AS total_products
   FROM warehouse w
   LEFT JOIN users u ON w.contact_person_id = u.id
   LEFT JOIN product p ON p.warehouse_id = w.id
-`;
-
-let whereConditions = [];
-let queryParams = [];
-
-if(warehouseFilter){
+  `;
+  
+  let whereConditions = [];
+  let queryParams = [];
+  
+  if(warehouseFilter){
 	whereConditions.push("w.id = ?");
 	queryParams.push(warehouseFilter)
 }
@@ -621,7 +710,7 @@ if (sortBy === "date_asc") {
 
 
 
-    const warehouses = await do_ma_query(query, queryParams);
+  const warehouses = await do_ma_query(query, queryParams);
 
     res.status(200).json({
       success: true,
@@ -703,7 +792,7 @@ export const getWarehouseById = async (req, res) => {
 			});
 		}
 
-		res.status(200).json({
+		res.status(200).json({	
 			success: true,
 			data: warehouse[0],
 			timestamp: DateTime.local().toFormat("yyyy-MM-dd HH:mm:ss"),
@@ -787,32 +876,331 @@ export const getWarehouseById = async (req, res) => {
 		);
 
 		if (wh_insert_res.affectedRows === 1) {
-			res.status(201).json({
-				success: true,
-				timestamp: DateTime.local().toFormat("yyyy-MM-dd HH:mm:ss"),
-				message: "Warehouse created successfully.",
-			});
-		} else {
-			res.status(304).json({
-				success: false,
-				timestamp: DateTime.local().toFormat("yyyy-MM-dd HH:mm:ss"),
-				message: "Warehouse creation failed.",
-			});
-		}
-	} catch (err) {
-		console.error(`Route: ${req.originalUrl}, Error:`, err);
-		res.status(500).json({
-			success: false,
-			timestamp: DateTime.local().toFormat("yyyy-MM-dd HH:mm:ss"),
-			message: "Internal server error.",
-		});
-	}
+		 const [user] = await do_ma_query(
+        "SELECT name FROM users WHERE id = ?",
+        [value.user_id]
+      );
+
+      await logActivity({
+        activity_type: 'warehouse',
+        action: 'created',
+        entity_id: wh_insert_res.insertId,
+        entity_name: value.wh_title,
+        description: `Warehouse "${value.wh_title}" created`,
+        user_id: req.user?.id || value.user_id,
+        user_name: req.user?.name || user[0]?.name || 'System',
+        warehouse_id: wh_insert_res.insertId,
+        warehouse_name: value.wh_title,
+        metadata: {
+          contact_person: user[0]?.name || 'Unknown',
+          email: value.email_1,
+          phone: phone_no,
+          address: value.address
+        }
+      });
+
+      res.status(201).json({
+        success: true,
+        timestamp: DateTime.local().toFormat("yyyy-MM-dd HH:mm:ss"),
+        message: "Warehouse created successfully.",
+      });
+    } else {
+      res.status(304).json({
+        success: false,
+        timestamp: DateTime.local().toFormat("yyyy-MM-dd HH:mm:ss"),
+        message: "Warehouse creation failed.",
+      });
+    }
+  } catch (err) {
+    console.error(`Route: ${req.originalUrl}, Error:`, err);
+    res.status(500).json({
+      success: false,
+      timestamp: DateTime.local().toFormat("yyyy-MM-dd HH:mm:ss"),
+      message: "Internal server error.",
+    });
+  }
 };
 
 
 
+// export const updateWarehouse = async (req, res) => {
+// 	try {
+// 		const { id } = req.params;
 
-// Delete warehouse
+// 		const wh_label = "warehouse title";
+// 		const user_id_label = "user ID";
+// 		const phone_no_label = "phone number";
+// 		const email_id_label = "email ID";
+// 		const address_label = "address";
+
+// 		const wh_schema = Joi.object({
+// 			wh_title: Joi.string()
+// 				.min(3)
+// 				.max(127)
+// 				.pattern(new RegExp("^(?![-_.])(?!.*[-_.]{2})[a-zA-Z0-9-_.]+(?<![-_.])$"))
+// 				.required()
+// 				.label(wh_label)
+// 				.messages({
+// 					"string.pattern.base": `${wh_label} can include letters (a-z), numbers (0-9), and these special characters (-_.). You cannot start or end a ${wh_label} with a special character or use multiple special characters in a row.`,
+// 				}),
+// 			user_id: Joi.number().integer().min(1).required().label(user_id_label),
+// 			phone_1: Joi.string()
+// 				.pattern(new RegExp("^[0-9]{10}$"))
+// 				.required()
+// 				.label(phone_no_label)
+// 				.messages({
+// 					"string.pattern.base": `${phone_no_label} must have exactly 10 digits and contain only numbers.`,
+// 				}),
+// 			email_1: Joi.string().max(127).email().required().label(email_id_label),
+// 			address: Joi.string().min(10).max(255).required().label(address_label),
+// 		});
+
+// 		const { error, value } = wh_schema.validate(req.body, { abortEarly: false });
+
+// 		if (error) {
+// 			return res.status(400).json({
+// 				success: false,
+// 				timestamp: DateTime.local().toFormat("yyyy-MM-dd HH:mm:ss"),
+// 				message: error.details[0].message,
+// 			});
+// 		}
+
+// 		// Check if warehouse exists
+// 		let wh_check = await do_ma_query("SELECT COUNT(*) AS count FROM warehouse WHERE id = ?;", [id]);
+		
+// 		if (wh_check[0].count === 0) {
+// 			return res.status(404).json({
+// 				success: false,
+// 				timestamp: DateTime.local().toFormat("yyyy-MM-dd HH:mm:ss"),
+// 				message: "Warehouse not found.",
+// 			});
+// 		}
+
+// 		let phone_no = "+91" + value.phone_1;
+
+// 		// Check for duplicates excluding current warehouse
+// 		let verify_unique = await do_ma_query(
+// 			"SELECT COUNT(*) AS count FROM warehouse WHERE (title = ? OR phone_1 = ? OR email_1 = ?) AND id != ?;",
+// 			[value.wh_title, phone_no, value.email_1, id]
+// 		);
+
+// 		if (verify_unique[0].count > 0) {
+// 			return res.status(422).json({
+// 				success: false,
+// 				timestamp: DateTime.local().toFormat("yyyy-MM-dd HH:mm:ss"),
+// 				message: "Warehouse with this title, phone, or email already exists.",
+// 			});
+// 		}
+
+// 		// Verify user exists
+// 		let user_check = await do_ma_query("SELECT COUNT(*) AS count FROM users WHERE id = ?;", [value.user_id]);
+		
+// 		if (user_check[0].count === 0) {
+// 			return res.status(404).json({
+// 				success: false,
+// 				timestamp: DateTime.local().toFormat("yyyy-MM-dd HH:mm:ss"),
+// 				message: "Contact person not found.",
+// 			});
+// 		}
+
+// 		  let [oldWarehouse] = await do_ma_query("SELECT * FROM warehouse WHERE id = ?", [id]);
+
+// 		let wh_update_res = await do_ma_query(
+// 			`UPDATE warehouse SET title = ?, contact_person_id = ?, phone_1 = ?, email_1 = ?, address = ?, updated_at = NOW() WHERE id = ?;`,
+// 			[value.wh_title, value.user_id, phone_no, value.email_1, value.address, id]
+// 		);
+
+	
+
+
+// 		if (wh_update_res.affectedRows === 1) {
+// 			 const changes = [];
+//       if (oldWarehouse[0].title !== value.wh_title) changes.push(`name: ${oldWarehouse[0].title} → ${value.wh_title}`);
+//       if (oldWarehouse[0].email_1 !== value.email_1) changes.push('email changed');
+//       if (oldWarehouse[0].address !== value.address) changes.push('address changed');
+
+//       await logActivity({
+//         activity_type: 'warehouse',
+//         action: 'updated',
+//         entity_id: id,
+//         entity_name: value.wh_title,
+//         description: `Warehouse "${value.wh_title}" updated${changes.length ? ': ' + changes.join(', ') : ''}`,
+//         user_id: req.user?.id || value.user_id,
+//         user_name: req.user?.name || 'System',
+//         warehouse_id: id,
+//         warehouse_name: value.wh_title,
+//         metadata: {
+//           changes: changes,
+//           updated_by: req.user?.name || 'System'
+//         }
+//       });
+
+//       res.status(200).json({
+//         success: true,
+//         timestamp: DateTime.local().toFormat("yyyy-MM-dd HH:mm:ss"),
+//         message: "Warehouse updated successfully.",
+//       });
+//     } else {
+//       res.status(304).json({
+//         success: false,
+//         timestamp: DateTime.local().toFormat("yyyy-MM-dd HH:mm:ss"),
+//         message: "No changes made to warehouse.",
+//       });
+//     }
+//   } catch (err) {
+//     console.error(`Route: ${req.originalUrl}, Error:`, err);
+//     res.status(500).json({
+//       success: false,
+//       timestamp: DateTime.local().toFormat("yyyy-MM-dd HH:mm:ss"),
+//       message: "Internal server error.",
+//     });
+//   }
+// };
+
+// Update warehouse
+
+
+
+export const updateWarehouse = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const wh_label = "warehouse title";
+    const user_id_label = "user ID";
+    const phone_no_label = "phone number";
+    const email_id_label = "email ID";
+    const address_label = "address";
+
+    const wh_schema = Joi.object({
+      wh_title: Joi.string()
+        .min(3)
+        .max(127)
+        .pattern(new RegExp("^(?![-_.])(?!.*[-_.]{2})[a-zA-Z0-9-_.]+(?<![-_.])$"))
+        .required()
+        .label(wh_label)
+        .messages({
+          "string.pattern.base": `${wh_label} can include letters (a-z), numbers (0-9), and these special characters (-_.). You cannot start or end a ${wh_label} with a special character or use multiple special characters in a row.`,
+        }),
+      user_id: Joi.number().integer().min(1).required().label(user_id_label),
+      phone_1: Joi.string()
+        .pattern(new RegExp("^[0-9]{10}$"))
+        .required()
+        .label(phone_no_label)
+        .messages({
+          "string.pattern.base": `${phone_no_label} must have exactly 10 digits and contain only numbers.`,
+        }),
+      email_1: Joi.string().max(127).email().required().label(email_id_label),
+      address: Joi.string().min(10).max(255).required().label(address_label),
+    });
+
+    const { error, value } = wh_schema.validate(req.body, { abortEarly: false });
+
+    if (error) {
+      return res.status(400).json({
+        success: false,
+        timestamp: DateTime.local().toFormat("yyyy-MM-dd HH:mm:ss"),
+        message: error.details[0].message,
+      });
+    }
+
+  
+    let whRows = await do_ma_query("SELECT * FROM warehouse WHERE id = ?", [id]);
+    if (whRows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        timestamp: DateTime.local().toFormat("yyyy-MM-dd HH:mm:ss"),
+        message: "Warehouse not found.",
+      });
+    }
+
+    let oldWarehouse = whRows[0];
+
+    let phone_no = "+91" + value.phone_1;
+
+    
+    let verify_unique = await do_ma_query(
+      "SELECT COUNT(*) AS count FROM warehouse WHERE (title = ? OR phone_1 = ? OR email_1 = ?) AND id != ?;",
+      [value.wh_title, phone_no, value.email_1, id]
+    );
+
+    if (verify_unique[0].count > 0) {
+      return res.status(422).json({
+        success: false,
+        timestamp: DateTime.local().toFormat("yyyy-MM-dd HH:mm:ss"),
+        message: "Warehouse with this title, phone, or email already exists.",
+      });
+    }
+
+    
+    let userRows = await do_ma_query("SELECT name FROM users WHERE id = ?", [value.user_id]);
+    if (userRows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        timestamp: DateTime.local().toFormat("yyyy-MM-dd HH:mm:ss"),
+        message: "Contact person not found.",
+      });
+    }
+    let contactPersonName = userRows[0].name;
+
+    // Update warehouse
+    let wh_update_res = await do_ma_query(
+      `UPDATE warehouse 
+       SET title = ?, contact_person_id = ?, phone_1 = ?, email_1 = ?, address = ?, updated_at = NOW() 
+       WHERE id = ?;`,
+      [value.wh_title, value.user_id, phone_no, value.email_1, value.address, id]
+    );
+
+    if (wh_update_res.affectedRows === 1) {
+      
+      const changes = [];
+      if (oldWarehouse.title !== value.wh_title) changes.push(`title: ${oldWarehouse.title} → ${value.wh_title}`);
+      if (oldWarehouse.email_1 !== value.email_1) changes.push(`email: ${oldWarehouse.email_1} → ${value.email_1}`);
+      if (oldWarehouse.address !== value.address) changes.push(`address changed`);
+      if (oldWarehouse.phone_1 !== phone_no) changes.push(`phone: ${oldWarehouse.phone_1} → ${phone_no}`);
+      if (oldWarehouse.contact_person_id !== value.user_id) changes.push(`contact person: ${oldWarehouse.contact_person_id} → ${value.user_id}`);
+
+    
+      await logActivity({
+        activity_type: 'warehouse',
+        action: 'updated',
+        entity_id: id,
+        entity_name: value.wh_title,
+        description: `Warehouse "${value.wh_title}" updated${changes.length ? ': ' + changes.join(', ') : ''}`,
+        user_id: req.user?.id || value.user_id,
+        user_name: req.user?.name || contactPersonName || 'System',
+        warehouse_id: id,
+        warehouse_name: value.wh_title,
+        metadata: {
+          changes: changes,
+          updated_by: req.user?.name || contactPersonName || 'System'
+        }
+      });
+
+      res.status(200).json({
+        success: true,
+        timestamp: DateTime.local().toFormat("yyyy-MM-dd HH:mm:ss"),
+        message: "Warehouse updated successfully.",
+      });
+    } else {
+      res.status(304).json({
+        success: false,
+        timestamp: DateTime.local().toFormat("yyyy-MM-dd HH:mm:ss"),
+        message: "No changes made to warehouse.",
+      });
+    }
+  } catch (err) {
+    console.error(`Route: ${req.originalUrl}, Error:`, err);
+    res.status(500).json({
+      success: false,
+      timestamp: DateTime.local().toFormat("yyyy-MM-dd HH:mm:ss"),
+      message: "Internal server error.",
+    });
+  }
+};
+
+
+
+// Delete
 export const deleteWarehouse = async (req, res) => {
 	try {
 		const { id } = req.params;
@@ -842,6 +1230,8 @@ export const deleteWarehouse = async (req, res) => {
 			});
 		}
 
+		
+
 		// Check if warehouse has products
 		let product_check = await do_ma_query("SELECT COUNT(*) AS count FROM product WHERE warehouse_id = ?;", [id]);
 		
@@ -853,142 +1243,50 @@ export const deleteWarehouse = async (req, res) => {
 			});
 		}
 
+		
+
 		let wh_delete_res = await do_ma_query("DELETE FROM warehouse WHERE id = ?;", [id]);
 
 		if (wh_delete_res.affectedRows === 1) {
-			res.status(200).json({
-				success: true,
-				timestamp: DateTime.local().toFormat("yyyy-MM-dd HH:mm:ss"),
-				message: "Warehouse deleted successfully.",
-			});
-		} else {
-			res.status(304).json({
-				success: false,
-				timestamp: DateTime.local().toFormat("yyyy-MM-dd HH:mm:ss"),
-				message: "Warehouse deletion failed.",
-			});
-		}
-	} catch (err) {
-		console.error(`Route: ${req.originalUrl}, Error:`, err);
-		res.status(500).json({
-			success: false,
-			timestamp: DateTime.local().toFormat("yyyy-MM-dd HH:mm:ss"),
-			message: "Internal server error.",
-		});
-	}
+			 await logActivity({
+        activity_type: 'warehouse',
+        action: 'deleted',
+        entity_id: id,
+        entity_name: warehouse[0].title,
+        description: `Warehouse "${warehouse[0].title}" deleted`,
+        user_id: req.user?.id || null,
+        user_name: req.user?.name || 'System',
+        warehouse_id: id,
+        warehouse_name: warehouse[0].title,
+        metadata: {
+          deleted_warehouse_email: warehouse[0].email_1,
+          deleted_warehouse_phone: warehouse[0].phone_1,
+          deleted_by: req.user?.name || 'System'
+        }
+      });
+
+      res.status(200).json({
+        success: true,
+        timestamp: DateTime.local().toFormat("yyyy-MM-dd HH:mm:ss"),
+        message: "Warehouse deleted successfully.",
+      });
+    } else {
+      res.status(304).json({
+        success: false,
+        timestamp: DateTime.local().toFormat("yyyy-MM-dd HH:mm:ss"),
+        message: "Warehouse deletion failed.",
+      });
+    }
+  } catch (err) {
+    console.error(`Route: ${req.originalUrl}, Error:`, err);
+    res.status(500).json({
+      success: false,
+      timestamp: DateTime.local().toFormat("yyyy-MM-dd HH:mm:ss"),
+      message: "Internal server error.",
+    });
+  }
 };
 
-
-
-
-// Update warehouse
-export const updateWarehouse = async (req, res) => {
-	try {
-		const { id } = req.params;
-
-		const wh_label = "warehouse title";
-		const user_id_label = "user ID";
-		const phone_no_label = "phone number";
-		const email_id_label = "email ID";
-		const address_label = "address";
-
-		const wh_schema = Joi.object({
-			wh_title: Joi.string()
-				.min(3)
-				.max(127)
-				.pattern(new RegExp("^(?![-_.])(?!.*[-_.]{2})[a-zA-Z0-9-_.]+(?<![-_.])$"))
-				.required()
-				.label(wh_label)
-				.messages({
-					"string.pattern.base": `${wh_label} can include letters (a-z), numbers (0-9), and these special characters (-_.). You cannot start or end a ${wh_label} with a special character or use multiple special characters in a row.`,
-				}),
-			user_id: Joi.number().integer().min(1).required().label(user_id_label),
-			phone_1: Joi.string()
-				.pattern(new RegExp("^[0-9]{10}$"))
-				.required()
-				.label(phone_no_label)
-				.messages({
-					"string.pattern.base": `${phone_no_label} must have exactly 10 digits and contain only numbers.`,
-				}),
-			email_1: Joi.string().max(127).email().required().label(email_id_label),
-			address: Joi.string().min(10).max(255).required().label(address_label),
-		});
-
-		const { error, value } = wh_schema.validate(req.body, { abortEarly: false });
-
-		if (error) {
-			return res.status(400).json({
-				success: false,
-				timestamp: DateTime.local().toFormat("yyyy-MM-dd HH:mm:ss"),
-				message: error.details[0].message,
-			});
-		}
-
-		// Check if warehouse exists
-		let wh_check = await do_ma_query("SELECT COUNT(*) AS count FROM warehouse WHERE id = ?;", [id]);
-		
-		if (wh_check[0].count === 0) {
-			return res.status(404).json({
-				success: false,
-				timestamp: DateTime.local().toFormat("yyyy-MM-dd HH:mm:ss"),
-				message: "Warehouse not found.",
-			});
-		}
-
-		let phone_no = "+91" + value.phone_1;
-
-		// Check for duplicates excluding current warehouse
-		let verify_unique = await do_ma_query(
-			"SELECT COUNT(*) AS count FROM warehouse WHERE (title = ? OR phone_1 = ? OR email_1 = ?) AND id != ?;",
-			[value.wh_title, phone_no, value.email_1, id]
-		);
-
-		if (verify_unique[0].count > 0) {
-			return res.status(422).json({
-				success: false,
-				timestamp: DateTime.local().toFormat("yyyy-MM-dd HH:mm:ss"),
-				message: "Warehouse with this title, phone, or email already exists.",
-			});
-		}
-
-		// Verify user exists
-		let user_check = await do_ma_query("SELECT COUNT(*) AS count FROM users WHERE id = ?;", [value.user_id]);
-		
-		if (user_check[0].count === 0) {
-			return res.status(404).json({
-				success: false,
-				timestamp: DateTime.local().toFormat("yyyy-MM-dd HH:mm:ss"),
-				message: "Contact person not found.",
-			});
-		}
-
-		let wh_update_res = await do_ma_query(
-			`UPDATE warehouse SET title = ?, contact_person_id = ?, phone_1 = ?, email_1 = ?, address = ?, updated_at = NOW() WHERE id = ?;`,
-			[value.wh_title, value.user_id, phone_no, value.email_1, value.address, id]
-		);
-
-		if (wh_update_res.affectedRows === 1) {
-			res.status(200).json({
-				success: true,
-				timestamp: DateTime.local().toFormat("yyyy-MM-dd HH:mm:ss"),
-				message: "Warehouse updated successfully.",
-			});
-		} else {
-			res.status(304).json({
-				success: false,
-				timestamp: DateTime.local().toFormat("yyyy-MM-dd HH:mm:ss"),
-				message: "No changes made to warehouse.",
-			});
-		}
-	} catch (err) {
-		console.error(`Route: ${req.originalUrl}, Error:`, err);
-		res.status(500).json({
-			success: false,
-			timestamp: DateTime.local().toFormat("yyyy-MM-dd HH:mm:ss"),
-			message: "Internal server error.",
-		});
-	}
-};
 
 
 // export const get = async (req, res) => {
@@ -1272,3 +1570,23 @@ export const updateWarehouse = async (req, res) => {
 // 		});
 // 	}
 // };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

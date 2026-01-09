@@ -88,12 +88,14 @@ import authReducer from './slices/authSlice'
 import menuReducer from './slices/menuSlice'
 import warehouseReducer from './slices/warehouseSlice'
 import stockFlowReducer from './slices/stockSlice'
+import articleReducer from './slices/articleSlice'
 
 
 const rootReducer = combineReducers({
   auth:authReducer,
   user:userReducer,
   dashboard:dashboardReducer,
+  articles:articleReducer,
   products: productReducer,
   warehouse:warehouseReducer,
   stockFlow:stockFlowReducer,
